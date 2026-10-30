@@ -26,6 +26,30 @@ jobs:
           python-version: '3.12'
       - name: Resolve thumbnail URLs
         run: python scripts/update_image_sources.py
+      - name: Probe thumbnail responses (diagnostic)
+        continue-on-error: true
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+          import urllib.error
+          from pathlib import Path
+          images = json.loads(Path('data/image_sources.json').read_text())['images']
+          for ident in ('10001','30081','30323'):
+              url=images.get(ident)
+              if not url:
+                  print(ident, 'no URL')
+                  continue
+              try:
+                  request=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'})
+                  with urllib.request.urlopen(request,timeout=20) as response:
+                      first=response.read(16)
+                      print(ident,'status=',response.status,'mime=',response.headers.get('content-type'),'signature=',repr(first))
+                      if not response.headers.get('content-type','').startswith('image/'):
+                          raise ValueError('Response not an image')
+              except Exception as exc:
+                  print(ident,'image probe failed:',repr(exc))
+          PY
       - name: Commit URL metadata
         run: |
           if [ -z "$(git status --porcelain -- data/image_sources.json)" ]; then
