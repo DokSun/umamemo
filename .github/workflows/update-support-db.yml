@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: '15 19 * * *' # 04:15 Korea time, daily
   workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/update_support_db.py'
+      - '.github/workflows/update-support-db.yml'
 
 permissions:
   contents: write
