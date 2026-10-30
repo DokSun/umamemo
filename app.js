@@ -98,10 +98,17 @@ function switchServer(next){
 }
 $('server-mode').value=serverMode;
 $('server-mode').addEventListener('change',e=>switchServer(e.target.value));
+// Compare ISO release dates in Korean local time; missing dates mean not released.
+function koreaDate(){
+ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+}
+function visibleCard(c){
+ return serverMode==='jp'||(typeof c.releaseKo==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(c.releaseKo)&&c.releaseKo<=koreaDate());
+}
 const findCard=id=>cards.find(c=>String(c.id)===String(id));
 function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'group':'normal'}
 function countFor(slot,c){return category(c)==='friend'?5:category(c)==='group'?slot.groupCount:3}
-function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><div class="portrait placeholder" id="photo-${i}">이미지 없음</div></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><input class="search" data-search="${i}" placeholder="카드 이름 검색" value="${escapeHTML(cardLabel(c))}" autocomplete="off"><div class="results" id="results-${i}" hidden></div></div><button data-clear="${i}">비우기</button></div>${c&&serverMode==='jp'? `<div class="jp-card-title" title="${escapeHTML(cardLabel(c))}">${escapeHTML(cardLabel(c))}</div>`:''}<div class="meta">${c?`${escapeHTML(c.rarity)} · ${escapeHTML(c.type)}`:'카드를 선택하세요'}</div>${c?`<div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}`:''}</div>`;return el}
+function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><div class="portrait placeholder" id="photo-${i}">이미지 없음</div></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><input class="search" data-search="${i}" placeholder="카드 이름 검색" value="${escapeHTML(cardLabel(c))}" autocomplete="off"><div class="results" id="results-${i}" hidden></div></div><button data-clear="${i}">비우기</button></div><div class="meta">${c?`${escapeHTML(c.rarity)} · ${escapeHTML(c.type)}`:'카드를 선택하세요'}</div>${c?`<div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}`:''}</div>`;return el}
 // External URL metadata, not image files, is published with the site.
 let remoteImages = {};
 const wikiLookups = new Map();
@@ -185,7 +192,7 @@ loadRemoteImageIndex();
 
 function render(){const target=$('slots');target.replaceChildren(...state.slots.map((_,i)=>slotRender(i)));state.slots.forEach((_,i)=>renderPhoto(i));save()}
 function updateEvents(i){const s=state.slots[i];document.querySelectorAll('[data-step]').forEach(b=>{const [slot,n]=b.dataset.step.split(':').map(Number);if(slot!==i)return;const on=s.step>=n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});document.querySelectorAll('[data-random]').forEach(b=>{const [slot,n]=b.dataset.random.split(':').map(Number);if(slot!==i)return;const on=!!s.random[n];b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
-function results(i,q){const el=$('results-'+i);q=q.trim().toLowerCase();if(!q){el.hidden=true;return}const found=cards.filter(c=>(cardLabel(c)+' '+c.nameKo+' '+c.nameJa+' '+c.characterKo+' '+c.id).toLowerCase().includes(q)).slice(0,35);el.innerHTML=found.map(c=>`<button data-choose="${i}:${c.id}">${escapeHTML(cardLabel(c))} <small>(${escapeHTML(c.rarity)} · ${escapeHTML(c.type)})</small></button>`).join('')||'<p class="hint">검색 결과 없음</p>';el.hidden=false}
+function results(i,q){const el=$('results-'+i);q=q.trim().toLowerCase();if(!q){el.hidden=true;return}const found=cards.filter(c=>visibleCard(c)&&(cardLabel(c)+' '+c.nameKo+' '+c.nameJa+' '+c.characterKo+' '+c.id).toLowerCase().includes(q)).slice(0,35);el.innerHTML=found.map(c=>`<button data-choose="${i}:${c.id}">${escapeHTML(cardLabel(c))} <small>(${escapeHTML(c.rarity)} · ${escapeHTML(c.type)})</small></button>`).join('')||'<p class="hint">검색 결과 없음</p>';el.hidden=false}
 $('slots').addEventListener('input',e=>{if(e.target.matches('[data-search]'))results(Number(e.target.dataset.search),e.target.value)});
 $('slots').addEventListener('change',e=>{
  const t=e.target;
@@ -196,7 +203,7 @@ $('slots').addEventListener('change',e=>{
   render();
  }
 });
-$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.choose){[i,j]=t.dataset.choose.split(':').map(Number);state.slots[i]={id:j,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
+$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.choose){[i,j]=t.dataset.choose.split(':').map(Number);const card=findCard(j);if(!card||!visibleCard(card))return;state.slots[i]={id:j,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 document.addEventListener('click',e=>{if(!e.target.closest('.choices'))document.querySelectorAll('.results').forEach(x=>x.hidden=true)});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 $('reset').onclick=()=>{
