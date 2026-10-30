@@ -21,7 +21,7 @@ const LAYOUT_KEY='uma-tracker-layout-v1';
 const TOOLS={
  counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
   reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
- memo:{name:'시나리오 메모',scope:'independent',element:'memo-panel',
+ memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}}
 };
 function readLayout(){
