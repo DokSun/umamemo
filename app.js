@@ -108,7 +108,7 @@ function visibleCard(c){
 const findCard=id=>cards.find(c=>String(c.id)===String(id));
 function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'group':'normal'}
 function countFor(slot,c){return category(c)==='friend'?5:category(c)==='group'?slot.groupCount:3}
-function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><div class="portrait placeholder" id="photo-${i}">이미지 없음</div></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><input class="search" data-search="${i}" placeholder="카드 이름 검색" value="${escapeHTML(cardLabel(c))}" autocomplete="off"><div class="results" id="results-${i}" hidden></div></div><button data-clear="${i}">비우기</button></div><div class="meta">${c?`${escapeHTML(c.rarity)} · ${escapeHTML(c.type)}`:'카드를 선택하세요'}</div>${c?`<div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}`:''}</div>`;return el}
+function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><div class="portrait placeholder" id="photo-${i}">이미지 없음</div></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><button type="button" class="search card-select-btn" data-open-picker="${i}" title="${escapeHTML(cardLabel(c)||"카드를 선택하세요")}">${escapeHTML(cardLabel(c)||"카드를 선택하세요")}</button></div><button data-clear="${i}">비우기</button></div><div class="meta">${c?`${escapeHTML(c.rarity)} · ${escapeHTML(c.type)}`:'카드를 선택하세요'}</div>${c?`<div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}`:''}</div>`;return el}
 // External URL metadata, not image files, is published with the site.
 let remoteImages = {};
 const wikiLookups = new Map();
@@ -182,6 +182,7 @@ async function loadRemoteImageIndex(){
   const index=await response.json();
   if(index&&typeof index.images==='object'&&!Array.isArray(index.images))
    remoteImages=index.images;
+  if(!$('card-picker').hidden)pickerRender();
  }catch(e){console.debug('Using on-demand wiki image lookup',e)}
  state.slots.forEach((_,i)=>{
   const box=$('photo-'+i);
@@ -192,8 +193,99 @@ loadRemoteImageIndex();
 
 function render(){const target=$('slots');target.replaceChildren(...state.slots.map((_,i)=>slotRender(i)));state.slots.forEach((_,i)=>renderPhoto(i));save()}
 function updateEvents(i){const s=state.slots[i];document.querySelectorAll('[data-step]').forEach(b=>{const [slot,n]=b.dataset.step.split(':').map(Number);if(slot!==i)return;const on=s.step>=n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});document.querySelectorAll('[data-random]').forEach(b=>{const [slot,n]=b.dataset.random.split(':').map(Number);if(slot!==i)return;const on=!!s.random[n];b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
-function results(i,q){const el=$('results-'+i);q=q.trim().toLowerCase();if(!q){el.hidden=true;return}const found=cards.filter(c=>visibleCard(c)&&(cardLabel(c)+' '+c.nameKo+' '+c.nameJa+' '+c.characterKo+' '+c.id).toLowerCase().includes(q)).slice(0,35);el.innerHTML=found.map(c=>`<button data-choose="${i}:${c.id}"><small>${escapeHTML(c.rarity)} ${escapeHTML(c.type)}</small> ${escapeHTML(cardLabel(c))}</button>`).join('')||'<p class="hint">검색 결과 없음</p>';el.hidden=false}
-$('slots').addEventListener('input',e=>{if(e.target.matches('[data-search]'))results(Number(e.target.dataset.search),e.target.value)});
+// Image gallery card picker: uses the existing card DB and external thumbnail index.
+const PICKER_PAGE_SIZE=20;
+const PICKER_TYPES=[
+ ['전체','전체'],['스피드','스피드'],['스태미나','스태미나'],['파워','파워'],
+ ['근성','근성'],['지능','지능'],['친구','친구'],['그룹','그룹']
+];
+let pickerSlot=null,pickerType='전체',pickerRarity='SSR',pickerPage=0;
+let pickerPreviousFocus=null;
+function pickerClose(){
+ $('card-picker').hidden=true;
+ document.body.classList.remove('picker-open');
+ pickerSlot=null;
+ if(pickerPreviousFocus&&pickerPreviousFocus.isConnected)pickerPreviousFocus.focus();
+ pickerPreviousFocus=null;
+}
+function pickerOpen(i){
+ if(!cards.length)return toast('카드 DB를 불러오는 중입니다');
+ pickerSlot=i;
+ pickerPreviousFocus=document.activeElement;
+ pickerPage=0;
+ $('picker-search').value='';
+ $('card-picker').hidden=false;
+ document.body.classList.add('picker-open');
+ pickerRender();
+ $('picker-search').focus();
+}
+function pickerFiltered(){
+ const q=$('picker-search').value.trim().toLowerCase();
+ return cards.filter(c=>{
+  if(!visibleCard(c))return false;
+  if(pickerType!=='전체'&&c.type!==pickerType)return false;
+  if(c.rarity!==pickerRarity)return false;
+  if(!q)return true;
+  return (cardLabel(c)+' '+c.nameKo+' '+c.nameJa+' '+c.characterKo+' '+c.id).toLowerCase().includes(q);
+ }).sort((a,b)=>Number(b.id)-Number(a.id));
+}
+function pickerRender(){
+ if($('card-picker').hidden)return;
+ $('picker-types').innerHTML=PICKER_TYPES.map(([key,label])=>
+  \`<button type="button" data-picker-type="\${escapeHTML(key)}" aria-pressed="\${pickerType===key}" class="\${pickerType===key?'active':''}">\${label}</button>\`
+ ).join('');
+ $('picker-rarities').innerHTML=['SSR','SR','R'].map(x=>
+  \`<button type="button" data-picker-rarity="\${x}" aria-pressed="\${pickerRarity===x}" class="\${pickerRarity===x?'active':''}">\${x}</button>\`
+ ).join('');
+ const matched=pickerFiltered(),pages=Math.max(1,Math.ceil(matched.length/PICKER_PAGE_SIZE));
+ pickerPage=Math.max(0,Math.min(pickerPage,pages-1));
+ const windowCards=matched.slice(pickerPage*PICKER_PAGE_SIZE,(pickerPage+1)*PICKER_PAGE_SIZE);
+ $('picker-grid').innerHTML=windowCards.length?windowCards.map(c=>{
+  const src=remoteImages[String(c.id)],name=escapeHTML(cardLabel(c));
+  const image=validRemoteURL(src)?
+   \`<img src="\${escapeHTML(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">\`:
+   '<span class="picker-noimage">이미지 없음</span>';
+  return \`<button type="button" class="picker-card" data-picker-card="\${c.id}" title="\${name}" aria-label="\${escapeHTML(c.rarity)} \${escapeHTML(c.type)} \${name}">\${image}<span class="picker-card-caption">\${name}</span></button>\`;
+ }).join(''):'<div class="picker-empty">검색 조건에 맞는 카드가 없습니다.</div>';
+ const pager=$('picker-pager');
+ const start=Math.max(0,Math.min(pickerPage-2,pages-5));
+ const end=Math.min(pages,start+5);
+ pager.innerHTML=\`<button type="button" data-picker-page="\${pickerPage-1}" \${pickerPage===0?'disabled':''}>◀ 이전</button><span class="picker-pages">\${Array.from({length:end-start},(_,i)=>{
+  const p=start+i;return \`<button type="button" data-picker-page="\${p}" class="\${p===pickerPage?'active':''}" aria-current="\${p===pickerPage?'page':'false'}">\${p+1}</button>\`;
+ }).join('')}</span><button type="button" data-picker-page="\${pickerPage+1}" \${pickerPage>=pages-1?'disabled':''}>다음 ▶</button>\`;
+}
+$('picker-types').addEventListener('click',e=>{
+ const b=e.target.closest('[data-picker-type]');if(!b)return;
+ pickerType=b.dataset.pickerType;pickerPage=0;pickerRender();
+});
+$('picker-rarities').addEventListener('click',e=>{
+ const b=e.target.closest('[data-picker-rarity]');if(!b)return;
+ pickerRarity=b.dataset.pickerRarity;pickerPage=0;pickerRender();
+});
+$('picker-search').addEventListener('input',()=>{pickerPage=0;pickerRender()});
+$('picker-pager').addEventListener('click',e=>{
+ const b=e.target.closest('[data-picker-page]');if(!b||b.disabled)return;
+ pickerPage=Number(b.dataset.pickerPage);pickerRender();
+});
+$('picker-grid').addEventListener('click',e=>{
+ const b=e.target.closest('[data-picker-card]');if(!b||pickerSlot===null)return;
+ const c=findCard(b.dataset.pickerCard);if(!c||!visibleCard(c))return;
+ state.slots[pickerSlot]={id:c.id,step:0,random:[false,false],groupCount:3};
+ pickerClose();render();
+});
+$('picker-close').addEventListener('click',pickerClose);
+$('card-picker').addEventListener('click',e=>{if(e.target===$('card-picker'))pickerClose()});
+document.addEventListener('keydown',e=>{
+ if($('card-picker').hidden)return;
+ if(e.key==='Escape'){e.preventDefault();pickerClose();return}
+ if(e.key==='Tab'){
+  const f=[...$('card-picker').querySelectorAll('button:not([disabled]),input:not([disabled])')].filter(x=>x.offsetParent!==null);
+  if(!f.length)return;
+  if(e.shiftKey&&document.activeElement===f[0]){e.preventDefault();f[f.length-1].focus()}
+  else if(!e.shiftKey&&document.activeElement===f[f.length-1]){e.preventDefault();f[0].focus()}
+ }
+});
+
 $('slots').addEventListener('change',e=>{
  const t=e.target;
  if(t.matches('[data-group]')){
@@ -203,8 +295,7 @@ $('slots').addEventListener('change',e=>{
   render();
  }
 });
-$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.choose){[i,j]=t.dataset.choose.split(':').map(Number);const card=findCard(j);if(!card||!visibleCard(card))return;state.slots[i]={id:j,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
-document.addEventListener('click',e=>{if(!e.target.closest('.choices'))document.querySelectorAll('.results').forEach(x=>x.hidden=true)});
+$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 $('reset').onclick=()=>{
  if(!confirm('현재 편성은 유지하고 모든 카드의 이벤트 진행 기록만 초기화할까요?'))return;
