@@ -51,27 +51,23 @@ function renderResetActions(){
  }else secondary.dataset.targets='';
 }
 function applyLayout(){
- // The counter is fixed in split mode, so the chosen secondary tool must be different.
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
- // Existing tool DOM elements stay mounted: card progress, memo and focus survive switching.
- const ids=visibleToolIds();
- const workspace=$('workspace');
- const solo=layout.mode==='single';
+ const ids=visibleToolIds(),workspace=$('workspace'),solo=layout.mode==='single';
  workspace.classList.toggle('single',solo);
  workspace.classList.toggle('split',!solo);
  workspace.classList.toggle('reversed',!solo&&layout.reversed);
  workspace.style.setProperty('--counter-share',layout.ratio+'fr');
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
- for(const [id,tool] of Object.entries(TOOLS)){
-  const panel=$(tool.element);
-  panel.hidden=!ids.includes(id);
- }
- $('view-mode').value=layout.mode;
- $('active-tool').querySelectorAll('option').forEach(op=>{op.disabled=layout.mode==='split'&&op.value==='counter'});
- $('active-tool').value=layout.tool;
+ for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
+ $('split-toggle').checked=!solo;
  $('split-ratio').value=String(layout.ratio);
- document.querySelectorAll('.split-only').forEach(el=>el.hidden=solo);
+ $('split-options').hidden=solo;
  $('swap-panels').setAttribute('aria-pressed',String(layout.reversed));
+ $('tool-menu-list').querySelectorAll('[data-tool]').forEach(btn=>{
+  const active=btn.dataset.tool===layout.tool;
+  btn.classList.toggle('active',active);
+  btn.setAttribute('aria-current',active?'true':'false');
+ });
  renderResetActions();
  saveLayout();
 }
@@ -83,15 +79,39 @@ function resetTargets(button){
  ids.forEach(id=>TOOLS[id].reset());
  toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
+function toggleToolMenu(open){
+ $('tool-menu').hidden=!open;
+ $('tool-menu-toggle').setAttribute('aria-expanded',String(open));
+}
 function initWorkspace(){
- const select=$('active-tool');
- select.replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
-  const op=document.createElement('option');op.value=id;op.textContent=t.name;return op;
+ $('tool-menu-list').replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
+  const btn=document.createElement('button');
+  btn.type='button';btn.dataset.tool=id;
+  btn.textContent=t.name;
+  btn.className='tool-menu-item';
+  return btn;
  }));
- $('view-mode').addEventListener('change',e=>{layout.mode=e.target.value;applyLayout()});
- select.addEventListener('change',e=>{layout.tool=e.target.value;applyLayout()});
+ $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
+ $('tool-menu-list').addEventListener('click',e=>{
+  const btn=e.target.closest('[data-tool]');if(!btn)return;
+  if(layout.mode==='split'&&btn.dataset.tool==='counter')layout.mode='single';
+  layout.tool=btn.dataset.tool;
+  applyLayout();
+  toggleToolMenu(false);
+ });
+ $('split-toggle').addEventListener('change',e=>{
+  layout.mode=e.target.checked?'split':'single';
+  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
+  applyLayout();
+ });
  $('split-ratio').addEventListener('change',e=>{layout.ratio=Number(e.target.value);applyLayout()});
  $('swap-panels').addEventListener('click',()=>{layout.reversed=!layout.reversed;applyLayout()});
+ document.addEventListener('click',e=>{
+  if(!e.target.closest('.tool-menu-wrap'))toggleToolMenu(false);
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!$('tool-menu').hidden){toggleToolMenu(false);$('tool-menu-toggle').focus()}
+ });
  $('reset').addEventListener('click',()=>resetTargets($('reset')));
  $('secondary-reset').addEventListener('click',()=>resetTargets($('secondary-reset')));
  applyLayout();
