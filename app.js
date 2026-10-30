@@ -232,10 +232,10 @@ function pickerFiltered(){
 function pickerRender(){
  if($('card-picker').hidden)return;
  $('picker-types').innerHTML=PICKER_TYPES.map(([key,label])=>
-  \`<button type="button" data-picker-type="\${escapeHTML(key)}" aria-pressed="\${pickerType===key}" class="\${pickerType===key?'active':''}">\${label}</button>\`
+  `<button type="button" data-picker-type="${escapeHTML(key)}" aria-pressed="${pickerType===key}" class="${pickerType===key?'active':''}">${label}</button>`
  ).join('');
  $('picker-rarities').innerHTML=['SSR','SR','R'].map(x=>
-  \`<button type="button" data-picker-rarity="\${x}" aria-pressed="\${pickerRarity===x}" class="\${pickerRarity===x?'active':''}">\${x}</button>\`
+  `<button type="button" data-picker-rarity="${x}" aria-pressed="${pickerRarity===x}" class="${pickerRarity===x?'active':''}">${x}</button>`
  ).join('');
  const matched=pickerFiltered(),pages=Math.max(1,Math.ceil(matched.length/PICKER_PAGE_SIZE));
  pickerPage=Math.max(0,Math.min(pickerPage,pages-1));
@@ -243,16 +243,16 @@ function pickerRender(){
  $('picker-grid').innerHTML=windowCards.length?windowCards.map(c=>{
   const src=remoteImages[String(c.id)],name=escapeHTML(cardLabel(c));
   const image=validRemoteURL(src)?
-   \`<img src="\${escapeHTML(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">\`:
+   `<img src="${escapeHTML(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:
    '<span class="picker-noimage">이미지 없음</span>';
-  return \`<button type="button" class="picker-card" data-picker-card="\${c.id}" title="\${name}" aria-label="\${escapeHTML(c.rarity)} \${escapeHTML(c.type)} \${name}">\${image}<span class="picker-card-caption">\${name}</span></button>\`;
+  return `<button type="button" class="picker-card" data-picker-card="${c.id}" title="${name}" aria-label="${escapeHTML(c.rarity)} ${escapeHTML(c.type)} ${name}">${image}<span class="picker-card-caption">${name}</span></button>`;
  }).join(''):'<div class="picker-empty">검색 조건에 맞는 카드가 없습니다.</div>';
  const pager=$('picker-pager');
  const start=Math.max(0,Math.min(pickerPage-2,pages-5));
  const end=Math.min(pages,start+5);
- pager.innerHTML=\`<button type="button" data-picker-page="\${pickerPage-1}" \${pickerPage===0?'disabled':''}>◀ 이전</button><span class="picker-pages">\${Array.from({length:end-start},(_,i)=>{
-  const p=start+i;return \`<button type="button" data-picker-page="\${p}" class="\${p===pickerPage?'active':''}" aria-current="\${p===pickerPage?'page':'false'}">\${p+1}</button>\`;
- }).join('')}</span><button type="button" data-picker-page="\${pickerPage+1}" \${pickerPage>=pages-1?'disabled':''}>다음 ▶</button>\`;
+ pager.innerHTML=`<button type="button" data-picker-page="${pickerPage-1}" ${pickerPage===0?'disabled':''}>◀ 이전</button><span class="picker-pages">${Array.from({length:end-start},(_,i)=>{
+  const p=start+i;return `<button type="button" data-picker-page="${p}" class="${p===pickerPage?'active':''}" aria-current="${p===pickerPage?'page':'false'}">${p+1}</button>`;
+ }).join('')}</span><button type="button" data-picker-page="${pickerPage+1}" ${pickerPage>=pages-1?'disabled':''}>다음 ▶</button>`;
 }
 $('picker-types').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-type]');if(!b)return;
