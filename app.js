@@ -39,16 +39,25 @@ const layout=readLayout();
 function saveLayout(){try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){console.warn('화면 설정 저장 실패',e)}}
 function visibleToolIds(){return layout.mode==='single'?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
 function renderResetActions(){
- const ids=visibleToolIds(),allSession=ids.length>1&&ids.every(id=>TOOLS[id].scope==='session');
+ const ids=visibleToolIds();
+ const allSession=ids.length>1&&ids.every(id=>TOOLS[id].scope==='session');
  const primary=$('reset'),secondary=$('secondary-reset');
- const first=allSession?ids:[ids[0]];
- primary.textContent=allSession?'육성 기록 통합 초기화':TOOLS[first[0]].name+' 초기화';
- primary.dataset.targets=first.join(',');
- secondary.hidden=allSession||ids.length<2;
- if(!secondary.hidden){
-  secondary.textContent=TOOLS[ids[1]].name+' 초기화';
-  secondary.dataset.targets=ids[1];
- }else secondary.dataset.targets='';
+ const counterFooter=$('counter-reset-footer'),memoFooter=$('memo-reset-footer');
+ if(allSession){
+  // A shared session reset appears once, at the bottom of the counter panel.
+  primary.textContent='육성 기록 통합 초기화';
+  primary.dataset.targets=ids.join(',');
+  counterFooter.hidden=false;
+  memoFooter.hidden=true;
+ }else{
+  // Reset buttons belong to their own tool panels, including standalone mode.
+  primary.textContent=TOOLS.counter.name+' 초기화';
+  primary.dataset.targets='counter';
+  counterFooter.hidden=!ids.includes('counter');
+  secondary.textContent=TOOLS.memo.name+' 초기화';
+  secondary.dataset.targets='memo';
+  memoFooter.hidden=!ids.includes('memo');
+ }
 }
 function applyLayout(){
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
