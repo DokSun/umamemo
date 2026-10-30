@@ -167,3 +167,24 @@ header>.header-tools{order:2}
 .ratio-segments label:hover span{filter:brightness(1.15)}
 .ratio-segments input:focus-visible+span{outline:2px solid #a6d1ff;outline-offset:-3px}
 @media(max-width:390px){.ratio-fieldset{flex-wrap:wrap}.ratio-fieldset legend{line-height:1.5}.ratio-segments span{padding:6px 9px}}
+
+/* Keep ratio selectors and side swap on one line in the function menu. */
+.tool-menu-extras{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;flex-wrap:nowrap}
+.tool-menu-extras .ratio-fieldset{display:flex;gap:5px;flex-wrap:nowrap;align-items:center;min-width:0}
+.tool-menu-extras .ratio-fieldset legend{margin-right:3px;line-height:32px;font-size:11px;white-space:nowrap}
+.tool-menu-extras .ratio-segments label{min-width:0}
+.tool-menu-extras .ratio-segments span{padding:5px 7px;min-height:32px;font-size:12px}
+.tool-menu-extras #swap-panels{min-width:0;padding:5px 7px;font-size:12px;white-space:nowrap}
+@media(max-width:390px){.tool-menu-extras .ratio-fieldset{flex-wrap:nowrap}}
+/* Hover/focus previews show all six saved cards without changing a formation. */
+.preset-row{position:relative}
+.preset-label[tabindex]{cursor:default}
+.preset-label[tabindex]:focus-visible{outline:2px solid #80baff;outline-offset:2px;border-radius:3px}
+.preset-preview{display:none;position:absolute;right:calc(100% + 10px);top:-10px;width:356px;z-index:60;padding:10px;background:#152337;border:1px solid #6585a9;border-radius:8px;box-shadow:0 12px 28px #000b;pointer-events:none}
+.preset-row:hover .preset-preview,.preset-row:focus-within .preset-preview{display:block}
+.preset-preview-title{font-size:12px;color:#d7e6f7;font-weight:650;margin-bottom:7px}
+.preset-preview-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+.preset-preview-card{min-width:0;aspect-ratio:3/4;overflow:hidden;border:1px solid #4c6381;border-radius:4px;background:#293d56}
+.preset-preview-card img{width:100%;height:100%;object-fit:cover;display:block}
+.preset-preview-card.missing{font-size:9px;color:#b6c4d9;display:flex;align-items:center;justify-content:center;text-align:center;overflow-wrap:anywhere;padding:2px}
+@media(max-width:720px){.preset-preview{right:0;top:calc(100% + 4px);width:min(272px,calc(100vw - 32px));padding:7px}.preset-preview-grid{gap:3px}}
