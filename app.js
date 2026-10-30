@@ -2,6 +2,39 @@
 const KEY='uma-tracker-v1';
 let cards=[],state={slots:Array.from({length:6},()=>({id:null,step:0,random:[false,false],groupCount:3})),scenario:''};
 try{const old=JSON.parse(localStorage.getItem(KEY));if(old&&Array.isArray(old.slots))state={...state,...old,slots:Array.from({length:6},(_,i)=>({...state.slots[i],...(old.slots[i]||{})}))}}catch{}
+
+const PRESET_KEY='uma-tracker-presets-v1';
+const emptySlot=()=>({id:null,step:0,random:[false,false],groupCount:3});
+let presets=[null,null,null];
+try{
+ const stored=JSON.parse(localStorage.getItem(PRESET_KEY));
+ if(Array.isArray(stored))presets=Array.from({length:3},(_,i)=>stored[i]&&Array.isArray(stored[i].slots)&&stored[i].slots.length===6?stored[i]:null);
+}catch(e){console.warn('편성 세트 읽기 실패',e)}
+function cleanSlot(s){
+ const count=Math.max(1,Math.min(5,Number(s?.groupCount)||3));
+ return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
+}
+function presetRender(){
+ const root=$('presets');
+ root.innerHTML=presets.map((p,i)=>`<div class="preset-row"><span class="preset-label">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button></div>`).join('');
+}
+$('presets').addEventListener('click',e=>{
+ const btn=e.target.closest('button');if(!btn)return;
+ if('savePreset' in btn.dataset){
+  const i=Number(btn.dataset.savePreset);
+  if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
+  const next=presets.slice();
+  next[i]={slots:state.slots.map(cleanSlot)};
+  try{localStorage.setItem(PRESET_KEY,JSON.stringify(next));presets=next;presetRender();toast(`세트 ${i+1} 저장 완료`)}
+  catch(err){toast('편성 세트 저장 실패: '+err.message)}
+ }
+ if('loadPreset' in btn.dataset){
+  const i=Number(btn.dataset.loadPreset),p=presets[i];if(!p)return;
+  state.slots=p.slots.map(cleanSlot);render();toast(`세트 ${i+1} 불러오기 완료`);
+ }
+});
+presetRender();
+
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
