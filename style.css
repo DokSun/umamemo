@@ -62,3 +62,18 @@ body.picker-open{overflow:hidden}
 .picker-heading,.picker-types,.picker-rarities,#picker-search,.picker-pager{flex-shrink:0}
 .picker-pager{margin-top:8px}
 @media(max-height:620px){.picker-dialog{padding:6px}.picker-heading{margin-bottom:4px}.picker-types,.picker-rarities{margin-bottom:4px}.picker-types button,.picker-rarities button{padding:3px 5px}#picker-search{padding:4px 8px;margin-bottom:4px}.picker-grid{gap:3px}.picker-pager{margin-top:3px}.picker-pager button{padding-top:3px;padding-bottom:3px}}
+
+/* Uploaded support-type icons, combined as a 7-frame WebP sprite (36px each). */
+.picker-types{gap:5px;flex-wrap:nowrap}
+.picker-types button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;padding:4px 2px;height:46px}
+.picker-types button.active{background:#eef6ff;box-shadow:inset 0 0 0 2px #a4d7ff}
+.type-icon{display:block;width:36px;height:36px;flex:none;background-image:url('./assets/type-icons.webp');background-repeat:no-repeat;background-size:252px 36px}
+.type-icon-speed{background-position:0 0}
+.type-icon-stamina{background-position:-36px 0}
+.type-icon-power{background-position:-72px 0}
+.type-icon-guts{background-position:-108px 0}
+.type-icon-wisdom{background-position:-144px 0}
+.type-icon-friend{background-position:-180px 0}
+.type-icon-group{background-position:-216px 0}
+@media(max-width:430px){.picker-types{gap:2px}.picker-types button{padding:2px 1px;height:39px}.type-icon{width:30px;height:30px;background-size:210px 30px}.type-icon-stamina{background-position:-30px 0}.type-icon-power{background-position:-60px 0}.type-icon-guts{background-position:-90px 0}.type-icon-wisdom{background-position:-120px 0}.type-icon-friend{background-position:-150px 0}.type-icon-group{background-position:-180px 0}}
+@media(max-height:620px){.picker-types button{height:36px;padding:1px}.type-icon{transform:scale(.85)}}
