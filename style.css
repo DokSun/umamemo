@@ -76,3 +76,27 @@ body.picker-open{overflow:hidden}
 .type-icon-group{background-position:-216px 0}
 @media(max-width:430px){.picker-types{gap:2px}.picker-types button{padding:2px 1px;height:39px}.type-icon{width:30px;height:30px;background-size:210px 30px}.type-icon-stamina{background-position:-30px 0}.type-icon-power{background-position:-60px 0}.type-icon-guts{background-position:-90px 0}.type-icon-wisdom{background-position:-120px 0}.type-icon-friend{background-position:-150px 0}.type-icon-group{background-position:-180px 0}}
 @media(max-height:620px){.picker-types button{height:36px;padding:1px}.type-icon{transform:scale(.85)}}
+
+/* v1.1 workspace: independent tools with solo and counting+tool layout */
+.tool-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px max(10px,calc((100vw - 1600px)/2 + 10px));background:#152033;border-bottom:1px solid #304058}
+.tool-toolbar label{font-size:12px;color:#c6d7ed}
+.tool-toolbar select,.tool-toolbar button{height:34px}
+.tool-toolbar select{padding:4px 9px}
+.tool-toolbar [hidden],.header-reset [hidden]{display:none!important}
+.header-reset{display:flex;gap:6px;align-items:center}
+#workspace{width:100%;max-width:1600px;margin:auto;padding:10px;display:grid;gap:10px}
+#workspace.split{grid-template-columns:minmax(0,var(--counter-share,60fr)) minmax(0,var(--other-share,40fr))}
+#workspace.split.reversed{grid-template-columns:minmax(0,var(--other-share,40fr)) minmax(0,var(--counter-share,60fr))}
+#workspace.split.reversed #memo-panel{grid-column:1;grid-row:1}
+#workspace.split.reversed #counter-panel{grid-column:2;grid-row:1}
+#workspace.single{grid-template-columns:minmax(0,1fr)}
+#workspace .panel[hidden]{display:none}
+.tool-panel{min-width:0}
+.panel-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.panel-title h2{margin:0}
+#memo-panel textarea{min-height:280px}
+#workspace.split .slot{grid-template-columns:64px minmax(0,1fr);gap:7px}
+#workspace.split .portrait,#workspace.split .portrait-trigger{width:64px;height:83px}
+#workspace.split .events button[data-step],#workspace.split .events button[data-random]{min-width:35px;height:35px;padding:4px 7px;font-size:15px}
+@media(max-width:850px){#workspace.split,#workspace.split.reversed{grid-template-columns:minmax(0,1fr)}#workspace.split.reversed #memo-panel,#workspace.split.reversed #counter-panel{grid-column:1;grid-row:auto}#workspace.split .slot{grid-template-columns:72px minmax(0,1fr)}#workspace.split .portrait,#workspace.split .portrait-trigger{width:72px;height:91px}}
+@media(max-width:420px){#workspace.split .slot{grid-template-columns:60px minmax(0,1fr)}#workspace.split .portrait,#workspace.split .portrait-trigger{width:60px;height:80px}.header-reset{flex-wrap:wrap}.tool-toolbar{gap:5px}}
