@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
   push:
     paths:
+      - 'data/support_cards.json'
       - 'scripts/update_image_sources.py'
       - '.github/workflows/update-support-images.yml'
 
