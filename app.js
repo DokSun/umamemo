@@ -16,36 +16,47 @@ function cleanSlot(s){
  return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
 }
 function presetRender(){
- const select=$('preset-select'),selected=select.value;
- select.replaceChildren(...presets.map((p,i)=>{
-  const opt=document.createElement('option');
-  opt.value=String(i);
-  opt.textContent=`세트 ${i+1} · ${p?'저장됨':'비어 있음'}`;
-  return opt;
+ const root=$('preset-menu');
+ root.replaceChildren(...presets.map((p,i)=>{
+  const row=document.createElement('div');
+  row.className='preset-row';
+  row.innerHTML=`<span class="preset-label">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
+  return row;
  }));
- select.value=selected;
- $('preset-load').disabled=!presets[Number(select.value)];
 }
-$('preset-select').addEventListener('change',presetRender);
-$('preset-save').addEventListener('click',()=>{
- const i=Number($('preset-select').value);
- if(!Number.isInteger(i)||i<0||i>=3)return;
- if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
- const next=presets.slice();
- next[i]={slots:state.slots.map(cleanSlot)};
- try{
-  localStorage.setItem(PRESET_KEY,JSON.stringify(next));
-  presets=next;
-  presetRender();
-  toast(`세트 ${i+1} 저장 완료`);
- }catch(err){toast('편성 세트 저장 실패: '+err.message)}
+function togglePresetMenu(open){
+ $('preset-menu').hidden=!open;
+ $('preset-toggle').setAttribute('aria-expanded',String(open));
+}
+$('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
+$('preset-menu').addEventListener('click',e=>{
+ const btn=e.target.closest('button');
+ if(!btn)return;
+ if('savePreset' in btn.dataset){
+  const i=Number(btn.dataset.savePreset);
+  if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
+  const next=presets.slice();
+  next[i]={slots:state.slots.map(cleanSlot)};
+  try{
+   localStorage.setItem(PRESET_KEY,JSON.stringify(next));
+   presets=next;
+   presetRender();
+   toast(`세트 ${i+1} 저장 완료`);
+  }catch(err){toast('편성 세트 저장 실패: '+err.message)}
+ }else if('loadPreset' in btn.dataset){
+  const i=Number(btn.dataset.loadPreset),p=presets[i];
+  if(!p)return;
+  state.slots=p.slots.map(cleanSlot);
+  render();
+  togglePresetMenu(false);
+  toast(`세트 ${i+1} 불러오기 완료`);
+ }
 });
-$('preset-load').addEventListener('click',()=>{
- const i=Number($('preset-select').value),p=presets[i];
- if(!p)return;
- state.slots=p.slots.map(cleanSlot);
- render();
- toast(`세트 ${i+1} 불러오기 완료`);
+document.addEventListener('click',e=>{
+ if(!e.target.closest('.preset-dropdown'))togglePresetMenu(false);
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!$('preset-menu').hidden){togglePresetMenu(false);$('preset-toggle').focus()}
 });
 presetRender();
 
