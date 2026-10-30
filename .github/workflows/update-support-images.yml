@@ -1,0 +1,39 @@
+name: Refresh external support images
+
+on:
+  schedule:
+    - cron: '30 19 * * 1' # Every Monday at 04:30 KST
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/update_image_sources.py'
+      - '.github/workflows/update-support-images.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-support-images
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Resolve thumbnail URLs
+        run: python scripts/update_image_sources.py
+      - name: Commit URL metadata
+        run: |
+          if git diff --quiet -- data/image_sources.json && [ -f data/image_sources.json ]; then
+            echo 'No image URL changes'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/image_sources.json
+          git commit -m 'chore: refresh external support image URLs'
+          git push
