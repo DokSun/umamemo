@@ -69,7 +69,7 @@ function applyLayout(){
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
  $('split-toggle').checked=!solo;
- $('split-ratio').value=String(layout.ratio);
+ $('split-ratio').querySelectorAll('input[type="radio"]').forEach(r=>{r.checked=Number(r.value)===layout.ratio});
  $('split-options').hidden=solo;
  $('swap-panels').setAttribute('aria-pressed',String(layout.reversed));
  $('tool-menu-list').querySelectorAll('[data-tool]').forEach(btn=>{
@@ -113,7 +113,7 @@ function initWorkspace(){
   if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
   applyLayout();
  });
- $('split-ratio').addEventListener('change',e=>{layout.ratio=Number(e.target.value);applyLayout()});
+ $('split-ratio').addEventListener('change',e=>{if(!e.target.matches('input[type="radio"]'))return;layout.ratio=Number(e.target.value);applyLayout()});
  $('swap-panels').addEventListener('click',()=>{layout.reversed=!layout.reversed;applyLayout()});
  document.addEventListener('click',e=>{
   if(!e.target.closest('.tool-menu-wrap'))toggleToolMenu(false);
