@@ -14,6 +14,87 @@ function readState(){
 }
 let cards=[],state=readState();
 
+// Each tool declares its data scope and a reset handler. Future tools register here.
+const LAYOUT_KEY='uma-tracker-layout-v1';
+const TOOLS={
+ counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
+  reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
+ memo:{name:'시나리오 메모',scope:'independent',element:'memo-panel',
+  reset(){state.scenario='';$('scenario').value='';save()}}
+};
+function readLayout(){
+ const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
+ try{
+  const s=JSON.parse(localStorage.getItem(LAYOUT_KEY));
+  if(s&&typeof s==='object')return {
+   mode:s.mode==='single'?'single':'split',
+   tool:Object.hasOwn(TOOLS,s.tool)?s.tool:'memo',
+   ratio:[50,60,70].includes(Number(s.ratio))?Number(s.ratio):60,
+   reversed:s.reversed===true
+  };
+ }catch(e){console.warn('화면 설정을 불러오지 못했습니다',e)}
+ return initial;
+}
+const layout=readLayout();
+function saveLayout(){try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){console.warn('화면 설정 저장 실패',e)}}
+function visibleToolIds(){return layout.mode==='single'?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
+function renderResetActions(){
+ const ids=visibleToolIds(),allSession=ids.length>1&&ids.every(id=>TOOLS[id].scope==='session');
+ const primary=$('reset'),secondary=$('secondary-reset');
+ const first=allSession?ids:[ids[0]];
+ primary.textContent=allSession?'육성 기록 통합 초기화':TOOLS[first[0]].name+' 초기화';
+ primary.dataset.targets=first.join(',');
+ secondary.hidden=allSession||ids.length<2;
+ if(!secondary.hidden){
+  secondary.textContent=TOOLS[ids[1]].name+' 초기화';
+  secondary.dataset.targets=ids[1];
+ }else secondary.dataset.targets='';
+}
+function applyLayout(){
+ // Existing tool DOM elements stay mounted: card progress, memo and focus survive switching.
+ const ids=visibleToolIds();
+ const workspace=$('workspace');
+ const solo=layout.mode==='single';
+ workspace.classList.toggle('single',solo);
+ workspace.classList.toggle('split',!solo);
+ workspace.classList.toggle('reversed',!solo&&layout.reversed);
+ workspace.style.setProperty('--counter-share',layout.ratio+'fr');
+ workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
+ for(const [id,tool] of Object.entries(TOOLS)){
+  const panel=$(tool.element);
+  panel.hidden=!ids.includes(id);
+ }
+ $('view-mode').value=layout.mode;
+ $('active-tool').value=layout.tool;
+ $('split-ratio').value=String(layout.ratio);
+ document.querySelectorAll('.split-only').forEach(el=>el.hidden=solo);
+ $('swap-panels').setAttribute('aria-pressed',String(layout.reversed));
+ renderResetActions();
+ saveLayout();
+}
+function resetTargets(button){
+ const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
+ if(!ids.length)return;
+ const desc=ids.length===1?TOOLS[ids[0]].name+'의 기록을':'현재 표시된 육성 기록을 모두';
+ if(!confirm(desc+' 초기화할까요?'))return;
+ ids.forEach(id=>TOOLS[id].reset());
+ toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
+}
+function initWorkspace(){
+ const select=$('active-tool');
+ select.replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
+  const op=document.createElement('option');op.value=id;op.textContent=t.name;return op;
+ }));
+ $('view-mode').addEventListener('change',e=>{layout.mode=e.target.value;applyLayout()});
+ select.addEventListener('change',e=>{layout.tool=e.target.value;applyLayout()});
+ $('split-ratio').addEventListener('change',e=>{layout.ratio=Number(e.target.value);applyLayout()});
+ $('swap-panels').addEventListener('click',()=>{layout.reversed=!layout.reversed;applyLayout()});
+ $('reset').addEventListener('click',()=>resetTargets($('reset')));
+ $('secondary-reset').addEventListener('click',()=>resetTargets($('secondary-reset')));
+ applyLayout();
+}
+
+
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 let PRESET_KEY=serverMode==='ko'?'uma-tracker-presets-v1':'uma-tracker-presets-v1-jp';
 const emptySlot=()=>({id:null,step:0,random:[false,false],groupCount:3});
@@ -293,11 +374,5 @@ $('slots').addEventListener('change',e=>{
 });
 $('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
-$('reset').onclick=()=>{
- if(!confirm('현재 편성은 유지하고 모든 카드의 이벤트 진행 기록만 초기화할까요?'))return;
- state.slots.forEach(s=>{s.step=0;s.random=[false,false]});
- state.slots.forEach((_,i)=>updateEvents(i));
- save();
- toast('이벤트 진행 기록을 초기화했습니다');
-};
+initWorkspace();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
