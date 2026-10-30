@@ -213,20 +213,17 @@ function pickerOpen(i){
  pickerSlot=i;
  pickerPreviousFocus=document.activeElement;
  pickerPage=0;
- $('picker-search').value='';
  $('card-picker').hidden=false;
  document.body.classList.add('picker-open');
  pickerRender();
- $('picker-search').focus();
+ $('picker-close').focus();
 }
 function pickerFiltered(){
- const q=$('picker-search').value.trim().toLowerCase();
  return cards.filter(c=>{
   if(!visibleCard(c))return false;
   if(pickerType!=='전체'&&c.type!==pickerType)return false;
   if(c.rarity!==pickerRarity)return false;
-  if(!q)return true;
-  return (cardLabel(c)+' '+c.nameKo+' '+c.nameJa+' '+c.characterKo+' '+c.id).toLowerCase().includes(q);
+  return true;
  }).sort((a,b)=>Number(b.id)-Number(a.id));
 }
 function pickerRender(){
@@ -262,7 +259,6 @@ $('picker-rarities').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-rarity]');if(!b)return;
  pickerRarity=b.dataset.pickerRarity;pickerPage=0;pickerRender();
 });
-$('picker-search').addEventListener('input',()=>{pickerPage=0;pickerRender()});
 $('picker-pager').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-page]');if(!b||b.disabled)return;
  pickerPage=Number(b.dataset.pickerPage);pickerRender();
