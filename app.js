@@ -16,26 +16,38 @@ function cleanSlot(s){
  return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
 }
 function presetRender(){
- const root=$('presets');
- root.innerHTML=presets.map((p,i)=>`<div class="preset-row"><span class="preset-label">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button></div>`).join('');
+ const select=$('preset-select'),selected=select.value;
+ select.replaceChildren(...presets.map((p,i)=>{
+  const opt=document.createElement('option');
+  opt.value=String(i);
+  opt.textContent=`세트 ${i+1} · ${p?'저장됨':'비어 있음'}`;
+  return opt;
+ }));
+ select.value=selected;
+ $('preset-load').disabled=!presets[Number(select.value)];
 }
-$('presets').addEventListener('click',e=>{
- const btn=e.target.closest('button');if(!btn)return;
- if('savePreset' in btn.dataset){
-  const i=Number(btn.dataset.savePreset);
-  if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
-  const next=presets.slice();
-  next[i]={slots:state.slots.map(cleanSlot)};
-  try{localStorage.setItem(PRESET_KEY,JSON.stringify(next));presets=next;presetRender();toast(`세트 ${i+1} 저장 완료`)}
-  catch(err){toast('편성 세트 저장 실패: '+err.message)}
- }
- if('loadPreset' in btn.dataset){
-  const i=Number(btn.dataset.loadPreset),p=presets[i];if(!p)return;
-  state.slots=p.slots.map(cleanSlot);render();toast(`세트 ${i+1} 불러오기 완료`);
- }
+$('preset-select').addEventListener('change',presetRender);
+$('preset-save').addEventListener('click',()=>{
+ const i=Number($('preset-select').value);
+ if(!Number.isInteger(i)||i<0||i>=3)return;
+ if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
+ const next=presets.slice();
+ next[i]={slots:state.slots.map(cleanSlot)};
+ try{
+  localStorage.setItem(PRESET_KEY,JSON.stringify(next));
+  presets=next;
+  presetRender();
+  toast(`세트 ${i+1} 저장 완료`);
+ }catch(err){toast('편성 세트 저장 실패: '+err.message)}
+});
+$('preset-load').addEventListener('click',()=>{
+ const i=Number($('preset-select').value),p=presets[i];
+ if(!p)return;
+ state.slots=p.slots.map(cleanSlot);
+ render();
+ toast(`세트 ${i+1} 불러오기 완료`);
 });
 presetRender();
-
 
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -55,5 +67,11 @@ $('slots').addEventListener('change',async e=>{const t=e.target;if(t.matches('[d
 $('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.choose){[i,j]=t.dataset.choose.split(':').map(Number);state.slots[i]={id:j,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 document.addEventListener('click',e=>{if(!e.target.closest('.choices'))document.querySelectorAll('.results').forEach(x=>x.hidden=true)});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
-$('reset').onclick=()=>{if(confirm('모든 슬롯 진행 상황과 메모를 초기화할까요? 등록한 이미지는 유지됩니다.')){state.slots=Array.from({length:6},()=>({id:null,step:0,random:[false,false],groupCount:3}));state.scenario='';$('scenario').value='';render()}};
+$('reset').onclick=()=>{
+ if(!confirm('현재 편성은 유지하고 모든 카드의 이벤트 진행 기록만 초기화할까요?'))return;
+ state.slots.forEach(s=>{s.step=0;s.random=[false,false]});
+ state.slots.forEach((_,i)=>updateEvents(i));
+ save();
+ toast('이벤트 진행 기록을 초기화했습니다');
+};
 fetch('./data/support_cards.json').then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
