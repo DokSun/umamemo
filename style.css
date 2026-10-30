@@ -28,10 +28,14 @@
 
 /* Gallery selection dialog */
 body.picker-open{overflow:hidden}
-.card-select-btn{display:block;min-width:0;width:100%;max-width:460px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.card-name-text{display:block;min-width:0;width:100%;max-width:460px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.portrait-trigger{display:block;width:72px;height:91px;padding:0;border:0;border-radius:6px;background:transparent;overflow:hidden}
+.portrait-trigger:hover{outline:2px solid #80baff;outline-offset:1px}
+.portrait-trigger .portrait{display:block}
+@media(max-width:420px){.portrait-trigger{width:60px;height:80px}}
 .picker-backdrop{position:fixed;inset:0;background:#020813bd;display:flex;justify-content:center;align-items:center;padding:15px;z-index:100}
 .picker-backdrop[hidden]{display:none}
-.picker-dialog{width:min(560px,100%);max-height:min(760px,calc(100dvh - 30px));overflow:auto;background:#192b47;border:2px solid #326cba;border-radius:10px;box-shadow:0 18px 55px #000a;padding:12px}
+.picker-dialog{width:min(510px,100%);height:min(710px,calc(100dvh - 16px));min-height:0;overflow:hidden;display:flex;flex-direction:column;background:#192b47;border:2px solid #326cba;border-radius:10px;box-shadow:0 18px 55px #000a;padding:10px}
 .picker-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
 .picker-heading h2{font-size:17px;margin:0}
 #picker-close{background:#285b99;font-size:17px;line-height:1;min-width:34px;min-height:32px}
@@ -40,12 +44,11 @@ body.picker-open{overflow:hidden}
 .picker-types button.active,.picker-rarities button.active{background:#d7ecff;color:#174477;border-color:#9bc7fc;font-weight:700}
 .picker-rarities button{min-width:60px}
 #picker-search{width:100%;background:#0f1b2a;border:1px solid #4e7299;border-radius:5px;color:#fff;padding:8px 10px;margin:0 0 9px}
-.picker-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;min-height:120px}
-.picker-card{min-width:0;overflow:hidden;padding:2px;background:#294466;border:2px solid #5184bd;border-radius:5px;display:flex;flex-direction:column;align-items:stretch;gap:3px}
+.picker-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:6px;min-height:0;flex:1 1 auto;overflow:hidden}
+.picker-card{min-width:0;min-height:0;height:100%;overflow:hidden;padding:2px;background:#294466;border:2px solid #5184bd;border-radius:5px;display:flex;align-items:stretch}
 .picker-card:hover,.picker-card:focus-visible{background:#4778b4;border-color:#8fd7ff}
-.picker-card img,.picker-noimage{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:2px}
+.picker-card img,.picker-noimage{display:block;width:100%;height:100%;min-height:0;object-fit:cover;border-radius:2px}
 .picker-noimage{background:#15263b;color:#b9c9dd;display:grid;place-items:center;font-size:10px}
-.picker-card-caption{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;line-height:1.25;text-align:center;color:#f1f6ff}
 .picker-empty{grid-column:1/-1;padding:35px 8px;text-align:center;color:#c7d9ee}
 .picker-pager{display:flex;justify-content:space-between;align-items:center;gap:6px;margin-top:12px}
 .picker-pager>button{padding:6px 12px;background:#225ca4}
@@ -53,4 +56,9 @@ body.picker-open{overflow:hidden}
 .picker-pages{display:flex;gap:3px}
 .picker-pages button{min-width:28px;padding:6px 5px;background:transparent;border:0}
 .picker-pages button.active{color:#86d1ff;font-weight:700;text-decoration:underline}
-@media(max-width:430px){.picker-dialog{padding:8px}.picker-grid{gap:4px}.picker-types button{padding:5px 3px;min-width:36px;font-size:11px}.picker-card{padding:1px}.picker-card-caption{font-size:9px}.picker-pager>button{padding:6px 7px}}
+@media(max-width:430px){.picker-dialog{padding:8px}.picker-grid{gap:4px}.picker-types button{padding:5px 3px;min-width:36px;font-size:11px}.picker-card{padding:1px}.picker-pager>button{padding:6px 7px}}
+
+/* Keep gallery controls visible with no internal scrolling */
+.picker-heading,.picker-types,.picker-rarities,#picker-search,.picker-pager{flex-shrink:0}
+.picker-pager{margin-top:8px}
+@media(max-height:620px){.picker-dialog{padding:6px}.picker-heading{margin-bottom:4px}.picker-types,.picker-rarities{margin-bottom:4px}.picker-types button,.picker-rarities button{padding:3px 5px}#picker-search{padding:4px 8px;margin-bottom:4px}.picker-grid{gap:3px}.picker-pager{margin-top:3px}.picker-pager button{padding-top:3px;padding-bottom:3px}}
