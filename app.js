@@ -103,7 +103,7 @@ function koreaDate(){
  return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 }
 function visibleCard(c){
- return serverMode==='jp'||(typeof c.releaseKo==='string'&&/^\\d{4}-\\d{2}-\\d{2}$/.test(c.releaseKo)&&c.releaseKo<=koreaDate());
+ return serverMode==='jp'||(typeof c.releaseKo==='string'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(c.releaseKo)&&c.releaseKo<=koreaDate());
 }
 const findCard=id=>cards.find(c=>String(c.id)===String(id));
 function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'group':'normal'}
