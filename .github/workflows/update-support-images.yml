@@ -28,7 +28,7 @@ jobs:
         run: python scripts/update_image_sources.py
       - name: Commit URL metadata
         run: |
-          if git diff --quiet -- data/image_sources.json && [ -f data/image_sources.json ]; then
+          if [ -z "$(git status --porcelain -- data/image_sources.json)" ]; then
             echo 'No image URL changes'
             exit 0
           fi
