@@ -140,3 +140,17 @@ header>.header-tools{order:2}
 #counter-panel #slots{width:100%}
 #memo-panel textarea{flex:1 0 auto}
 @media(max-width:620px){header>h1{font-size:17px}.header-tools{margin-left:0}}
+
+/* Use the spare vertical space in each counting row for larger card artwork. */
+#counter-panel .slot{grid-template-columns:76px minmax(0,1fr)}
+#counter-panel .portrait,#counter-panel .portrait-trigger{width:76px;height:102px}
+#workspace.split #counter-panel .slot{grid-template-columns:70px minmax(0,1fr)}
+#workspace.split #counter-panel .portrait,#workspace.split #counter-panel .portrait-trigger{width:70px;height:100px}
+@media(max-width:850px){
+ #workspace.split #counter-panel .slot{grid-template-columns:76px minmax(0,1fr)}
+ #workspace.split #counter-panel .portrait,#workspace.split #counter-panel .portrait-trigger{width:76px;height:102px}
+}
+@media(max-width:420px){
+ #counter-panel .slot,#workspace.split #counter-panel .slot{grid-template-columns:64px minmax(0,1fr)}
+ #counter-panel .portrait,#counter-panel .portrait-trigger,#workspace.split #counter-panel .portrait,#workspace.split #counter-panel .portrait-trigger{width:64px;height:91px}
+}
