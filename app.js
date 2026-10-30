@@ -51,6 +51,8 @@ function renderResetActions(){
  }else secondary.dataset.targets='';
 }
 function applyLayout(){
+ // The counter is fixed in split mode, so the chosen secondary tool must be different.
+ if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
  // Existing tool DOM elements stay mounted: card progress, memo and focus survive switching.
  const ids=visibleToolIds();
  const workspace=$('workspace');
@@ -65,6 +67,7 @@ function applyLayout(){
   panel.hidden=!ids.includes(id);
  }
  $('view-mode').value=layout.mode;
+ $('active-tool').querySelectorAll('option').forEach(op=>{op.disabled=layout.mode==='split'&&op.value==='counter'});
  $('active-tool').value=layout.tool;
  $('split-ratio').value=String(layout.ratio);
  document.querySelectorAll('.split-only').forEach(el=>el.hidden=solo);
