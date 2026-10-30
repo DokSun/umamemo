@@ -27,3 +27,12 @@
 
 /* Show the complete Japanese support title even when the search input is narrow */
 .jp-card-title{font-size:12px;line-height:1.35;color:#d8e5f5;white-space:normal;overflow-wrap:anywhere;margin-top:4px}
+
+/* Local-only bulk photo importer */
+.bulk-image-menu{position:relative}
+.bulk-image-panel{position:absolute;top:calc(100% + 6px);right:0;width:270px;padding:11px;display:flex;flex-direction:column;gap:8px;background:#223148;border:1px solid #49617d;border-radius:9px;box-shadow:0 12px 28px #0009;z-index:45}
+.bulk-image-panel[hidden]{display:none}
+.bulk-image-panel .button{font-size:13px;padding:7px 10px;text-align:center}
+.bulk-image-panel small{color:#b9cadd;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+#bulk-image-status{color:#86dfc1}
+@media(max-width:550px){.bulk-image-panel{right:auto;left:0;width:min(270px,calc(100vw - 18px))}}
