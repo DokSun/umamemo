@@ -196,8 +196,8 @@ function updateEvents(i){const s=state.slots[i];document.querySelectorAll('[data
 // Image gallery card picker: uses the existing card DB and external thumbnail index.
 const PICKER_PAGE_SIZE=20;
 const PICKER_TYPES=[
- ['전체','전체'],['스피드','스피드'],['스태미나','스태미나'],['파워','파워'],
- ['근성','근성'],['지능','지능'],['친구','친구'],['그룹','그룹']
+ ['전체','전체',null],['스피드','스피드','speed'],['스태미나','스태미나','stamina'],['파워','파워','power'],
+ ['근성','근성','guts'],['지능','지능','wisdom'],['친구','친구','friend'],['그룹','그룹','group']
 ];
 let pickerSlot=null,pickerType='전체',pickerRarity='SSR',pickerPage=0;
 let pickerPreviousFocus=null;
@@ -231,8 +231,8 @@ function pickerFiltered(){
 }
 function pickerRender(){
  if($('card-picker').hidden)return;
- $('picker-types').innerHTML=PICKER_TYPES.map(([key,label])=>
-  `<button type="button" data-picker-type="${escapeHTML(key)}" aria-pressed="${pickerType===key}" class="${pickerType===key?'active':''}">${label}</button>`
+ $('picker-types').innerHTML=PICKER_TYPES.map(([key,label,icon])=>
+  `<button type="button" data-picker-type="${escapeHTML(key)}" title="${escapeHTML(label)}" aria-label="${escapeHTML(label)}" aria-pressed="${pickerType===key}" class="${pickerType===key?'active':''}">${icon?`<span class="type-icon type-icon-${icon}" aria-hidden="true"></span>`:'전체'}</button>`
  ).join('');
  $('picker-rarities').innerHTML=['SSR','SR','R'].map(x=>
   `<button type="button" data-picker-rarity="${x}" aria-pressed="${pickerRarity===x}" class="${pickerRarity===x?'active':''}">${x}</button>`
