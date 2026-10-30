@@ -79,6 +79,75 @@ const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('uma-tracker-images',1);r.onupgradeneeded=()=>r.result.createObjectStore('images');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
 async function imageGet(id){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction('images','readonly');const r=tx.objectStore('images').get(String(id));r.onsuccess=()=>{resolve(r.result);db.close()};r.onerror=()=>{reject(r.error);db.close()}})}
 async function imagePut(id,blob){const db=await openDB();return new Promise((resolve,reject)=>{const tx=db.transaction('images','readwrite');tx.objectStore('images').put(blob,String(id));tx.oncomplete=()=>{db.close();resolve()};tx.onerror=()=>{db.close();reject(tx.error)}})}
+/* All imported photos stay in the browser's existing IndexedDB store. */
+function bulkImageToggle(open){
+ $('bulk-image-panel').hidden=!open;
+ $('bulk-image-toggle').setAttribute('aria-expanded',String(open));
+}
+$('bulk-image-toggle').addEventListener('click',()=>bulkImageToggle($('bulk-image-panel').hidden));
+document.addEventListener('click',e=>{if(!e.target.closest('.bulk-image-menu'))bulkImageToggle(false)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('bulk-image-panel').hidden)bulkImageToggle(false)});
+function cardIdFromFilename(filename,known){
+ // Require a standalone 5-digit card identifier, not an arbitrary substring.
+ const hits=[...String(filename).matchAll(/(?:^|[^0-9])([0-9]{5})(?=[^0-9]|$)/g)]
+  .map(m=>m[1]).filter(id=>known.has(id));
+ const ids=[...new Set(hits)];
+ return ids.length===1?ids[0]:null;
+}
+async function imageKeys(){
+ const db=await openDB();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction('images','readonly');
+  const req=tx.objectStore('images').getAllKeys();
+  req.onsuccess=()=>resolve(new Set(req.result.map(String)));
+  req.onerror=()=>reject(req.error);
+  tx.oncomplete=()=>db.close();
+  tx.onerror=()=>{db.close();reject(tx.error)};
+ });
+}
+let bulkBusy=false;
+async function importImageFiles(fileList){
+ const files=Array.from(fileList||[]);
+ if(!files.length)return;
+ if(bulkBusy){toast('다른 이미지 등록 작업이 진행 중입니다');return}
+ if(!cards.length){toast('카드 DB를 불러온 다음 다시 시도하세요');return}
+ bulkBusy=true;
+ const status=$('bulk-image-status');
+ const known=new Set(cards.map(c=>String(c.id)));
+ let added=0,existing=0,unmatched=0,invalid=0,duplicate=0,errors=0;
+ const seen=new Set();
+ try{
+  const stored=await imageKeys();
+  status.textContent=`이미지 ${files.length}개 확인 중…`;
+  for(const [index,file] of files.entries()){
+   if(!['image/png','image/jpeg','image/webp','image/gif'].includes(file.type)||file.size===0||file.size>8*1024*1024){invalid++;continue}
+   const id=cardIdFromFilename(file.name,known);
+   if(!id){unmatched++;continue}
+   if(seen.has(id)){duplicate++;continue}
+   seen.add(id);
+   if(stored.has(id)){existing++;continue}
+   try{
+    await imagePut(id,file);
+    stored.add(id);added++;
+   }catch(err){errors++;console.error('이미지 저장 실패:',file.name,err)}
+   if(index%20===0)status.textContent=`등록 중… ${index+1}/${files.length}`;
+  }
+  status.textContent=`등록 ${added} · 기존 ${existing} · ID 불일치 ${unmatched} · 중복 ${duplicate} · 형식/크기 오류 ${invalid} · 저장 실패 ${errors}`;
+  state.slots.forEach((s,i)=>{if(s.id!=null&&stored.has(String(s.id)))renderPhoto(i)});
+  toast(`사진 ${added}개 자동등록 완료`);
+ }catch(err){
+  status.textContent='이미지 자동등록 실패: '+err.message;
+  console.error(err);
+ }finally{bulkBusy=false}
+}
+for(const id of ['bulk-image-files','bulk-image-folder']){
+ $(id).addEventListener('change',async e=>{
+  const files=e.target.files;
+  await importImageFiles(files);
+  e.target.value='';
+ });
+}
+
 function cardLabel(c){
  if(!c)return '';
  if(serverMode==='ko')return c.nameKo||c.characterKo||'';
