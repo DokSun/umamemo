@@ -13,6 +13,8 @@ function readState(){
  return base;
 }
 let cards=[],state=readState();
+// Shared image URL index is used by both the main counter and saved-preset previews.
+let remoteImages = {};
 
 // Each tool declares its data scope and a reset handler. Future tools register here.
 const LAYOUT_KEY='uma-tracker-layout-v1';
@@ -147,7 +149,41 @@ function presetRender(){
  root.replaceChildren(...presets.map((p,i)=>{
   const row=document.createElement('div');
   row.className='preset-row';
-  row.innerHTML=`<span class="preset-label">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
+  row.innerHTML=`<span class="preset-label" tabindex="0" aria-describedby="preset-preview-${i}">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
+  if(p){
+   const preview=document.createElement('div');
+   preview.className='preset-preview';
+   preview.id='preset-preview-'+i;
+   preview.setAttribute('role','tooltip');
+   const label=document.createElement('div');
+   label.className='preset-preview-title';
+   label.textContent='세트 '+(i+1)+' · 서포트 카드 6장';
+   preview.append(label);
+   const grid=document.createElement('div');
+   grid.className='preset-preview-grid';
+   for(const slot of p.slots){
+    const item=document.createElement('div');
+    item.className='preset-preview-card';
+    const card=findCard(slot.id);
+    const url=slot.id!=null?remoteImages[String(slot.id)]:null;
+    if(card&&validRemoteURL(url)){
+     const img=document.createElement('img');
+     img.src=url;
+     img.alt=cardLabel(card);
+     img.title=cardLabel(card);
+     img.loading='lazy';
+     img.referrerPolicy='no-referrer';
+     img.onerror=()=>{item.textContent='이미지 없음';item.classList.add('missing')};
+     item.append(img);
+    }else{
+     item.textContent=slot.id!=null?'이미지 없음':'빈 슬롯';
+     item.classList.add('missing');
+    }
+    grid.append(item);
+   }
+   preview.append(grid);
+   row.append(preview);
+  }
   return row;
  }));
 }
@@ -223,7 +259,6 @@ function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'grou
 function countFor(slot,c){return category(c)==='friend'?5:category(c)==='group'?slot.groupCount:3}
 function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><button type="button" class="portrait-trigger" data-open-picker="${i}" aria-label="${escapeHTML(cardLabel(c)||"서포트 카드 선택")}"><div class="portrait placeholder" id="photo-${i}">카드 선택</div></button></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><span class="search card-name-text" title="${escapeHTML(cardLabel(c)||"카드를 선택하세요")}">${escapeHTML(cardLabel(c)||"카드를 선택하세요")}</span></div><button data-clear="${i}">비우기</button></div><div class="meta">${c?`${escapeHTML(c.rarity)} · ${escapeHTML(c.type)}`:'카드를 선택하세요'}</div>${c?`<div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}`:''}</div>`;return el}
 // External URL metadata, not image files, is published with the site.
-let remoteImages = {};
 const wikiLookups = new Map();
 const photoVersions = Array(6).fill(0);
 function validRemoteURL(url){
@@ -296,6 +331,7 @@ async function loadRemoteImageIndex(){
   if(index&&typeof index.images==='object'&&!Array.isArray(index.images))
    remoteImages=index.images;
   if(!$('card-picker').hidden)pickerRender();
+  presetRender();
  }catch(e){console.debug('Using on-demand wiki image lookup',e)}
  state.slots.forEach((_,i)=>{
   const box=$('photo-'+i);
@@ -407,4 +443,4 @@ $('slots').addEventListener('change',e=>{
 $('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 initWorkspace();
-fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
+fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render();presetRender()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
