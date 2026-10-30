@@ -43,7 +43,6 @@ body.picker-open{overflow:hidden}
 .picker-types button,.picker-rarities button{background:#315d92;color:#dceeff;font-size:12px;border-radius:4px;padding:6px 8px;flex:1;min-width:44px}
 .picker-types button.active,.picker-rarities button.active{background:#d7ecff;color:#174477;border-color:#9bc7fc;font-weight:700}
 .picker-rarities button{min-width:60px}
-#picker-search{width:100%;background:#0f1b2a;border:1px solid #4e7299;border-radius:5px;color:#fff;padding:8px 10px;margin:0 0 9px}
 .picker-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-template-rows:repeat(4,minmax(0,1fr));gap:6px;min-height:0;flex:1 1 auto;overflow:hidden}
 .picker-card{min-width:0;min-height:0;height:100%;overflow:hidden;padding:2px;background:#294466;border:2px solid #5184bd;border-radius:5px;display:flex;align-items:stretch}
 .picker-card:hover,.picker-card:focus-visible{background:#4778b4;border-color:#8fd7ff}
@@ -59,9 +58,9 @@ body.picker-open{overflow:hidden}
 @media(max-width:430px){.picker-dialog{padding:8px}.picker-grid{gap:4px}.picker-types button{padding:5px 3px;min-width:36px;font-size:11px}.picker-card{padding:1px}.picker-pager>button{padding:6px 7px}}
 
 /* Keep gallery controls visible with no internal scrolling */
-.picker-heading,.picker-types,.picker-rarities,#picker-search,.picker-pager{flex-shrink:0}
+.picker-heading,.picker-types,.picker-rarities,.picker-pager{flex-shrink:0}
 .picker-pager{margin-top:8px}
-@media(max-height:620px){.picker-dialog{padding:6px}.picker-heading{margin-bottom:4px}.picker-types,.picker-rarities{margin-bottom:4px}.picker-types button,.picker-rarities button{padding:3px 5px}#picker-search{padding:4px 8px;margin-bottom:4px}.picker-grid{gap:3px}.picker-pager{margin-top:3px}.picker-pager button{padding-top:3px;padding-bottom:3px}}
+@media(max-height:620px){.picker-dialog{padding:6px}.picker-heading{margin-bottom:4px}.picker-types,.picker-rarities{margin-bottom:4px}.picker-types button,.picker-rarities button{padding:3px 5px}.picker-grid{gap:3px}.picker-pager{margin-top:3px}.picker-pager button{padding-top:3px;padding-bottom:3px}}
 
 /* Uploaded support-type icons, combined as a 7-frame WebP sprite (36px each). */
 .picker-types{gap:5px;flex-wrap:nowrap}
