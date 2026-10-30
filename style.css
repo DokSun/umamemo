@@ -5,8 +5,18 @@
 
 /* Formation presets in the compact header */
 .header-tools{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
-.preset-select-label{font-size:12px;color:#c1cde0;white-space:nowrap}
-#preset-select{max-width:180px;min-height:32px;font-size:13px}
 .header-tools button{white-space:nowrap;min-height:32px}
 .header-tools button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:700px){header{flex-wrap:wrap}.header-tools{width:100%;justify-content:flex-start}}
+
+/* Click-to-expand formation menu */
+.preset-dropdown{position:relative}
+#preset-toggle{min-width:105px;text-align:center}
+.preset-menu{position:absolute;top:calc(100% + 6px);right:0;width:280px;padding:10px;background:#223148;border:1px solid #49617d;border-radius:9px;box-shadow:0 12px 28px #0009;z-index:40}
+.preset-menu[hidden]{display:none}
+.preset-row{display:flex;align-items:center;gap:5px;padding:6px 0}
+.preset-row+.preset-row{border-top:1px solid #40516a}
+.preset-label{flex:1;min-width:0;font-size:13px;font-weight:600}
+.preset-label small{display:block;font-size:11px;font-weight:400;color:#b6c4d9}
+.preset-row button{font-size:12px;min-width:57px}
+@media(max-width:440px){.preset-menu{right:auto;left:0;width:min(280px,calc(100vw - 18px))}}
