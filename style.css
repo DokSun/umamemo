@@ -66,7 +66,7 @@ body.picker-open{overflow:hidden}
 .picker-types{gap:5px;flex-wrap:nowrap}
 .picker-types button{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;padding:4px 2px;height:46px}
 .picker-types button.active{background:#eef6ff;box-shadow:inset 0 0 0 2px #a4d7ff}
-.type-icon{display:block;width:36px;height:36px;flex:none;background-image:url('./assets/type-icons.webp');background-repeat:no-repeat;background-size:252px 36px}
+.type-icon{display:block;width:36px;height:36px;flex:none;background-image:url('./assets/type-icons.webp?v=alpha-2');background-repeat:no-repeat;background-size:252px 36px}
 .type-icon-speed{background-position:0 0}
 .type-icon-stamina{background-position:-36px 0}
 .type-icon-power{background-position:-72px 0}
@@ -76,17 +76,3 @@ body.picker-open{overflow:hidden}
 .type-icon-group{background-position:-216px 0}
 @media(max-width:430px){.picker-types{gap:2px}.picker-types button{padding:2px 1px;height:39px}.type-icon{width:30px;height:30px;background-size:210px 30px}.type-icon-stamina{background-position:-30px 0}.type-icon-power{background-position:-60px 0}.type-icon-guts{background-position:-90px 0}.type-icon-wisdom{background-position:-120px 0}.type-icon-friend{background-position:-150px 0}.type-icon-group{background-position:-180px 0}}
 @media(max-height:620px){.picker-types button{height:36px;padding:1px}.type-icon{transform:scale(.85)}}
-
-/* Transparent attribute filters: show only original icon artwork, not button tiles. */
-.picker-types button,
-.picker-types button:hover,
-.picker-types button:focus,
-.picker-types button.active,
-.picker-types button.active:hover{
- background:transparent;
- border-color:transparent;
- box-shadow:none;
-}
-.picker-types button:hover .type-icon{filter:brightness(1.13)}
-.picker-types button.active .type-icon{filter:drop-shadow(0 0 3px #d4f2ff) drop-shadow(0 0 3px #74cfff)}
-.picker-types button:focus-visible{outline:2px solid #a4d7ff;outline-offset:-2px}
