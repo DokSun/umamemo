@@ -3,6 +3,7 @@ const KEY='uma-tracker-v1';
 let cards=[],state={slots:Array.from({length:6},()=>({id:null,step:0,random:[false,false],groupCount:3})),scenario:''};
 try{const old=JSON.parse(localStorage.getItem(KEY));if(old&&Array.isArray(old.slots))state={...state,...old,slots:Array.from({length:6},(_,i)=>({...state.slots[i],...(old.slots[i]||{})}))}}catch{}
 
+const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 const PRESET_KEY='uma-tracker-presets-v1';
 const emptySlot=()=>({id:null,step:0,random:[false,false],groupCount:3});
 let presets=[null,null,null];
@@ -35,7 +36,7 @@ $('presets').addEventListener('click',e=>{
 });
 presetRender();
 
-const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function openDB(){return new Promise((resolve,reject)=>{const r=indexedDB.open('uma-tracker-images',1);r.onupgradeneeded=()=>r.result.createObjectStore('images');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)})}
