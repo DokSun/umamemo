@@ -127,3 +127,16 @@ body.picker-open{overflow:hidden}
 .tool-menu-extras select{flex:1;min-height:33px}
 .tool-menu-extras button{min-height:33px}
 @media(max-width:620px){header{flex-wrap:wrap}.tool-menu{left:0}.header-tools{justify-content:flex-start}}
+
+/* Left-aligned navigation and per-tool reset footers */
+header{justify-content:flex-start}
+header>h1{margin-right:auto}
+header>.tool-menu-wrap{order:0}
+header>h1{order:1}
+header>.header-tools{order:2}
+.panel-reset-footer{margin-top:auto;padding-top:15px;display:flex;justify-content:flex-end;border-top:1px solid #34445c}
+.panel-reset-footer[hidden]{display:none!important}
+.tool-panel{display:flex;flex-direction:column;align-items:stretch}
+#counter-panel #slots{width:100%}
+#memo-panel textarea{flex:1 0 auto}
+@media(max-width:620px){header>h1{font-size:17px}.header-tools{margin-left:0}}
