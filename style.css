@@ -154,3 +154,16 @@ header>.header-tools{order:2}
  #counter-panel .slot,#workspace.split #counter-panel .slot{grid-template-columns:64px minmax(0,1fr)}
  #counter-panel .portrait,#counter-panel .portrait-trigger,#workspace.split #counter-panel .portrait,#workspace.split #counter-panel .portrait-trigger{width:64px;height:91px}
 }
+
+/* Connected single-choice button group (segmented control) for split ratio. */
+.ratio-fieldset{border:0;padding:0;margin:0;display:flex;align-items:center;gap:8px;min-width:0}
+.ratio-fieldset legend{float:left;font-size:12px;color:#c1d1e7;padding:0;margin-right:8px;line-height:34px}
+.ratio-segments{display:inline-flex;align-items:stretch;border:1px solid #5b718d;border-radius:6px;overflow:hidden;flex:none}
+.ratio-segments label{position:relative;display:flex;cursor:pointer;min-width:45px;justify-content:center}
+.ratio-segments label+label{border-left:1px solid #5b718d}
+.ratio-segments input{position:absolute;inset:0;opacity:0;width:100%;height:100%;margin:0;cursor:pointer}
+.ratio-segments span{display:flex;align-items:center;justify-content:center;padding:6px 11px;min-height:32px;background:#263b55;color:#d5e0ed;font-size:13px;font-weight:600}
+.ratio-segments input:checked+span{background:#e32e70;color:#fff}
+.ratio-segments label:hover span{filter:brightness(1.15)}
+.ratio-segments input:focus-visible+span{outline:2px solid #a6d1ff;outline-offset:-3px}
+@media(max-width:390px){.ratio-fieldset{flex-wrap:wrap}.ratio-fieldset legend{line-height:1.5}.ratio-segments span{padding:6px 9px}}
