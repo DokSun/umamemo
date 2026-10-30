@@ -82,8 +82,7 @@ async function imagePut(id,blob){const db=await openDB();return new Promise((res
 function cardLabel(c){
  if(!c)return '';
  if(serverMode==='ko')return c.nameKo||c.characterKo||'';
- const match=String(c.nameJa||'').match(/^[\\[［]([^\\]］]+)[\\]］]/);
- return (match?'['+match[1]+']':'')+(c.characterKo||c.nameKo||'');
+ return String(c.titleJa||'')+String(c.characterKo||'');
 }
 function switchServer(next){
  if(next!== 'ko'&&next!=='jp')return;
