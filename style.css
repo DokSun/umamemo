@@ -249,3 +249,7 @@ header>.header-tools{order:2}
   flex-basis:55px;width:55px;font-size:20px;
  }
 }
+
+/* Random A/B event completion uses blue; numbered steps retain green. */
+#counter-panel .event-controls button[data-random].on{background:#2465b5;border-color:#65afff;color:#fff}
+#counter-panel .event-controls button[data-random].on:hover{background:#3076cc}
