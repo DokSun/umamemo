@@ -179,7 +179,7 @@ function findCard(id){return cards.find(c=>String(c.id)===String(id))}
 function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'group':'normal'}
 function countFor(slot,c){return category(c)==='friend'?5:category(c)==='group'?slot.groupCount:3}
 const TYPE_ICONS={스피드:'speed',스태미나:'stamina',파워:'power',근성:'guts',지능:'wisdom',친구:'friend',그룹:'group'};
-function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><button type="button" class="portrait-trigger" data-open-picker="${i}" aria-label="${escapeHTML(cardLabel(c)||"서포트 카드 선택")}"><div class="portrait placeholder" id="photo-${i}">카드 선택</div></button></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><span class="card-title-line">${c&&TYPE_ICONS[c.type]?`<span class="type-icon type-icon-${TYPE_ICONS[c.type]} card-type-icon" title="${escapeHTML(c.type)}" aria-label="${escapeHTML(c.type)}"></span>`:'' }<span class="search card-name-text" title="${escapeHTML(cardLabel(c)||"카드를 선택하세요")}">${escapeHTML(cardLabel(c)||"카드를 선택하세요")}</span></span></div><button data-clear="${i}">비우기</button></div>${c?`<div class="event-controls"><div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}</div>`:''}</div>`;return el}
+function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),kind=category(c);const el=document.createElement('div');el.className='slot';el.innerHTML=`<div><button type="button" class="portrait-trigger" data-open-picker="${i}" aria-label="${escapeHTML(cardLabel(c)||"서포트 카드 선택")}"><div class="portrait placeholder" id="photo-${i}">카드 선택</div></button></div><div class="info"><div class="topline"><div class="choices" style="flex:1"><span class="card-title-line">${c&&TYPE_ICONS[c.type]?`<span class="type-icon type-icon-${TYPE_ICONS[c.type]} card-type-icon" title="${escapeHTML(c.type)}" aria-label="${escapeHTML(c.type)}"></span>`:'' }<span class="search card-name-text" title="${escapeHTML(cardLabel(c)||"카드를 선택하세요")}">${escapeHTML(cardLabel(c)||"카드를 선택하세요")}</span></span></div></div>${c?`<div class="event-controls"><div class="events">${Array.from({length:n},(_,j)=>`<button data-step="${i}:${j+1}" class="${s.step>=j+1?'on':''}" aria-pressed="${s.step>=j+1}">${j+1}</button>`).join('')}${kind==='group'?`<label class="groupopts">단계 수 <select data-group="${i}">${[1,2,3,4,5].map(x=>`<option value="${x}" ${n===x?'selected':''}>${x}</option>`).join('')}</select></label>`:''}</div>${kind==='normal'?`<div class="events">${['A','B'].map((x,j)=>`<button data-random="${i}:${j}" class="${s.random[j]?'on':''}" aria-pressed="${!!s.random[j]}">${x}</button>`).join('')}</div>`:''}</div>`:''}</div>`;return el}
 // External URL metadata, not image files, is published with the site.
 const wikiLookups = new Map();
 const photoVersions = Array(6).fill(0);
@@ -339,6 +339,12 @@ $('picker-grid').addEventListener('click',e=>{
  state.slots[pickerSlot]={id:c.id,step:0,random:[false,false],groupCount:3};
  pickerClose();render();
 });
+$('picker-clear').addEventListener('click',()=>{
+ if(pickerSlot===null)return;
+ state.slots[pickerSlot]={id:null,step:0,random:[false,false],groupCount:3};
+ pickerClose();
+ render();
+});
 $('picker-close').addEventListener('click',pickerClose);
 $('card-picker').addEventListener('click',e=>{if(e.target===$('card-picker'))pickerClose()});
 document.addEventListener('keydown',e=>{
@@ -361,7 +367,7 @@ $('slots').addEventListener('change',e=>{
   render();
  }
 });
-$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.clear){i=+t.dataset.clear;state.slots[i]={id:null,step:0,random:[false,false],groupCount:3};render()}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
+$('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 initWorkspace();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
