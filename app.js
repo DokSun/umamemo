@@ -91,8 +91,16 @@ function resetTargets(button){
  toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
 function toggleToolMenu(open){
- $('tool-menu').hidden=!open;
+ const menu=$('tool-menu');
+ menu.hidden=!open;
+ $('tool-menu-backdrop').hidden=!open;
  $('tool-menu-toggle').setAttribute('aria-expanded',String(open));
+ menu.setAttribute('aria-modal',String(open));
+ document.body.classList.toggle('tool-drawer-open',open);
+ if(open){
+  if(!$('preset-menu').hidden)togglePresetMenu(false);
+  $('tool-menu-close').focus();
+ }
 }
 function initWorkspace(){
  $('tool-menu-list').replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
@@ -103,6 +111,8 @@ function initWorkspace(){
   return btn;
  }));
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
+ $('tool-menu-close').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
+ $('tool-menu-backdrop').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-list').addEventListener('click',e=>{
   const btn=e.target.closest('[data-tool]');if(!btn)return;
   if(layout.mode==='split'&&btn.dataset.tool==='counter')layout.mode='single';
@@ -118,10 +128,18 @@ function initWorkspace(){
  $('split-ratio').addEventListener('change',e=>{if(!e.target.matches('input[type="radio"]'))return;layout.ratio=Number(e.target.value);applyLayout()});
  $('swap-panels').addEventListener('click',()=>{layout.reversed=!layout.reversed;applyLayout()});
  document.addEventListener('click',e=>{
-  if(!e.target.closest('.tool-menu-wrap'))toggleToolMenu(false);
+  if(!$('tool-menu').hidden&&!e.target.closest('.tool-menu-wrap')&&!e.target.closest('#tool-menu')&&!e.target.closest('#tool-menu-backdrop'))toggleToolMenu(false);
  });
  document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'&&!$('tool-menu').hidden){toggleToolMenu(false);$('tool-menu-toggle').focus()}
+  if($('tool-menu').hidden)return;
+  if(e.key==='Escape'){e.preventDefault();toggleToolMenu(false);$('tool-menu-toggle').focus();return}
+  if(e.key==='Tab'){
+   const nodes=[...$('tool-menu').querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled])')].filter(el=>el.getClientRects().length);
+   const first=nodes[0],last=nodes[nodes.length-1];
+   if(!first||!last)return;
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  }
  });
  $('reset').addEventListener('click',()=>resetTargets($('reset')));
  $('secondary-reset').addEventListener('click',()=>resetTargets($('secondary-reset')));
