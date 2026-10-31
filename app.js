@@ -250,6 +250,8 @@ $('preset-menu').addEventListener('pointerout',e=>{
  if(row&&!row.contains(e.relatedTarget))hidePresetPreview();
 });
 $('preset-menu').addEventListener('focusin',e=>{
+ // Touch focus must not open the preview before its tap/click handler toggles it.
+ if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
  const row=e.target.closest('.preset-row');
  if(row&&presets[Number(row.dataset.presetIndex)])showPresetPreview(Number(row.dataset.presetIndex),row);
 });
