@@ -323,3 +323,21 @@ body.tool-drawer-open{overflow:hidden}
   font-size:clamp(14px,4.5vw,20px);
  }
 }
+
+/* Compact vertical spacing beneath mobile card art and event controls. */
+@media (max-width:850px){
+ #counter-panel .slot,
+ #workspace.split #counter-panel .slot{
+  min-height:0;
+  padding-top:5px;
+  padding-bottom:2px;
+ }
+}
+@media (max-width:420px){
+ #counter-panel .slot,
+ #workspace.split #counter-panel .slot{
+  min-height:0;
+  padding-top:4px;
+  padding-bottom:2px;
+ }
+}
