@@ -150,7 +150,37 @@ function syncPresetPresentation(){
  document.body.classList.toggle('preset-drawer-open',open);
  $('preset-menu').setAttribute('aria-modal',String(open));
 }
+function hidePresetPreview(){
+ const popup=$('preset-preview-float');
+ popup.hidden=true;
+ popup.replaceChildren();
+ popup.dataset.presetIndex='';
+}
+function showPresetPreview(index,row){
+ if($('preset-menu').hidden||!presets[index])return;
+ const source=row.querySelector('.preset-preview');
+ if(!source)return;
+ const popup=$('preset-preview-float');
+ if(!popup.hidden&&popup.dataset.presetIndex===String(index))return;
+ popup.replaceChildren(source.cloneNode(true));
+ popup.dataset.presetIndex=String(index);
+ popup.hidden=false;
+ const availableWidth=window.innerWidth-$('preset-menu').getBoundingClientRect().width-24;
+ if(availableWidth>=240){
+  popup.classList.remove('compact');
+  popup.style.width=Math.min(356,availableWidth)+'px';
+  const drawer=$('preset-menu').getBoundingClientRect();
+  popup.style.left=Math.max(8,drawer.left-parseInt(popup.style.width,10)-10)+'px';
+  popup.style.top=Math.max(8,Math.min(row.getBoundingClientRect().top,window.innerHeight-popup.offsetHeight-8))+'px';
+ }else{
+  popup.classList.add('compact');
+  popup.style.width='min(340px, calc(100vw - 24px))';
+  popup.style.left='50%';
+  popup.style.top='50%';
+ }
+}
 function presetRender(){
+ hidePresetPreview();
  const root=$('preset-menu');
  const heading=document.createElement('div');
  heading.className='preset-sheet-header';
@@ -159,16 +189,9 @@ function presetRender(){
  const rows=presets.map((p,i)=>{
   const row=document.createElement('div');
   row.className='preset-row';
+  row.dataset.presetIndex=String(i);
   row.innerHTML=`<span class="preset-label" tabindex="0"${p?` aria-describedby="preset-preview-${i}"`:''}>세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
   if(p){
-   const toggle=document.createElement('button');
-   toggle.type='button';
-   toggle.className='preset-preview-toggle';
-   toggle.dataset.previewPreset=String(i);
-   toggle.setAttribute('aria-controls','preset-preview-'+i);
-   toggle.setAttribute('aria-expanded','false');
-   toggle.textContent='6장 미리보기 ▾';
-   row.append(toggle);
    const preview=document.createElement('div');
    preview.className='preset-preview';
    preview.id='preset-preview-'+i;
@@ -208,6 +231,7 @@ function presetRender(){
  root.replaceChildren(heading,...rows);
 }
 function togglePresetMenu(open){
+ if(!open)hidePresetPreview();
  $('preset-menu').hidden=!open;
  $('preset-toggle').setAttribute('aria-expanded',String(open));
  syncPresetPresentation();
@@ -215,14 +239,28 @@ function togglePresetMenu(open){
 }
 $('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
 $('preset-backdrop').addEventListener('click',()=>togglePresetMenu(false));
+$('preset-menu').addEventListener('pointerover',e=>{
+ if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
+ const row=e.target.closest('.preset-row');
+ if(row&&row.dataset.presetIndex&&presets[Number(row.dataset.presetIndex)])showPresetPreview(Number(row.dataset.presetIndex),row);
+});
+$('preset-menu').addEventListener('pointerout',e=>{
+ if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
+ const row=e.target.closest('.preset-row');
+ if(row&&!row.contains(e.relatedTarget))hidePresetPreview();
+});
+$('preset-menu').addEventListener('focusin',e=>{
+ const row=e.target.closest('.preset-row');
+ if(row&&presets[Number(row.dataset.presetIndex)])showPresetPreview(Number(row.dataset.presetIndex),row);
+});
+
 $('preset-menu').addEventListener('click',e=>{
  if(e.target.closest('.preset-sheet-close')){togglePresetMenu(false);$('preset-toggle').focus();return}
- const previewBtn=e.target.closest('[data-preview-preset]');
- if(previewBtn){
-  const row=previewBtn.closest('.preset-row');
-  const expanded=row.classList.toggle('preview-expanded');
-  previewBtn.setAttribute('aria-expanded',String(expanded));
-  previewBtn.textContent=expanded?'미리보기 접기 ▴':'6장 미리보기 ▾';
+ const name=e.target.closest('.preset-label');
+ if(name&&e.detail!==0){
+  const row=name.closest('.preset-row'),index=Number(row.dataset.presetIndex);
+  if(!$('preset-preview-float').hidden&&$('preset-preview-float').dataset.presetIndex===String(index))hidePresetPreview();
+  else showPresetPreview(index,row);
   return;
  }
  const btn=e.target.closest('button');
