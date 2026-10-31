@@ -13,7 +13,7 @@ function readState(){
  return base;
 }
 let cards=[],state=readState();
-// Shared image URL index is used by both the main counter and saved-preset previews.
+// Image URL index for the card counter and card picker.
 let remoteImages = {};
 
 // Each tool declares its data scope and a reset handler. Future tools register here.
@@ -98,7 +98,6 @@ function toggleToolMenu(open){
  menu.setAttribute('aria-modal',String(open));
  document.body.classList.toggle('tool-drawer-open',open);
  if(open){
-  if(!$('preset-menu').hidden)togglePresetMenu(false);
   $('tool-menu-close').focus();
  }
 }
@@ -148,159 +147,6 @@ function initWorkspace(){
 
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
-let PRESET_KEY=serverMode==='ko'?'uma-tracker-presets-v1':'uma-tracker-presets-v1-jp';
-const emptySlot=()=>({id:null,step:0,random:[false,false],groupCount:3});
-function readPresets(){
- try{
-  const stored=JSON.parse(localStorage.getItem(PRESET_KEY));
-  if(Array.isArray(stored))return Array.from({length:3},(_,i)=>stored[i]&&Array.isArray(stored[i].slots)&&stored[i].slots.length===6?stored[i]:null);
- }catch(err){console.warn('편성 세트 읽기 실패',err)}
- return [null,null,null];
-}
-let presets=readPresets();
-function cleanSlot(s){
- const count=Math.max(1,Math.min(5,Number(s?.groupCount)||3));
- return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
-}
-function syncPresetPresentation(){
- const open=!$('preset-menu').hidden;
- $('preset-backdrop').hidden=!open;
- document.body.classList.toggle('preset-drawer-open',open);
- $('preset-menu').setAttribute('aria-modal',String(open));
-}
-// The preview stays inside the right drawer, above all three saved sets.
-let selectedPresetPreview=0;
-function renderPresetPreview(index){
- const target=$('preset-preview-stage');
- if(!target)return;
- selectedPresetPreview=index;
- const p=presets[index];
- $('preset-preview-heading').textContent='세트 '+(index+1)+(p?' · 저장됨':' · 비어 있음');
- target.replaceChildren();
- for(let i=0;i<6;i++){
-  const item=document.createElement('div');
-  item.className='preset-stage-card';
-  const slot=p?.slots?.[i];
-  const card=slot?.id!=null?findCard(slot.id):null;
-  const url=slot?.id!=null?remoteImages[String(slot.id)]:null;
-  if(card&&validRemoteURL(url)){
-   const img=document.createElement('img');
-   img.src=url;
-   img.alt=cardLabel(card);
-   img.title=cardLabel(card);
-   img.referrerPolicy='no-referrer';
-   img.onerror=()=>{item.replaceChildren();item.textContent='이미지 없음';item.classList.add('missing')};
-   item.append(img);
-  }else{
-   item.textContent=slot?.id!=null?'이미지 없음':'빈 슬롯';
-   item.classList.add('missing');
-  }
-  target.append(item);
- }
- $('preset-menu').querySelectorAll('.preset-row').forEach(row=>{
-  row.classList.toggle('preview-selected',Number(row.dataset.presetIndex)===index);
- });
-}
-function presetRender(){
- const root=$('preset-menu');
- const heading=document.createElement('div');
- heading.className='preset-sheet-header';
- heading.id='preset-drawer-title';
- heading.innerHTML='<strong>편성정보</strong><button type="button" class="preset-sheet-close" aria-label="편성정보 닫기">➜</button>';
- const preview=document.createElement('section');
- preview.className='preset-stage';
- preview.setAttribute('aria-label','선택한 편성 카드 미리보기');
- const previewTitle=document.createElement('div');
- previewTitle.id='preset-preview-heading';
- previewTitle.className='preset-preview-title';
- const grid=document.createElement('div');
- grid.className='preset-stage-grid';
- grid.id='preset-preview-stage';
- preview.append(previewTitle,grid);
- const rows=presets.map((p,i)=>{
-  const row=document.createElement('div');
-  row.className='preset-row';
-  row.dataset.presetIndex=String(i);
-  row.innerHTML=`<button type="button" class="preset-label" data-select-preset="${i}" aria-label="세트 ${i+1} 미리보기">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></button><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
-  return row;
- });
- root.replaceChildren(heading,preview,...rows);
- renderPresetPreview(selectedPresetPreview);
-}
-function togglePresetMenu(open){
- $('preset-menu').hidden=!open;
- $('preset-toggle').setAttribute('aria-expanded',String(open));
- syncPresetPresentation();
- if(open){
-  renderPresetPreview(selectedPresetPreview);
-  $('preset-menu').querySelector('.preset-sheet-close')?.focus();
- }
-}
-$('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
-$('preset-backdrop').addEventListener('click',()=>togglePresetMenu(false));
-$('preset-menu').addEventListener('pointerover',e=>{
- if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
- const row=e.target.closest('.preset-row');
- if(row)renderPresetPreview(Number(row.dataset.presetIndex));
-});
-$('preset-menu').addEventListener('focusin',e=>{
- if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
- const row=e.target.closest('.preset-row');
- if(row)renderPresetPreview(Number(row.dataset.presetIndex));
-});
-$('preset-menu').addEventListener('click',e=>{
- if(e.target.closest('.preset-sheet-close')){
-  togglePresetMenu(false);
-  $('preset-toggle').focus();
-  return;
- }
- const btn=e.target.closest('button');
- if(!btn)return;
- if('selectPreset' in btn.dataset){
-  renderPresetPreview(Number(btn.dataset.selectPreset));
-  return;
- }
- if('savePreset' in btn.dataset){
-  const i=Number(btn.dataset.savePreset);
-  if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
-  const next=presets.slice();
-  next[i]={slots:state.slots.map(cleanSlot)};
-  try{
-   localStorage.setItem(PRESET_KEY,JSON.stringify(next));
-   presets=next;
-   selectedPresetPreview=i;
-   presetRender();
-   toast(`세트 ${i+1} 저장 완료`);
-  }catch(err){toast('편성 세트 저장 실패: '+err.message)}
- }else if('loadPreset' in btn.dataset){
-  const i=Number(btn.dataset.loadPreset),p=presets[i];
-  if(!p)return;
-  state.slots=p.slots.map(cleanSlot);
-  render();
-  togglePresetMenu(false);
-  toast(`세트 ${i+1} 불러오기 완료`);
- }
-});
-document.addEventListener('click',e=>{
- if(!e.target.closest('.preset-dropdown')&&!e.target.closest('#preset-menu')&&!e.target.closest('#preset-backdrop'))togglePresetMenu(false);
-});
-document.addEventListener('keydown',e=>{
- if($('preset-menu').hidden)return;
- if(e.key==='Escape'){
-  e.preventDefault();togglePresetMenu(false);$('preset-toggle').focus();return;
- }
- if(e.key==='Tab'){
-  const nodes=[...$('preset-menu').querySelectorAll('button:not([disabled])')];
-  const first=nodes[0],last=nodes[nodes.length-1];
-  if(!first||!last)return;
-  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
-  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
- }
-});
-$('preset-menu').setAttribute('role','dialog');
-$('preset-menu').setAttribute('aria-labelledby','preset-drawer-title');
-presetRender();
-
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cardLabel(c){
@@ -314,12 +160,9 @@ function switchServer(next){
  save();
  serverMode=next;
  KEY=next==='ko'?'uma-tracker-v1':'uma-tracker-v1-jp';
- PRESET_KEY=next==='ko'?'uma-tracker-presets-v1':'uma-tracker-presets-v1-jp';
  try{localStorage.setItem(SERVER_KEY,next)}catch(err){console.warn('서버 선택 저장 실패',err)}
  state=readState();
- presets=readPresets();
  $('scenario').value=state.scenario||'';
- presetRender();
  render();
  toast(next==='ko'?'한국 서버 모드':'일본 서버 모드');
 }
