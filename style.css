@@ -200,3 +200,16 @@ header>.header-tools{order:2}
 .card-title-line .type-icon-wisdom{background-position:-120px 0}
 .card-title-line .type-icon-friend{background-position:-150px 0}
 .card-title-line .type-icon-group{background-position:-180px 0}
+
+/* Stretch the counting rows down to the bottom edge of each card illustration. */
+#counter-panel .slot .info{display:flex;flex-direction:column;min-height:0}
+#counter-panel .slot .topline{flex:0 0 auto}
+#counter-panel .slot .events{display:flex;align-items:stretch;flex:1 1 0;min-height:34px;margin:4px 10px 0 0}
+#counter-panel .slot .events button[data-step],
+#counter-panel .slot .events button[data-random],
+#workspace.split #counter-panel .slot .events button[data-step],
+#workspace.split #counter-panel .slot .events button[data-random]{
+  height:auto;min-height:34px;max-height:54px;align-self:stretch;
+  display:inline-flex;align-items:center;justify-content:center
+}
+#counter-panel .slot .events:last-child{margin-bottom:0}
