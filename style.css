@@ -345,3 +345,8 @@ body.tool-drawer-open{overflow:hidden}
 /* Clear the currently selected support slot from the picker header. */
 .picker-heading-actions{display:flex;align-items:center;gap:7px;flex:none}
 #picker-clear{min-height:32px;white-space:nowrap}
+
+/* Server selector lives in the left feature drawer. */
+.tool-server-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 0 4px}
+.tool-server-row .server-label{font-size:14px;font-weight:700;color:#e8edf5}
+.tool-server-row #server-mode{flex:0 0 125px;min-height:40px;padding:7px 10px;font-size:14px}
