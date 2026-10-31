@@ -227,3 +227,25 @@ header>.header-tools{order:2}
  #counter-panel .event-controls button[data-step],
  #counter-panel .event-controls button[data-random]{font-size:15px}
 }
+
+/* Match event-button baseline to portrait bottom, without altering button order. */
+#counter-panel .slot .info{height:102px;min-height:0}
+#workspace.split #counter-panel .slot .info{height:100px}
+#counter-panel .event-controls{padding-top:0;align-items:flex-end}
+#counter-panel .event-controls button[data-step],
+#counter-panel .event-controls button[data-random],
+#workspace.split #counter-panel .event-controls button[data-step],
+#workspace.split #counter-panel .event-controls button[data-random]{
+ flex:0 1 62px;width:62px;height:auto;aspect-ratio:1/1;
+ font-size:22px;font-weight:700;
+}
+@media(max-width:850px){#workspace.split #counter-panel .slot .info{height:102px}}
+@media(max-width:420px){
+ #counter-panel .slot .info,#workspace.split #counter-panel .slot .info{height:91px}
+ #counter-panel .event-controls button[data-step],
+ #counter-panel .event-controls button[data-random],
+ #workspace.split #counter-panel .event-controls button[data-step],
+ #workspace.split #counter-panel .event-controls button[data-random]{
+  flex-basis:55px;width:55px;font-size:20px;
+ }
+}
