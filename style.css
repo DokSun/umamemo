@@ -341,3 +341,7 @@ body.tool-drawer-open{overflow:hidden}
   padding-bottom:2px;
  }
 }
+
+/* Clear the currently selected support slot from the picker header. */
+.picker-heading-actions{display:flex;align-items:center;gap:7px;flex:none}
+#picker-clear{min-height:32px;white-space:nowrap}
