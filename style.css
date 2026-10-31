@@ -329,3 +329,74 @@ body.tool-drawer-open{overflow:hidden}
 @media(max-width:420px){
  .tool-menu{width:min(370px,94vw);padding:12px 10px calc(14px + env(safe-area-inset-bottom))}
 }
+
+/* Mobile layout: compact gutters, five equal square event buttons, safe scrolling. */
+@media (max-width:850px){
+ html{overflow-x:clip;scroll-padding-bottom:96px}
+ body{min-width:0;overflow-x:clip}
+ #workspace{
+  width:100%;max-width:100%;box-sizing:border-box;
+  padding:8px 8px max(88px,calc(24px + env(safe-area-inset-bottom)));
+  gap:8px;
+ }
+ #workspace .tool-panel{min-width:0;padding:8px}
+ #counter-panel #slots{min-width:0}
+ #counter-panel .slot,
+ #workspace.split #counter-panel .slot{
+  grid-template-columns:72px minmax(0,1fr);
+  column-gap:7px;
+  padding:7px 0;
+ }
+ #counter-panel .slot .info,
+ #workspace.split #counter-panel .slot .info{min-width:0;max-width:100%}
+ #counter-panel .slot .topline{min-width:0;gap:5px}
+ #counter-panel .slot .topline .choices{min-width:0}
+ #counter-panel .slot .topline > button{flex:none;padding:5px 7px}
+ #counter-panel .event-controls{
+  display:flex;flex-wrap:wrap;gap:4px;
+  min-width:0;max-width:100%;
+  margin-top:auto;margin-right:0;padding:0;
+  align-content:end;align-items:flex-end;
+ }
+ #counter-panel .event-controls .events{display:contents}
+ #counter-panel .event-controls button[data-step],
+ #counter-panel .event-controls button[data-random],
+ #workspace.split #counter-panel .event-controls button[data-step],
+ #workspace.split #counter-panel .event-controls button[data-random]{
+  box-sizing:border-box;
+  flex:0 0 calc((100% - 16px)/5);
+  width:calc((100% - 16px)/5);
+  max-width:62px;
+  height:auto;min-width:0;min-height:0;
+  aspect-ratio:1/1;
+  padding:0;
+  font-size:clamp(14px,3.5vw,21px);
+  line-height:1;
+ }
+ #counter-panel .event-controls .groupopts{
+  flex:0 0 100%;white-space:nowrap;
+  font-size:11px;
+ }
+}
+@media (max-width:420px){
+ #workspace{padding:6px 5px max(88px,calc(24px + env(safe-area-inset-bottom)))}
+ #workspace .tool-panel{padding:6px}
+ #counter-panel .slot,
+ #workspace.split #counter-panel .slot{
+  grid-template-columns:64px minmax(0,1fr);
+  column-gap:5px;
+  padding:6px 0;
+ }
+ #counter-panel .slot .topline > button{padding:4px 6px;font-size:12px}
+ #counter-panel .card-title-line{gap:3px}
+ #counter-panel .event-controls{gap:3px}
+ #counter-panel .event-controls button[data-step],
+ #counter-panel .event-controls button[data-random],
+ #workspace.split #counter-panel .event-controls button[data-step],
+ #workspace.split #counter-panel .event-controls button[data-random]{
+  flex-basis:calc((100% - 12px)/5);
+  width:calc((100% - 12px)/5);
+  max-width:55px;
+  font-size:clamp(14px,4.5vw,20px);
+ }
+}
