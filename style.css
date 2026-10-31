@@ -201,15 +201,29 @@ header>.header-tools{order:2}
 .card-title-line .type-icon-friend{background-position:-150px 0}
 .card-title-line .type-icon-group{background-position:-180px 0}
 
-/* Stretch the counting rows down to the bottom edge of each card illustration. */
-#counter-panel .slot .info{display:flex;flex-direction:column;min-height:0}
+
+/* One horizontal sequence in DOM order; responsive square buttons. */
+#counter-panel .slot .info{display:flex;flex-direction:column;min-width:0}
 #counter-panel .slot .topline{flex:0 0 auto}
-#counter-panel .slot .events{display:flex;align-items:stretch;flex:1 1 0;min-height:34px;margin:4px 10px 0 0}
-#counter-panel .slot .events button[data-step],
-#counter-panel .slot .events button[data-random],
-#workspace.split #counter-panel .slot .events button[data-step],
-#workspace.split #counter-panel .slot .events button[data-random]{
-  height:auto;min-height:34px;max-height:54px;align-self:stretch;
-  display:inline-flex;align-items:center;justify-content:center
+#counter-panel .event-controls{
+ display:flex;flex-wrap:nowrap;align-items:center;gap:5px;
+ width:100%;min-width:0;margin-top:auto;padding-top:5px;
 }
-#counter-panel .slot .events:last-child{margin-bottom:0}
+#counter-panel .event-controls .events{display:contents}
+#counter-panel .event-controls button[data-step],
+#counter-panel .event-controls button[data-random],
+#workspace.split #counter-panel .event-controls button[data-step],
+#workspace.split #counter-panel .event-controls button[data-random]{
+ flex:0 1 43px;width:43px;height:auto;aspect-ratio:1/1;
+ min-width:0;min-height:0;max-height:none;
+ padding:0;font-size:17px;line-height:1;align-self:auto;
+ display:flex;align-items:center;justify-content:center;
+}
+#counter-panel .event-controls .groupopts{
+ flex:0 1 auto;min-width:0;white-space:nowrap;
+}
+@media(max-width:420px){
+ #counter-panel .event-controls{gap:3px}
+ #counter-panel .event-controls button[data-step],
+ #counter-panel .event-controls button[data-random]{font-size:15px}
+}
