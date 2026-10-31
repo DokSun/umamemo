@@ -144,17 +144,46 @@ function cleanSlot(s){
  const count=Math.max(1,Math.min(5,Number(s?.groupCount)||3));
  return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
 }
+const PRESET_MOBILE_QUERY=window.matchMedia('(max-width:720px)');
+function syncPresetPresentation(){
+ const open=!$('preset-menu').hidden;
+ const mobile=PRESET_MOBILE_QUERY.matches;
+ $('preset-backdrop').hidden=!(open&&mobile);
+ document.body.classList.toggle('preset-sheet-open',open&&mobile);
+ const menu=$('preset-menu');
+ if(open&&mobile){
+  menu.setAttribute('role','dialog');
+  menu.setAttribute('aria-modal','true');
+  menu.setAttribute('aria-label','편성정보');
+ }else{
+  menu.removeAttribute('role');
+  menu.removeAttribute('aria-modal');
+  menu.removeAttribute('aria-label');
+ }
+}
 function presetRender(){
  const root=$('preset-menu');
- root.replaceChildren(...presets.map((p,i)=>{
+ const heading=document.createElement('div');
+ heading.className='preset-sheet-header';
+ heading.innerHTML='<strong>편성정보</strong><button type="button" class="preset-sheet-close" aria-label="편성정보 닫기">✕</button>';
+ const rows=presets.map((p,i)=>{
   const row=document.createElement('div');
   row.className='preset-row';
-  row.innerHTML=`<span class="preset-label" tabindex="0" aria-describedby="preset-preview-${i}">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
+  row.innerHTML=`<span class="preset-label" tabindex="0"${p?` aria-describedby="preset-preview-${i}"`:''}>세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
   if(p){
+   const toggle=document.createElement('button');
+   toggle.type='button';
+   toggle.className='preset-preview-toggle';
+   toggle.dataset.previewPreset=String(i);
+   toggle.setAttribute('aria-controls','preset-preview-'+i);
+   toggle.setAttribute('aria-expanded','false');
+   toggle.textContent='6장 미리보기 ▾';
+   row.append(toggle);
    const preview=document.createElement('div');
    preview.className='preset-preview';
    preview.id='preset-preview-'+i;
-   preview.setAttribute('role','tooltip');
+   preview.setAttribute('role','group');
+   preview.setAttribute('aria-label','세트 '+(i+1)+' 서포트 카드 미리보기');
    const label=document.createElement('div');
    label.className='preset-preview-title';
    label.textContent='세트 '+(i+1)+' · 서포트 카드 6장';
@@ -185,14 +214,27 @@ function presetRender(){
    row.append(preview);
   }
   return row;
- }));
+ });
+ root.replaceChildren(heading,...rows);
 }
 function togglePresetMenu(open){
  $('preset-menu').hidden=!open;
  $('preset-toggle').setAttribute('aria-expanded',String(open));
+ syncPresetPresentation();
+ if(open&&PRESET_MOBILE_QUERY.matches)$('preset-menu').querySelector('.preset-sheet-close')?.focus();
 }
 $('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
+$('preset-backdrop').addEventListener('click',()=>togglePresetMenu(false));
 $('preset-menu').addEventListener('click',e=>{
+ if(e.target.closest('.preset-sheet-close')){togglePresetMenu(false);$('preset-toggle').focus();return}
+ const previewBtn=e.target.closest('[data-preview-preset]');
+ if(previewBtn){
+  const row=previewBtn.closest('.preset-row');
+  const expanded=row.classList.toggle('preview-expanded');
+  previewBtn.setAttribute('aria-expanded',String(expanded));
+  previewBtn.textContent=expanded?'미리보기 접기 ▴':'6장 미리보기 ▾';
+  return;
+ }
  const btn=e.target.closest('button');
  if(!btn)return;
  if('savePreset' in btn.dataset){
@@ -216,11 +258,20 @@ $('preset-menu').addEventListener('click',e=>{
  }
 });
 document.addEventListener('click',e=>{
- if(!e.target.closest('.preset-dropdown'))togglePresetMenu(false);
+ if(!e.target.closest('.preset-dropdown')&&!e.target.closest('#preset-backdrop'))togglePresetMenu(false);
 });
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'&&!$('preset-menu').hidden){togglePresetMenu(false);$('preset-toggle').focus()}
+ if($('preset-menu').hidden)return;
+ if(e.key==='Escape'){e.preventDefault();togglePresetMenu(false);$('preset-toggle').focus();return}
+ if(e.key==='Tab'&&PRESET_MOBILE_QUERY.matches){
+  const nodes=[...$('preset-menu').querySelectorAll('button:not([disabled]),[tabindex="0"]')];
+  const first=nodes[0],last=nodes[nodes.length-1];
+  if(!first||!last)return;
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+ }
 });
+PRESET_MOBILE_QUERY.addEventListener('change',syncPresetPresentation);
 presetRender();
 
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
