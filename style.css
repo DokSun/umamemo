@@ -214,7 +214,7 @@ header>.header-tools{order:2}
 #counter-panel .event-controls button[data-random],
 #workspace.split #counter-panel .event-controls button[data-step],
 #workspace.split #counter-panel .event-controls button[data-random]{
- flex:0 1 43px;width:43px;height:auto;aspect-ratio:1/1;
+ flex:0 1 68px;width:68px;height:auto;aspect-ratio:1/1;
  min-width:0;min-height:0;max-height:none;
  padding:0;font-size:17px;line-height:1;align-self:auto;
  display:flex;align-items:center;justify-content:center;
