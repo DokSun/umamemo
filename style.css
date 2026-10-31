@@ -343,7 +343,7 @@ body.tool-drawer-open{overflow:hidden}
  #counter-panel #slots{min-width:0}
  #counter-panel .slot,
  #workspace.split #counter-panel .slot{
-  grid-template-columns:72px minmax(0,1fr);
+  grid-template-columns:76px minmax(0,1fr);
   column-gap:7px;
   padding:7px 0;
  }
