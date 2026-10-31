@@ -312,3 +312,23 @@ body.preset-drawer-open{overflow:hidden}
   min-width:57px;padding:7px 5px
  }
 }
+
+/* Six-card preview floats separately from the scrollable right drawer. */
+.preset-preview-float[hidden]{display:none!important}
+.preset-preview-float{
+ position:fixed;z-index:125;box-sizing:border-box;
+ width:356px;padding:10px;
+ background:#152337;border:1px solid #6585a9;border-radius:9px;
+ box-shadow:0 12px 28px #000b;pointer-events:none;
+}
+.preset-preview-float .preset-preview,
+.preset-preview-float .preset-preview:hover{
+ display:block!important;position:static!important;
+ width:100%;padding:0;box-shadow:none;border:0;pointer-events:none;
+}
+.preset-menu .preset-row .preset-preview,
+.preset-menu .preset-row:hover .preset-preview,
+.preset-menu .preset-row:focus-within .preset-preview,
+.preset-menu .preset-row.preview-expanded .preset-preview{display:none!important}
+.preset-preview-toggle{display:none!important}
+.preset-preview-float.compact{transform:translate(-50%,-50%);max-height:90dvh;overflow:hidden}
