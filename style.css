@@ -253,3 +253,32 @@ header>.header-tools{order:2}
 /* Random A/B event completion uses blue; numbered steps retain green. */
 #counter-panel .event-controls button[data-random].on{background:#2465b5;border-color:#65afff;color:#fff}
 #counter-panel .event-controls button[data-random].on:hover{background:#3076cc}
+
+/* Responsive formation settings: desktop dropdown, compact-screen bottom sheet. */
+.preset-backdrop[hidden],.preset-sheet-header,.preset-preview-toggle{display:none}
+@media(max-width:720px){
+ body.preset-sheet-open{overflow:hidden}
+ .preset-backdrop:not([hidden]){display:block;position:fixed;inset:0;background:#030917b8;z-index:85}
+ .preset-dropdown{position:relative}
+ .preset-menu{
+  position:fixed;left:0;right:0;bottom:0;top:auto;
+  width:100%;max-width:100vw;max-height:min(88dvh,720px);
+  padding:12px max(14px,env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left));
+  border-radius:16px 16px 0 0;
+  border:1px solid #49617d;
+  background:#223148;z-index:90;
+  overflow-y:auto;overscroll-behavior:contain;
+  box-shadow:0 -14px 40px #000a;
+ }
+ .preset-menu[hidden]{display:none}
+ .preset-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;padding-bottom:9px;border-bottom:1px solid #475d78;font-size:17px}
+ .preset-sheet-close{min-width:38px;min-height:36px}
+ .preset-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:7px;align-items:center;padding:12px 0}
+ .preset-label{min-width:0}
+ .preset-row>button[data-save-preset],.preset-row>button[data-load-preset]{min-width:66px;min-height:40px}
+ .preset-preview-toggle{display:block;grid-column:1/-1;width:100%;min-height:38px;text-align:left}
+ .preset-row .preset-preview{position:static;display:none!important;grid-column:1/-1;right:auto;top:auto;width:100%;max-width:100%;padding:9px;pointer-events:auto;box-shadow:none}
+ .preset-row.preview-expanded .preset-preview{display:block!important}
+ .preset-preview-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:4px}
+ .preset-preview-card{min-width:0}
+}
