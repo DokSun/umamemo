@@ -144,27 +144,17 @@ function cleanSlot(s){
  const count=Math.max(1,Math.min(5,Number(s?.groupCount)||3));
  return {id:s?.id??null,step:Math.max(0,Math.min(5,Number(s?.step)||0)),random:[!!s?.random?.[0],!!s?.random?.[1]],groupCount:count};
 }
-const PRESET_MOBILE_QUERY=window.matchMedia('(max-width:720px)');
 function syncPresetPresentation(){
  const open=!$('preset-menu').hidden;
- const mobile=PRESET_MOBILE_QUERY.matches;
- $('preset-backdrop').hidden=!(open&&mobile);
- document.body.classList.toggle('preset-sheet-open',open&&mobile);
- const menu=$('preset-menu');
- if(open&&mobile){
-  menu.setAttribute('role','dialog');
-  menu.setAttribute('aria-modal','true');
-  menu.setAttribute('aria-label','편성정보');
- }else{
-  menu.removeAttribute('role');
-  menu.removeAttribute('aria-modal');
-  menu.removeAttribute('aria-label');
- }
+ $('preset-backdrop').hidden=!open;
+ document.body.classList.toggle('preset-drawer-open',open);
+ $('preset-menu').setAttribute('aria-modal',String(open));
 }
 function presetRender(){
  const root=$('preset-menu');
  const heading=document.createElement('div');
  heading.className='preset-sheet-header';
+ heading.id='preset-drawer-title';
  heading.innerHTML='<strong>편성정보</strong><button type="button" class="preset-sheet-close" aria-label="편성정보 닫기">✕</button>';
  const rows=presets.map((p,i)=>{
   const row=document.createElement('div');
@@ -221,7 +211,7 @@ function togglePresetMenu(open){
  $('preset-menu').hidden=!open;
  $('preset-toggle').setAttribute('aria-expanded',String(open));
  syncPresetPresentation();
- if(open&&PRESET_MOBILE_QUERY.matches)$('preset-menu').querySelector('.preset-sheet-close')?.focus();
+ if(open)$('preset-menu').querySelector('.preset-sheet-close')?.focus();
 }
 $('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
 $('preset-backdrop').addEventListener('click',()=>togglePresetMenu(false));
@@ -258,12 +248,12 @@ $('preset-menu').addEventListener('click',e=>{
  }
 });
 document.addEventListener('click',e=>{
- if(!e.target.closest('.preset-dropdown')&&!e.target.closest('#preset-backdrop'))togglePresetMenu(false);
+ if(!e.target.closest('.preset-dropdown')&&!e.target.closest('#preset-menu')&&!e.target.closest('#preset-backdrop'))togglePresetMenu(false);
 });
 document.addEventListener('keydown',e=>{
  if($('preset-menu').hidden)return;
  if(e.key==='Escape'){e.preventDefault();togglePresetMenu(false);$('preset-toggle').focus();return}
- if(e.key==='Tab'&&PRESET_MOBILE_QUERY.matches){
+ if(e.key==='Tab'){
   const nodes=[...$('preset-menu').querySelectorAll('button:not([disabled]),[tabindex="0"]')];
   const first=nodes[0],last=nodes[nodes.length-1];
   if(!first||!last)return;
@@ -271,7 +261,8 @@ document.addEventListener('keydown',e=>{
   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
  }
 });
-PRESET_MOBILE_QUERY.addEventListener('change',syncPresetPresentation);
+$('preset-menu').setAttribute('role','dialog');
+$('preset-menu').setAttribute('aria-labelledby','preset-drawer-title');
 presetRender();
 
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
