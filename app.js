@@ -150,123 +150,98 @@ function syncPresetPresentation(){
  document.body.classList.toggle('preset-drawer-open',open);
  $('preset-menu').setAttribute('aria-modal',String(open));
 }
-function hidePresetPreview(){
- const popup=$('preset-preview-float');
- popup.hidden=true;
- popup.replaceChildren();
- popup.dataset.presetIndex='';
-}
-function showPresetPreview(index,row){
- if($('preset-menu').hidden||!presets[index])return;
- const source=row.querySelector('.preset-preview');
- if(!source)return;
- const popup=$('preset-preview-float');
- if(!popup.hidden&&popup.dataset.presetIndex===String(index))return;
- popup.replaceChildren(source.cloneNode(true));
- popup.dataset.presetIndex=String(index);
- popup.hidden=false;
- const availableWidth=window.innerWidth-$('preset-menu').getBoundingClientRect().width-24;
- if(availableWidth>=240){
-  popup.classList.remove('compact');
-  popup.style.width=Math.min(356,availableWidth)+'px';
-  const drawer=$('preset-menu').getBoundingClientRect();
-  popup.style.left=Math.max(8,drawer.left-parseInt(popup.style.width,10)-10)+'px';
-  popup.style.top=Math.max(8,Math.min(row.getBoundingClientRect().top,window.innerHeight-popup.offsetHeight-8))+'px';
- }else{
-  popup.classList.add('compact');
-  popup.style.width='min(340px, calc(100vw - 24px))';
-  popup.style.left='50%';
-  popup.style.top='50%';
+// The preview stays inside the right drawer, above all three saved sets.
+let selectedPresetPreview=0;
+function renderPresetPreview(index){
+ const target=$('preset-preview-stage');
+ if(!target)return;
+ selectedPresetPreview=index;
+ const p=presets[index];
+ $('preset-preview-heading').textContent='세트 '+(index+1)+(p?' · 저장됨':' · 비어 있음');
+ target.replaceChildren();
+ for(let i=0;i<6;i++){
+  const item=document.createElement('div');
+  item.className='preset-stage-card';
+  const slot=p?.slots?.[i];
+  const card=slot?.id!=null?findCard(slot.id):null;
+  const url=slot?.id!=null?remoteImages[String(slot.id)]:null;
+  if(card&&validRemoteURL(url)){
+   const img=document.createElement('img');
+   img.src=url;
+   img.alt=cardLabel(card);
+   img.title=cardLabel(card);
+   img.referrerPolicy='no-referrer';
+   img.onerror=()=>{item.replaceChildren();item.textContent='이미지 없음';item.classList.add('missing')};
+   item.append(img);
+  }else{
+   item.textContent=slot?.id!=null?'이미지 없음':'빈 슬롯';
+   item.classList.add('missing');
+  }
+  target.append(item);
  }
+ $('preset-menu').querySelectorAll('.preset-row').forEach(row=>{
+  row.classList.toggle('preview-selected',Number(row.dataset.presetIndex)===index);
+ });
 }
 function presetRender(){
- hidePresetPreview();
  const root=$('preset-menu');
  const heading=document.createElement('div');
  heading.className='preset-sheet-header';
  heading.id='preset-drawer-title';
- heading.innerHTML='<strong>편성정보</strong><button type="button" class="preset-sheet-close" aria-label="편성정보 닫기">✕</button>';
+ heading.innerHTML='<strong>편성정보</strong><button type="button" class="preset-sheet-close" aria-label="편성정보 닫기">➜</button>';
+ const preview=document.createElement('section');
+ preview.className='preset-stage';
+ preview.setAttribute('aria-label','선택한 편성 카드 미리보기');
+ const previewTitle=document.createElement('div');
+ previewTitle.id='preset-preview-heading';
+ previewTitle.className='preset-preview-title';
+ const grid=document.createElement('div');
+ grid.className='preset-stage-grid';
+ grid.id='preset-preview-stage';
+ preview.append(previewTitle,grid);
  const rows=presets.map((p,i)=>{
   const row=document.createElement('div');
   row.className='preset-row';
   row.dataset.presetIndex=String(i);
-  row.innerHTML=`<span class="preset-label" tabindex="0"${p?` aria-describedby="preset-preview-${i}"`:''}>세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></span><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
-  if(p){
-   const preview=document.createElement('div');
-   preview.className='preset-preview';
-   preview.id='preset-preview-'+i;
-   preview.setAttribute('role','group');
-   preview.setAttribute('aria-label','세트 '+(i+1)+' 서포트 카드 미리보기');
-   const label=document.createElement('div');
-   label.className='preset-preview-title';
-   label.textContent='세트 '+(i+1)+' · 서포트 카드 6장';
-   preview.append(label);
-   const grid=document.createElement('div');
-   grid.className='preset-preview-grid';
-   for(const slot of p.slots){
-    const item=document.createElement('div');
-    item.className='preset-preview-card';
-    const card=findCard(slot.id);
-    const url=slot.id!=null?remoteImages[String(slot.id)]:null;
-    if(card&&validRemoteURL(url)){
-     const img=document.createElement('img');
-     img.src=url;
-     img.alt=cardLabel(card);
-     img.title=cardLabel(card);
-     img.loading='lazy';
-     img.referrerPolicy='no-referrer';
-     img.onerror=()=>{item.textContent='이미지 없음';item.classList.add('missing')};
-     item.append(img);
-    }else{
-     item.textContent=slot.id!=null?'이미지 없음':'빈 슬롯';
-     item.classList.add('missing');
-    }
-    grid.append(item);
-   }
-   preview.append(grid);
-   row.append(preview);
-  }
+  row.innerHTML=`<button type="button" class="preset-label" data-select-preset="${i}" aria-label="세트 ${i+1} 미리보기">세트 ${i+1}<small>${p?'저장됨':'비어 있음'}</small></button><button type="button" data-save-preset="${i}">저장</button><button type="button" data-load-preset="${i}" ${p?'':'disabled'}>불러오기</button>`;
   return row;
  });
- root.replaceChildren(heading,...rows);
+ root.replaceChildren(heading,preview,...rows);
+ renderPresetPreview(selectedPresetPreview);
 }
 function togglePresetMenu(open){
- if(!open)hidePresetPreview();
  $('preset-menu').hidden=!open;
  $('preset-toggle').setAttribute('aria-expanded',String(open));
  syncPresetPresentation();
- if(open)$('preset-menu').querySelector('.preset-sheet-close')?.focus();
+ if(open){
+  renderPresetPreview(selectedPresetPreview);
+  $('preset-menu').querySelector('.preset-sheet-close')?.focus();
+ }
 }
 $('preset-toggle').addEventListener('click',()=>togglePresetMenu($('preset-menu').hidden));
 $('preset-backdrop').addEventListener('click',()=>togglePresetMenu(false));
 $('preset-menu').addEventListener('pointerover',e=>{
  if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
  const row=e.target.closest('.preset-row');
- if(row&&row.dataset.presetIndex&&presets[Number(row.dataset.presetIndex)])showPresetPreview(Number(row.dataset.presetIndex),row);
-});
-$('preset-menu').addEventListener('pointerout',e=>{
- if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
- const row=e.target.closest('.preset-row');
- if(row&&!row.contains(e.relatedTarget))hidePresetPreview();
+ if(row)renderPresetPreview(Number(row.dataset.presetIndex));
 });
 $('preset-menu').addEventListener('focusin',e=>{
- // Touch focus must not open the preview before its tap/click handler toggles it.
  if(!window.matchMedia('(hover:hover) and (pointer:fine)').matches)return;
  const row=e.target.closest('.preset-row');
- if(row&&presets[Number(row.dataset.presetIndex)])showPresetPreview(Number(row.dataset.presetIndex),row);
+ if(row)renderPresetPreview(Number(row.dataset.presetIndex));
 });
-
 $('preset-menu').addEventListener('click',e=>{
- if(e.target.closest('.preset-sheet-close')){togglePresetMenu(false);$('preset-toggle').focus();return}
- const name=e.target.closest('.preset-label');
- if(name&&e.detail!==0){
-  const row=name.closest('.preset-row'),index=Number(row.dataset.presetIndex);
-  if(!$('preset-preview-float').hidden&&$('preset-preview-float').dataset.presetIndex===String(index))hidePresetPreview();
-  else showPresetPreview(index,row);
+ if(e.target.closest('.preset-sheet-close')){
+  togglePresetMenu(false);
+  $('preset-toggle').focus();
   return;
  }
  const btn=e.target.closest('button');
  if(!btn)return;
+ if('selectPreset' in btn.dataset){
+  renderPresetPreview(Number(btn.dataset.selectPreset));
+  return;
+ }
  if('savePreset' in btn.dataset){
   const i=Number(btn.dataset.savePreset);
   if(presets[i]&&!confirm(`세트 ${i+1}을(를) 현재 편성으로 덮어쓸까요?`))return;
@@ -275,6 +250,7 @@ $('preset-menu').addEventListener('click',e=>{
   try{
    localStorage.setItem(PRESET_KEY,JSON.stringify(next));
    presets=next;
+   selectedPresetPreview=i;
    presetRender();
    toast(`세트 ${i+1} 저장 완료`);
   }catch(err){toast('편성 세트 저장 실패: '+err.message)}
@@ -292,9 +268,11 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
  if($('preset-menu').hidden)return;
- if(e.key==='Escape'){e.preventDefault();togglePresetMenu(false);$('preset-toggle').focus();return}
+ if(e.key==='Escape'){
+  e.preventDefault();togglePresetMenu(false);$('preset-toggle').focus();return;
+ }
  if(e.key==='Tab'){
-  const nodes=[...$('preset-menu').querySelectorAll('button:not([disabled]),[tabindex="0"]')];
+  const nodes=[...$('preset-menu').querySelectorAll('button:not([disabled])')];
   const first=nodes[0],last=nodes[nodes.length-1];
   if(!first||!last)return;
   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
