@@ -18,6 +18,11 @@ let remoteImages = {};
 
 // Each tool declares its data scope and a reset handler. Future tools register here.
 const LAYOUT_KEY='uma-tracker-layout-v1';
+const RESET_POPUP_KEY='uma-tracker-reset-popup-v1';
+// Confirmation remains enabled for existing users unless explicitly switched off.
+let confirmCounterReset=true;
+try{confirmCounterReset=localStorage.getItem(RESET_POPUP_KEY)!=='off'}catch(e){console.warn('초기화 팝업 설정 읽기 실패',e)}
+
 const TOOLS={
  counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
   reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
@@ -86,7 +91,7 @@ function resetTargets(button){
  const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
  if(!ids.length)return;
  const desc=ids.length===1?TOOLS[ids[0]].name+'의 기록을':'현재 표시된 육성 기록을 모두';
- if(!confirm(desc+' 초기화할까요?'))return;
+ if((ids.length!==1||ids[0]!=='counter'||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'))return;
  ids.forEach(id=>TOOLS[id].reset());
  toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
@@ -139,6 +144,11 @@ function initWorkspace(){
    if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
    else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
   }
+ });
+ $('reset-popup-toggle').checked=confirmCounterReset;
+ $('reset-popup-toggle').addEventListener('change',e=>{
+  confirmCounterReset=e.target.checked;
+  try{localStorage.setItem(RESET_POPUP_KEY,confirmCounterReset?'on':'off')}catch(err){console.warn('초기화 팝업 설정 저장 실패',err)}
  });
  $('reset').addEventListener('click',()=>resetTargets($('reset')));
  $('secondary-reset').addEventListener('click',()=>resetTargets($('secondary-reset')));
