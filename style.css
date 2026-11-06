@@ -350,3 +350,29 @@ body.tool-drawer-open{overflow:hidden}
 .tool-server-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 0 4px}
 .tool-server-row .server-label{font-size:14px;font-weight:700;color:#e8edf5}
 .tool-server-row #server-mode{flex:0 0 125px;min-height:40px;padding:7px 10px;font-size:14px}
+
+/* Confirmation popup switch positioned next to the counter reset button. */
+#counter-reset-footer{align-items:center;gap:12px;flex-wrap:wrap}
+.reset-popup-option{
+ display:inline-flex;align-items:center;gap:8px;
+ min-height:36px;white-space:nowrap;cursor:pointer;
+ font-size:13px;color:#c9d8eb;
+}
+.reset-popup-option input{position:absolute;opacity:0;width:1px;height:1px}
+.reset-popup-track{
+ display:inline-block;flex:none;width:43px;height:25px;
+ border-radius:999px;border:1px solid #73849d;
+ background:#3c4758;position:relative;transition:background .15s;
+}
+.reset-popup-track:before{
+ content:'';position:absolute;top:3px;left:3px;
+ width:17px;height:17px;background:#eff4fa;border-radius:50%;
+ transition:transform .15s;
+}
+.reset-popup-option input:checked+.reset-popup-track{background:#247d61;border-color:#53c8a0}
+.reset-popup-option input:checked+.reset-popup-track:before{transform:translateX(18px)}
+.reset-popup-option input:focus-visible+.reset-popup-track{outline:2px solid #80baff;outline-offset:2px}
+@media(max-width:420px){
+ #counter-reset-footer{gap:8px;justify-content:flex-end}
+ .reset-popup-option{gap:5px;font-size:12px}
+}
