@@ -376,3 +376,21 @@ body.tool-drawer-open{overflow:hidden}
  #counter-reset-footer{gap:8px;justify-content:flex-end}
  .reset-popup-option{gap:5px;font-size:12px}
 }
+
+/* Keep the reset-confirmation control visible and away from the destructive action. */
+#counter-reset-footer{
+ display:flex;flex-direction:row;flex-wrap:wrap;
+ align-items:center;justify-content:space-between;
+ column-gap:16px;row-gap:8px;min-width:0;width:100%;
+}
+#counter-reset-footer .reset-popup-option{
+ display:inline-flex;order:0;flex:0 0 auto;margin-right:auto;
+ align-items:center;justify-content:flex-start;
+ min-width:0;min-height:40px;
+}
+#counter-reset-footer #reset{order:1;flex:0 0 auto;margin-left:auto}
+@media(max-width:420px){
+ #counter-reset-footer{justify-content:space-between;column-gap:9px}
+ #counter-reset-footer .reset-popup-option{font-size:12px;gap:5px}
+ #counter-reset-footer #reset{font-size:12px;padding:7px 8px;min-height:36px}
+}
