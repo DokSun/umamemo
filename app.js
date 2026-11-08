@@ -372,10 +372,10 @@ function renderSchedule(){
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const icon=seasonal?'<span class="schedule-prep-label">육성 준비</span>':goal?scheduleBannerHtml(selectedGoal,goal):(display?scheduleActionIcon(display):scheduleActionIcon(null));
+   const icon=goal?scheduleBannerHtml(selectedGoal,goal):(display?scheduleActionIcon(display):scheduleActionIcon(null));
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
-   const title=seasonal?'육성 준비 기간':goal?'고정 목표 레이스':label;
+   const title=goal?'고정 목표 레이스':label;
    return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle)}"><span class="schedule-cell-face">${icon}${mark}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
@@ -410,7 +410,6 @@ $('schedule-grid').addEventListener('click',e=>{
  const year=btn.dataset.scheduleYearCell;
  if(!Object.hasOwn(SCHEDULE_YEARS,year))return;
  const clickedTurn=Number(btn.dataset.scheduleTurn);
- if(scheduleIsPrepTurn(year,clickedTurn))return;
  scheduleCurrent.year=year;
  scheduleTurn=clickedTurn;
  const month=1+Math.floor(scheduleTurn/2);
@@ -454,7 +453,7 @@ function updateSelectedRaceDescription(){
 }
 $('schedule-race-select').addEventListener('change',updateSelectedRaceDescription);
 $('schedule-race-apply').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||scheduleIsPrepTurn(scheduleCurrent.year,scheduleTurn)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
+ if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
  const race=scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number($('schedule-race-select').value)];
  if(!race)return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]='race';
@@ -463,13 +462,13 @@ $('schedule-race-apply').addEventListener('click',()=>{
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||scheduleIsPrepTurn(scheduleCurrent.year,scheduleTurn)||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
+ if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  if(btn.dataset.scheduleAction!=='race')delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 $('schedule-action-clear').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||scheduleIsPrepTurn(scheduleCurrent.year,scheduleTurn))return;
+ if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=null;
  delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
