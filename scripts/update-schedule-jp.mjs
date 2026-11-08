@@ -25,6 +25,15 @@ if (!Array.isArray(rawCharacters) || rawCharacters.length < 240 ||
   throw Error('Upstream data unexpectedly small or malformed; leaving existing snapshot intact.');
 }
 const supports = JSON.parse(await readFile(join(ROOT, 'data/support_cards.json'), 'utf8'));
+const characterKorean = JSON.parse(await readFile(join(ROOT, 'data/character_ko_names.json'), 'utf8')).characters;
+const raceKorean = JSON.parse(await readFile(join(ROOT, 'data/race_ko_names.json'), 'utf8')).names;
+const extraKorean = {
+  'Satono Crown':'사토노 크라운','Furioso':'후리오소',
+  'Loves Only You':'러브즈 온리 유','Believe':'빌리브',
+  'Epiphaneia':'에피파네이아','Phalaenopsis':'팔레놉시스',
+  'Rose Kingdom':'로즈 킹덤',
+};
+
 const names = new Map();
 for (const s of supports) {
   const key = norm((s.urlName || '').replace(/^\d+-/, ''));
@@ -41,16 +50,18 @@ const characters = rawCharacters
       const entry = grouped.get(turn);
       const name = String(objective.ObjectiveName || '').trim();
       if (name && !entry.o.some(y => y.n === name)) {
-        entry.o.push({ n: name, g: '', s: '', d: String(objective.ObjectiveCondition || ''), f: 0 });
+        entry.o.push({ n: name, g: '', s: '', d: String(objective.ObjectiveCondition || ''), f: 0, ko: raceKorean[name] || '' });
       }
     }
     const goals = [...grouped.values()].filter(g => g.o.length).sort((a, b) => a.t - b.t);
     for (const g of goals) g.c = g.o.length > 1;
+    const translated = characterKorean[String(x.UmaId)];
     return {
       id: 'uma-' + String(x.UmaId),
       en: x.UmaName,
-      ko: names.get(norm(x.UmaName)) || x.UmaName,
+      ko: translated?.name || names.get(norm(x.UmaName)) || extraKorean[x.UmaName] || x.UmaName,
       variant: x.UmaNickname || '',
+      variantKo: translated?.nickname || '',
       jp: x.UmaNameJP || '',
       variantJP: x.UmaNicknameJP || '',
       server: x.UmaServer,
@@ -68,6 +79,7 @@ for (const x of rawRaces) {
     if (year < 1 || year > 3 || month < 1 || month > 12 || half < 1 || half > 2) continue;
     races.push({
       n: String(x.name_en || x.name || ''),
+      ko: raceKorean[String(x.name_en || x.name || '')] || '',
       t: (year - 1) * 24 + (month - 1) * 2 + half,
       g: grades[Number(x.grade)] || '',
       track: String(x.venue || ''),
@@ -79,6 +91,26 @@ for (const x of rawRaces) {
   }
 }
 races.sort((a, b) => a.t - b.t || a.n.localeCompare(b.n));
+const lookupRace = new Map();
+for (const race of races) {
+  const key = race.t + '|' + race.n.trim().toLowerCase();
+  if (!lookupRace.has(key)) lookupRace.set(key, race);
+}
+for (const character of characters) {
+  for (const goal of character.goals) {
+    for (const objective of goal.o) {
+      const race = lookupRace.get(goal.t + '|' + objective.n.trim().toLowerCase());
+      if (!race) continue;
+      objective.g = race.g;
+      objective.s = race.surface;
+      objective.track = race.track;
+      objective.m = race.m;
+      objective.dir = race.dir;
+      objective.f = race.f || 0;
+    }
+  }
+}
+
 if (characters.length < 240 || races.length < 350 ||
     new Set(characters.map(c => c.id)).size !== characters.length) {
   throw Error('Normalized JP data failed validation; leaving existing snapshot intact.');
