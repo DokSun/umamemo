@@ -325,8 +325,7 @@ function scheduleOnsenTicketStatus(year,i){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
  if(index<0)return {turn:0,superRecovery:false};
  if(scheduleOnsenTicketBlocked(year,i)){
-  const py=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
-  return {turn:2,superRecovery:scheduleOnsenEvents(py,(index-1)%24).includes('ticketSuper')};
+  return {turn:2,superRecovery:false}; // Super recovery itself occurs on the use turn, not on the lingering second turn.
  }
  const events=scheduleOnsenEvents(year,i);
  if(events.includes('ticketSuper'))return {turn:1,superRecovery:true};
