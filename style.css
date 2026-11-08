@@ -569,3 +569,21 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-cell-face .schedule-banner-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
 .schedule-cell-face:has(.schedule-race-banner){overflow:hidden}
 .schedule-cell.has-goal .schedule-goal-marker{font-size:9px}
+
+/* Korean text-first race labels until verified KR client art becomes available. */
+.schedule-ko-banner{
+ width:100%;height:100%;display:flex;flex-direction:column;align-items:center;
+ justify-content:center;gap:2px;padding:4px 2px;box-sizing:border-box;
+ background:linear-gradient(135deg,#35596f,#25445c 52%,#1b3348);
+ border:1px solid #a7c4cf;border-radius:inherit;color:#fff;overflow:hidden
+}
+.schedule-ko-banner-grade{font-size:10px;font-weight:900;color:#f7da92;line-height:1.2}
+.schedule-ko-banner-name{font-size:clamp(9px,1.1vw,13px);font-weight:750;line-height:1.15;
+ text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:keep-all}
+.schedule-cell.locked-goal{cursor:help}
+.schedule-cell.locked-goal .schedule-cell-face{border-color:#dbad58}
+.schedule-prep-label{font-size:11px;color:#b0c1d3;font-weight:700}
+.schedule-cell.seasonal{cursor:default}
+.schedule-cell.seasonal .schedule-cell-face{border-style:dashed;background:#273346}
+.schedule-cell.seasonal .schedule-cell-label{color:#a6b6c9}
+#schedule-action-choices[hidden],#schedule-action-clear[hidden],#schedule-race-picker[hidden]{display:none!important}
