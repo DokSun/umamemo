@@ -181,7 +181,11 @@ const SCHEDULE_RACE_TRANSLATIONS={
  Chukyo:'주쿄',Niigata:'니가타',Fukushima:'후쿠시마',
  Sapporo:'삿포로',Hakodate:'하코다테',Kokura:'고쿠라',
  Oi:'오이',Kawasaki:'가와사키',Funabashi:'후나바시',
- Morioka:'모리오카',Nagoya:'나고야'
+ Morioka:'모리오카',Nagoya:'나고야',
+ '札幌':'삿포로','函館':'하코다테','福島':'후쿠시마','新潟':'니가타',
+ '中山':'나카야마','東京':'도쿄','中京':'주쿄','京都':'교토',
+ '阪神':'한신','小倉':'고쿠라','大井':'오이','船橋':'후나바시',
+ '盛岡':'모리오카','佐賀':'사가','ロンシャン':'롱샹','サンタアニタパーク':'산타 아니타 파크'
 };
 function localizeRaceField(value){
  return SCHEDULE_RACE_TRANSLATIONS[value]||value||'';
@@ -215,81 +219,27 @@ function showScheduleRaceInfo(goal,year,i,selected){
 function renderScheduleGoalStatus(){
  const status=$('schedule-data-status');
  const character=findScheduleCharacter();
- if(!scheduleDb.characters.length)status.textContent='DB를 불러오지 못했습니다. 직접 기록은 계속 사용할 수 있습니다.';
- else if(character)status.textContent='목표 '+character.goals.length+'개 · 캐릭터 '+scheduleDb.characters.length+'종 / 레이스 일정 '+scheduleDb.races.length+'건 · 데이터 출처: GameTora 기반 공개 자료';
- else status.textContent='캐릭터 선택 시 목표를 자동 표시합니다. 등록 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건';
-}
-const SCHEDULE_EXTERNAL={
- uma:'https://raw.githubusercontent.com/daftuyda/UmaTools/main/assets/uma_data.json',
- races:'https://raw.githubusercontent.com/daftuyda/UmaTools/main/assets/races.json'
-};
-function convertExternalCharacters(raw,local){
- const known=new Map(local.map(c=>[c.en.toLowerCase().replace(/[^a-z0-9]/g,''),c.ko]));
- const seen=new Set();
- return raw.filter(x=>x&&x.UmaId&&x.UmaName&&Array.isArray(x.UmaObjectives)).map(x=>{
-  const id='uma-'+String(x.UmaId);
-  const en=x.UmaName;
-  const ko=known.get(en.toLowerCase().replace(/[^a-z0-9]/g,''))||en;
-  const goals=x.UmaObjectives.map(g=>{
-   const t=Number(g.Turn);
-   if(!Number.isInteger(t)||t<1||t>72)return null;
-   const n=String(g.ObjectiveName||'').trim();
-   return {t,c:false,o:[{n,g:'',s:'',d:String(g.ObjectiveCondition||''),f:0}]};
-  }).filter(Boolean);
-  return {id,en,ko,variant:x.UmaNickname||'',goals};
- }).filter(c=>{if(seen.has(c.id))return false;seen.add(c.id);return true});
-}
-function convertExternalRaces(raw){
- const races=[];
- const mapGrade={100:'G1',200:'G2',300:'G3',400:'OP',500:'Pre-OP'};
- for(const item of raw){
-  if(!item||!Array.isArray(item.instances))continue;
-  for(const inst of item.instances){
-   const year=Number(inst.year),month=Number(inst.month),half=Number(inst.half);
-   if(![1,2,3].includes(year)||month<1||month>12||![1,2].includes(half))continue;
-   const t=(year-1)*24+(month-1)*2+half;
-   races.push({n:String(item.name_en||item.name||''),t,g:mapGrade[Number(item.grade)]||'',track:String(item.venue||''),surface:Number(item.terrain)===1?'잔디':Number(item.terrain)===2?'더트':'',m:Number(item.distance)||0,dir:'',f:0});
-  }
+ if(!scheduleDb.characters.length){
+  status.textContent='일본 서버 DB를 불러오지 못했습니다. 직접 스케줄 기록은 계속 사용할 수 있습니다.';
+ }else if(character){
+  status.textContent='일본 서버 DB · 목표 '+character.goals.length+'개 · 육성 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건';
+ }else{
+  status.textContent='일본 서버 기준 · 육성 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건 · 캐릭터 선택 시 목표 자동 표시';
  }
- return races;
-}
-async function fetchScheduleJson(url){
- const controller=new AbortController();
- const timeout=setTimeout(()=>controller.abort(),9000);
- try{
-  const response=await fetch(url,{signal:controller.signal,cache:'no-store'});
-  if(!response.ok)throw Error('HTTP '+response.status);
-  return await response.json();
- }finally{clearTimeout(timeout)}
 }
 async function loadScheduleDatabase(){
  try{
-  const response=await fetch('./data/schedule_gametora.json',{cache:'no-store'});
-  if(!response.ok)throw new Error('HTTP '+response.status);
-  const raw=await response.json();
-  if(!Array.isArray(raw.characters)||!Array.isArray(raw.races))throw Error('schedule data format');
-  scheduleDb={characters:raw.characters,races:raw.races};
-  renderSchedule();
- }catch(err){console.warn('기본 스케줄 DB 읽기 실패',err);renderScheduleGoalStatus()}
- // The public GameTora-derived dataset extends the bundled fallback.
- // Never erase local data if external hosting or CORS is unavailable.
- const [uma,races]=await Promise.allSettled([
-  fetchScheduleJson(SCHEDULE_EXTERNAL.uma),
-  fetchScheduleJson(SCHEDULE_EXTERNAL.races)
- ]);
- if(uma.status==='fulfilled'&&Array.isArray(uma.value)){
-  const converted=convertExternalCharacters(uma.value,scheduleDb.characters);
-  if(converted.length>scheduleDb.characters.length/2){
-   const ids=new Set(converted.map(c=>c.en.toLowerCase()));
-   scheduleDb.characters=[...converted,...scheduleDb.characters.filter(c=>!ids.has(c.en.toLowerCase()))];
-  }
+  const response=await fetch('./data/schedule_jp.json',{cache:'no-store'});
+  if(!response.ok)throw Error('일본 서버 DB HTTP '+response.status);
+  const data=await response.json();
+  if(!Array.isArray(data.characters)||data.characters.length<200||
+     !Array.isArray(data.races)||data.races.length<300)throw Error('일본 서버 DB 형식 또는 데이터 개수 오류');
+  scheduleDb={characters:data.characters,races:data.races};
+ }catch(err){
+  // Never substitute global-only objectives when JP loading fails.
+  console.error('일본 서버 스케줄 DB 불러오기 실패',err);
+  scheduleDb={characters:[],races:[]};
  }
- if(races.status==='fulfilled'&&Array.isArray(races.value)){
-  const converted=convertExternalRaces(races.value);
-  if(converted.length>100)scheduleDb.races=converted;
- }
- if(uma.status==='rejected')console.warn('확장 캐릭터 DB 사용 불가: 기본 DB 유지',uma.reason);
- if(races.status==='rejected')console.warn('확장 레이스 DB 사용 불가: 기본 DB 유지',races.reason);
  renderSchedule();
 }
 
