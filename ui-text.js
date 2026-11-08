@@ -5,7 +5,9 @@
 const UI_TEXT=Object.freeze({
   'onsen.heading':'온천 시나리오',
   'onsen.digHint':'굴착할 온천 선택 (하나만 선택)',
-  'onsen.ticketLabel':'♨ 온천권 사용',
+  'onsen.ticketLabel':'온천권 사용',
+  'onsen.ticketNormal':'일반',
+  'onsen.ticketSuper':'초회복',
   'onsen.ticketBlocked':'이미 온천권 효과가 적용 중입니다.',
   'onsen.ticketActive':'온천권 사용: 이 턴과 다음 턴에 효과 적용',
   'onsen.ticketBlockedTitle':'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.',

@@ -161,7 +161,9 @@ function applyUiTexts(){
  const bindings={
   'onsen.heading':'.schedule-onsen-panel h4',
   'onsen.digHint':'.schedule-onsen-subheading',
-  'onsen.ticketLabel':'#schedule-onsen-ticket',
+  'onsen.ticketLabel':'#schedule-onsen-ticket-label',
+  'onsen.ticketNormal':'#schedule-onsen-ticket',
+  'onsen.ticketSuper':'#schedule-onsen-ticket-super',
   'race.selectHeading':'label[for="schedule-race-select"]',
   'plans.help':'.schedule-plans-help'
  };
@@ -298,7 +300,9 @@ function scheduleOnsenUnlocked(id,year,i){
  const dig=SCHEDULE_ONSEN_DIGS[id];
  return !dig||scheduleGlobalTurn(year,i)>=dig.unlocksAt;
 }
-const SCHEDULE_ONSEN_EVENTS={...SCHEDULE_ONSEN_DIGS,ticket:{label:'온천권 사용',symbol:'♨'}};
+const SCHEDULE_ONSEN_EVENTS={...SCHEDULE_ONSEN_DIGS,ticket:{label:'온천권 일반',symbol:'♨'},ticketSuper:{label:'온천권 초회복',symbol:'✦♨'}};
+const SCHEDULE_ONSEN_TICKET_IDS=['ticket','ticketSuper'];
+function scheduleHasTicket(events){return Array.isArray(events)&&events.some(id=>SCHEDULE_ONSEN_TICKET_IDS.includes(id));}
 const SCHEDULE_ONSEN_EVENT_IDS=Object.keys(SCHEDULE_ONSEN_EVENTS);
 function scheduleOnsenIconHtml(id){
  const info=SCHEDULE_ONSEN_DIGS[id];
@@ -315,21 +319,31 @@ function scheduleOnsenTicketBlocked(year,i,events=scheduleCurrent.scenarioEvents
  if(index<=0)return false;
  const prevYear=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
  const previous=events?.[scheduleTurnEventKey(prevYear,(index-1)%24)];
- return Array.isArray(previous)&&previous.includes('ticket');
+ return scheduleHasTicket(previous);
 }
-function scheduleOnsenTicketTurn(year,i){
- // The second active turn cannot start another ticket, including across year boundaries.
- if(scheduleOnsenTicketBlocked(year,i))return 2;
- return scheduleOnsenEvents(year,i).includes('ticket')?1:0;
+function scheduleOnsenTicketStatus(year,i){
+ const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
+ if(index<0)return {turn:0,superRecovery:false};
+ if(scheduleOnsenTicketBlocked(year,i)){
+  const py=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
+  return {turn:2,superRecovery:scheduleOnsenEvents(py,(index-1)%24).includes('ticketSuper')};
+ }
+ const events=scheduleOnsenEvents(year,i);
+ if(events.includes('ticketSuper'))return {turn:1,superRecovery:true};
+ return {turn:events.includes('ticket')?1:0,superRecovery:false};
 }
+function scheduleOnsenTicketTurn(year,i){return scheduleOnsenTicketStatus(year,i).turn;}
 function scheduleOnsenBadges(year,i){
  if(scheduleCurrent.scenario!=='onsen')return '';
  const events=scheduleOnsenEvents(year,i);
  const badges=[];
  const dig=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
  if(dig)badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+'">'+scheduleOnsenIconHtml(dig)+'</span>');
- const ticket=scheduleOnsenTicketTurn(year,i);
- if(ticket)badges.push('<span class="schedule-onsen-badge schedule-onsen-ticket" title="'+(ticket===1?'온천권 사용 · 효과 1턴째':'온천 효과 2턴째')+'">♨'+ticket+'</span>');
+ const ticket=scheduleOnsenTicketStatus(year,i);
+ if(ticket.turn){
+  const label=(ticket.turn===1?'온천권 사용 · 효과 1턴째':'온천 효과 2턴째')+(ticket.superRecovery?' · 초회복':'');
+  badges.push('<span class="schedule-onsen-badge schedule-onsen-ticket '+(ticket.superRecovery?'super-recovery':'')+'" title="'+label+'">'+(ticket.superRecovery?'✦':'')+'♨'+ticket.turn+'</span>');
+ }
  return badges.length?'<span class="schedule-onsen-badges" aria-hidden="true">'+badges.join('')+'</span>':'';
 }
 // Legacy actions remain visible in existing records but are no longer choices for new turns.
@@ -359,6 +373,21 @@ function normalizeSchedule(raw){
    const eventTurn=Number(eventTurnText);
    const valid=[...new Set(events.filter(id=>typeof id==='string'&&SCHEDULE_ONSEN_EVENT_IDS.includes(id)&&scheduleOnsenUnlocked(id,eventYear,eventTurn)))];
    if(valid.length)result.scenarioEvents[key]=valid;
+  }
+ }
+ // The second turn of a ticket effect cannot activate another ticket.
+ for(const year of SCHEDULE_YEAR_ORDER){
+  for(let i=0;i<24;i++){
+   const key=scheduleTurnEventKey(year,i);
+   let events=result.scenarioEvents[key];
+   if(!events)continue;
+   const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
+   const py=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
+   const previous=index>0?result.scenarioEvents[scheduleTurnEventKey(py,(index-1)%24)]:null;
+   if(scheduleHasTicket(previous))events=events.filter(id=>!SCHEDULE_ONSEN_TICKET_IDS.includes(id));
+   if(events.includes('ticketSuper'))events=events.filter(id=>id!=='ticket');
+   if(events.length)result.scenarioEvents[key]=events;
+   else delete result.scenarioEvents[key];
   }
  }
  if(raw.selectedRaces&&typeof raw.selectedRaces==='object'){
@@ -551,12 +580,15 @@ function renderScheduleOnsenControls(year,i){
   if(!scheduleOnsenUnlocked(id,year,i))return '';
   return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected?'selected':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+'" title="'+entry.label+'" aria-pressed="'+selected+'">'+scheduleOnsenIconHtml(id)+'</button>';
  }).join('');
- const ticketButton=$('schedule-onsen-ticket');
  const blocked=scheduleOnsenTicketBlocked(year,i);
- ticketButton.disabled=blocked;
- ticketButton.classList.toggle('selected',!blocked&&events.includes('ticket'));
- ticketButton.setAttribute('aria-pressed',String(!blocked&&events.includes('ticket')));
- ticketButton.title=blocked?uiText('onsen.ticketBlockedTitle'):uiText('onsen.ticketLabel');
+ for(const id of SCHEDULE_ONSEN_TICKET_IDS){
+  const button=$(id==='ticket'?'schedule-onsen-ticket':'schedule-onsen-ticket-super');
+  const selected=!blocked&&events.includes(id);
+  button.disabled=blocked;
+  button.classList.toggle('selected',selected);
+  button.setAttribute('aria-pressed',String(selected));
+  button.title=blocked?uiText('onsen.ticketBlockedTitle'):uiText(id==='ticket'?'onsen.ticketNormal':'onsen.ticketSuper');
+ }
  $('schedule-onsen-status').textContent=blocked?uiText('onsen.ticketBlocked'):ticket===1?uiText('onsen.ticketActive'):'';
  $('schedule-onsen-status').hidden=!$('schedule-onsen-status').textContent;
 }
@@ -567,12 +599,12 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year;
  if(!scheduleOnsenUnlocked(id,year,scheduleTurn))return;
- if(id==='ticket'&&scheduleOnsenTicketBlocked(year,scheduleTurn))return;
+ if(SCHEDULE_ONSEN_TICKET_IDS.includes(id)&&scheduleOnsenTicketBlocked(year,scheduleTurn))return;
  const key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
  if(!scheduleCurrent.scenarioEvents||typeof scheduleCurrent.scenarioEvents!=='object')scheduleCurrent.scenarioEvents={};
  // Exactly one excavation type per turn; ticket is independent.
- const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]:[...current,id];
+ const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]:SCHEDULE_ONSEN_TICKET_IDS.includes(id)?[...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id]:[...current,id];
  if(next.length)scheduleCurrent.scenarioEvents[key]=next;
  else delete scheduleCurrent.scenarioEvents[key];
  saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,scheduleTurn);
