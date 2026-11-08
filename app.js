@@ -220,7 +220,7 @@ function renderScheduleCharacterOptions(){
  selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
  for(const ch of scheduleDb.characters){
   const isSelected=(ch.id||ch.ko)===value;
-  const option=new Option((isSelected?'✓ ':'')+ch.ko,ch.id||ch.ko);
+  const option=new Option(ch.ko,ch.id||ch.ko);
   if(isSelected){option.classList.add('current-character');option.style.fontWeight='bold';}
   selector.add(option);
  }
