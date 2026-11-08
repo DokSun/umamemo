@@ -163,7 +163,11 @@ let scheduleDb={characters:[],races:[]};
 const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
 const SCHEDULE_YEAR_KO={junior:'주니어',classic:'클래식',senior:'시니어'};
 function scheduleGlobalTurn(year,halfMonthIndex){return SCHEDULE_YEAR_ORDER.indexOf(year)*24+halfMonthIndex+1}
-function findScheduleCharacter(){return scheduleDb.characters.find(c=>c.id===scheduleCurrent.character||c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character||c.legacyIds?.includes(scheduleCurrent.character))}
+function findScheduleCharacter(value=scheduleCurrent.character){return scheduleDb.characters.find(c=>c.id===value||c.ko===value||c.en===value||c.legacyIds?.includes(value))}
+function scheduleCharacterLabel(value){
+ if(!value)return '캐릭터 미지정';
+ return findScheduleCharacter(value)?.ko||(!/^uma-\d+$/.test(value)?value:'캐릭터 정보 불러오는 중');
+}
 function scheduleGoalAt(year,i){
  const character=findScheduleCharacter();
  if(!character)return null;
@@ -257,6 +261,7 @@ async function loadScheduleDatabase(){
   scheduleDb={characters:[],races:[]};
  }
  renderSchedule();
+ if($('schedule-plans-backdrop')&&!$('schedule-plans-backdrop').hidden)renderSchedulePlans();
 }
 
 const SCHEDULE_ACTIONS={
@@ -493,7 +498,7 @@ function renderSchedulePlans(){
   root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다.</p>';
   return;
  }
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleDb.characters.find(c=>c.id===p.schedule.character)?.ko||p.schedule.character||'캐릭터 미지정')}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
 }
 $('schedule-plans-open').addEventListener('click',()=>{renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
 $('schedule-plan-save').addEventListener('click',()=>{
