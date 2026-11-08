@@ -396,9 +396,8 @@ body.tool-drawer-open{overflow:hidden}
 }
 
 
-/* Schedule prototype: compact four-column calendar and named plan slots. */
+/* Schedule: compact four-column calendar and named plan slots. */
 #schedule-panel{gap:10px}
-.schedule-prototype-tag{font-size:11px;color:#a7b8cc;font-weight:normal}
 .schedule-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .schedule-plan-info{display:flex;flex-direction:column;gap:2px;min-width:0}
 .schedule-plan-info strong{font-size:14px}
@@ -649,3 +648,9 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-onsen-dig-badge{display:block;width:clamp(18px,2.1vw,26px);height:clamp(18px,2.1vw,26px);flex-shrink:0;border-radius:50%;background:white;border:1px solid #c9daed;overflow:hidden;box-shadow:0 1px 3px #000b}
 .schedule-onsen-dig-badge .schedule-onsen-icon{width:100%;height:100%}
 @media(max-width:520px){.schedule-onsen-dig-badge{width:18px;height:18px}}
+
+/* Place the excavation badge at the top-left; keep ticket duration at the bottom-right. */
+.schedule-cell-face .schedule-onsen-badges{position:absolute;inset:0;right:auto;bottom:auto;max-width:none;display:block;pointer-events:none;z-index:3}
+.schedule-cell-face .schedule-onsen-dig-badge{position:absolute;left:2px;top:2px;right:auto;bottom:auto}
+.schedule-cell-face .schedule-onsen-ticket{position:absolute;right:2px;bottom:2px;left:auto;top:auto}
+.schedule-onsen-ticket-choice:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(.65)}
