@@ -156,6 +156,108 @@ function initWorkspace(){
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 
+/* User-editable UI copy. Overrides are private to the current browser, not shared site-wide. */
+const UI_TEXT_KEY='uma-ui-text-overrides-v1';
+const UI_TEXT_DEFAULTS=Object.freeze({
+ 'onsen.heading':'온천 시나리오',
+ 'onsen.digHint':'굴착할 온천 선택 (하나만 선택)',
+ 'onsen.ticketLabel':'♨ 온천권 사용',
+ 'onsen.ticketBlocked':'이미 온천권 효과가 적용 중입니다.',
+ 'onsen.ticketActive':'온천권 사용: 이 턴과 다음 턴에 효과 적용',
+ 'onsen.ticketBlockedTitle':'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.',
+ 'race.selectHint':'레이스를 선택하면 상세 정보가 표시됩니다.',
+ 'race.selectHeading':'이번 턴 레이스 선택',
+ 'plans.help':'계획은 현재 스케줄과 별도로 보관됩니다. 불러오면 현재 스케줄만 교체됩니다.',
+ 'plans.empty':'저장된 계획이 없습니다.'
+});
+const UI_TEXT_LABELS={
+ 'onsen.heading':'온천 · 제목',
+ 'onsen.digHint':'온천 · 굴착 안내',
+ 'onsen.ticketLabel':'온천 · 온천권 버튼',
+ 'onsen.ticketBlocked':'온천 · 사용 불가 안내',
+ 'onsen.ticketActive':'온천 · 사용 직후 안내',
+ 'onsen.ticketBlockedTitle':'온천 · 사용 불가 툴팁',
+ 'race.selectHint':'레이스 · 선택 전 안내',
+ 'race.selectHeading':'레이스 · 선택 항목 제목',
+ 'plans.help':'계획 관리 · 설명',
+ 'plans.empty':'계획 관리 · 비어 있을 때 안내'
+};
+function readUiTextOverrides(){
+ try{
+  const obj=JSON.parse(localStorage.getItem(UI_TEXT_KEY));
+  if(!obj||typeof obj!=='object'||Array.isArray(obj))return {};
+  return Object.fromEntries(Object.entries(obj).filter(([key,value])=>Object.hasOwn(UI_TEXT_DEFAULTS,key)&&typeof value==='string').map(([key,value])=>[key,value.slice(0,500)]));
+ }catch(e){console.warn('UI 문구 설정을 불러오지 못했습니다',e);return {}}
+}
+let uiTextOverrides=readUiTextOverrides();
+function uiText(key){return Object.hasOwn(uiTextOverrides,key)?uiTextOverrides[key]:UI_TEXT_DEFAULTS[key]}
+function applyUiTexts(){
+ const bindings={
+  'onsen.heading':'.schedule-onsen-panel h4',
+  'onsen.digHint':'.schedule-onsen-subheading',
+  'onsen.ticketLabel':'#schedule-onsen-ticket',
+  'race.selectHeading':'label[for="schedule-race-select"]',
+  'plans.help':'.schedule-plans-help'
+ };
+ for(const [key,selector] of Object.entries(bindings)){
+  const node=document.querySelector(selector);
+  if(node)node.textContent=uiText(key);
+ }
+ if(typeof scheduleTurn!=='undefined'&&scheduleTurn!==null&&scheduleCurrent?.scenario==='onsen')renderScheduleOnsenControls(scheduleCurrent.year,scheduleTurn);
+ if($('schedule-race-select'))updateSelectedRaceDescription();
+ if($('schedule-plans-backdrop')&&!$('schedule-plans-backdrop').hidden)renderSchedulePlans();
+}
+function openUiTextEditor(){
+ const root=$('ui-text-fields');
+ root.replaceChildren(...Object.entries(UI_TEXT_DEFAULTS).map(([key])=>{
+  const row=document.createElement('label');
+  row.className='ui-text-field';
+  const name=document.createElement('span');name.textContent=UI_TEXT_LABELS[key]||key;
+  const input=document.createElement('textarea');input.rows=2;input.maxLength=500;input.dataset.uiTextKey=key;input.value=uiText(key);
+  row.append(name,input);
+  return row;
+ }));
+ toggleToolMenu(false);
+ $('ui-text-backdrop').hidden=false;
+ document.body.classList.add('schedule-dialog-open');
+ root.querySelector('textarea')?.focus();
+}
+function closeUiTextEditor(){
+ $('ui-text-backdrop').hidden=true;
+ document.body.classList.remove('schedule-dialog-open');
+}
+$('ui-text-open').addEventListener('click',openUiTextEditor);
+$('ui-text-close').addEventListener('click',closeUiTextEditor);
+$('ui-text-backdrop').addEventListener('click',e=>{if(e.target===$('ui-text-backdrop'))closeUiTextEditor()});
+$('ui-text-save').addEventListener('click',()=>{
+ const next={};
+ for(const field of $('ui-text-fields').querySelectorAll('[data-ui-text-key]')){
+  const key=field.dataset.uiTextKey;
+  if(!Object.hasOwn(UI_TEXT_DEFAULTS,key))continue;
+  const value=field.value.slice(0,500);
+  if(value!==UI_TEXT_DEFAULTS[key])next[key]=value;
+ }
+ try{localStorage.setItem(UI_TEXT_KEY,JSON.stringify(next))}
+ catch(e){toast('문구 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.');return}
+ uiTextOverrides=next;
+ closeUiTextEditor();
+ applyUiTexts();
+ toast('문구를 저장했습니다.');
+});
+$('ui-text-reset').addEventListener('click',()=>{
+ if(!confirm('편집한 UI 문구를 모두 기본 문구로 되돌릴까요?'))return;
+ try{localStorage.removeItem(UI_TEXT_KEY)}
+ catch(e){toast('문구 초기화에 실패했습니다.');return}
+ uiTextOverrides={};
+ closeUiTextEditor();
+ applyUiTexts();
+ toast('기본 문구로 되돌렸습니다.');
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&!$('ui-text-backdrop').hidden){e.preventDefault();closeUiTextEditor()}
+});
+
+
 // Schedule: 24 turns per year, reusable plans and expandable scenario actions.
 // Character goals are fixed using the local career database.
 const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
@@ -539,8 +641,8 @@ function renderScheduleOnsenControls(year,i){
  ticketButton.disabled=blocked;
  ticketButton.classList.toggle('selected',!blocked&&events.includes('ticket'));
  ticketButton.setAttribute('aria-pressed',String(!blocked&&events.includes('ticket')));
- ticketButton.title=blocked?'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.':'온천권 사용';
- $('schedule-onsen-status').textContent=blocked?'이미 온천권 효과가 적용 중입니다.':ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':'';
+ ticketButton.title=blocked?uiText('onsen.ticketBlockedTitle'):uiText('onsen.ticketLabel');
+ $('schedule-onsen-status').textContent=blocked?uiText('onsen.ticketBlocked'):ticket===1?uiText('onsen.ticketActive'):'';
  $('schedule-onsen-status').hidden=!$('schedule-onsen-status').textContent;
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
@@ -568,7 +670,7 @@ $('schedule-scenario').addEventListener('change',e=>{
 function updateSelectedRaceDescription(){
  const index=$('schedule-race-select').value;
  const race=scheduleTurn===null?null:scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number(index)];
- $('schedule-race-description').textContent=index===''?'레이스를 선택하면 상세 정보가 표시됩니다.':describeRace(race)+(race?.f?' · 필요 팬 '+race.f.toLocaleString():'');
+ $('schedule-race-description').textContent=index===''?uiText('race.selectHint'):describeRace(race)+(race?.f?' · 필요 팬 '+race.f.toLocaleString():'');
 }
 $('schedule-race-select').addEventListener('change',updateSelectedRaceDescription);
 $('schedule-race-apply').addEventListener('click',()=>{
@@ -595,7 +697,8 @@ $('schedule-action-clear').addEventListener('click',()=>{
 function renderSchedulePlans(){
  const root=$('schedule-plan-list');
  if(!schedulePlans.length){
-  root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다.</p>';
+  root.innerHTML='<p class="schedule-plans-empty"></p>';
+  root.querySelector('.schedule-plans-empty').textContent=uiText('plans.empty');
   return;
  }
  root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
@@ -878,6 +981,7 @@ $('slots').addEventListener('change',e=>{
 $('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 initWorkspace();
+applyUiTexts();
 renderSchedule();
 loadScheduleDatabase();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
