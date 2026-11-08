@@ -156,7 +156,7 @@ function initWorkspace(){
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 
-// Schedule prototype: 24 turns per year, reusable plans and expandable scenario actions.
+// Schedule: 24 turns per year, reusable plans and expandable scenario actions.
 // Character goals are fixed using the local career database.
 const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
 let scheduleDb={characters:[],races:[]};
@@ -295,14 +295,17 @@ function scheduleOnsenEvents(year,i){
  const value=scheduleCurrent.scenarioEvents?.[scheduleTurnEventKey(year,i)];
  return Array.isArray(value)?value.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_EVENTS,id)&&scheduleOnsenUnlocked(id,year,i)):[];
 }
-function scheduleOnsenTicketTurn(year,i){
+function scheduleOnsenTicketBlocked(year,i,events=scheduleCurrent.scenarioEvents){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
- if(index<0)return 0;
- const current=scheduleOnsenEvents(year,i).includes('ticket');
- if(current)return 1;
- if(index===0)return 0;
+ if(index<=0)return false;
  const prevYear=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
- return scheduleOnsenEvents(prevYear,(index-1)%24).includes('ticket')?2:0;
+ const previous=events?.[scheduleTurnEventKey(prevYear,(index-1)%24)];
+ return Array.isArray(previous)&&previous.includes('ticket');
+}
+function scheduleOnsenTicketTurn(year,i){
+ // The second active turn cannot start another ticket, including across year boundaries.
+ if(scheduleOnsenTicketBlocked(year,i))return 2;
+ return scheduleOnsenEvents(year,i).includes('ticket')?1:0;
 }
 function scheduleOnsenBadges(year,i){
  if(scheduleCurrent.scenario!=='onsen')return '';
@@ -531,9 +534,13 @@ function renderScheduleOnsenControls(year,i){
   if(!scheduleOnsenUnlocked(id,year,i))return '';
   return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected?'selected':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+'" title="'+entry.label+'" aria-pressed="'+selected+'">'+scheduleOnsenIconHtml(id)+'</button>';
  }).join('');
- $('schedule-onsen-ticket').classList.toggle('selected',events.includes('ticket'));
- $('schedule-onsen-ticket').setAttribute('aria-pressed',String(events.includes('ticket')));
- $('schedule-onsen-status').textContent=ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':ticket===2?'이전 턴에서 사용한 온천권 효과가 유지되는 턴입니다.':'온천 종류 한 가지와 온천권 사용을 같은 턴에 기록할 수 있습니다.';
+ const ticketButton=$('schedule-onsen-ticket');
+ const blocked=scheduleOnsenTicketBlocked(year,i);
+ ticketButton.disabled=blocked;
+ ticketButton.classList.toggle('selected',!blocked&&events.includes('ticket'));
+ ticketButton.setAttribute('aria-pressed',String(!blocked&&events.includes('ticket')));
+ ticketButton.title=blocked?'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.':'온천권 사용';
+ $('schedule-onsen-status').textContent=blocked?'이전 턴의 온천권 효과가 지속되는 2번째 턴입니다. 새 온천권을 사용할 수 없습니다.':ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':'온천 종류 한 가지와 온천권 사용을 같은 턴에 기록할 수 있습니다.';
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
@@ -542,6 +549,7 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year;
  if(!scheduleOnsenUnlocked(id,year,scheduleTurn))return;
+ if(id==='ticket'&&scheduleOnsenTicketBlocked(year,scheduleTurn))return;
  const key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
  if(!scheduleCurrent.scenarioEvents||typeof scheduleCurrent.scenarioEvents!=='object')scheduleCurrent.scenarioEvents={};
