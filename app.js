@@ -262,8 +262,7 @@ const SCHEDULE_ACTIONS={
  wisdom:{label:'지능 훈련',typeIcon:'wisdom'},
  rest:{label:'휴식',icon:'💤'},
  outing:{label:'외출',typeIcon:'friend'},
- race:{label:'레이스',icon:'🏁'},
- target:{label:'목표 레이스',icon:'🎯'}
+ race:{label:'레이스',icon:'🏁'}
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
@@ -302,6 +301,8 @@ function normalizeSchedule(raw){
    const action=migrated[i];
    if(Object.hasOwn(allowed,action))return action;
    if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return action;
+   // Old manually assigned goals no longer exist as selectable actions.
+   if(action==='target')return null;
    return null;
   });
  }
