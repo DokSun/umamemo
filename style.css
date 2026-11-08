@@ -519,3 +519,23 @@ body.schedule-dialog-open{overflow:hidden}
  .schedule-cell-face .type-icon-wisdom{background-position:-120px 0}
  .schedule-cell-face .type-icon-friend{background-position:-150px 0}
 }
+
+
+/* GameTora-derived character goals and scheduled race detail UI. */
+#schedule-character{cursor:pointer}
+.schedule-cell-face{position:relative}
+.schedule-cell.has-goal .schedule-cell-face{border-color:#d9ac50;box-shadow:0 0 0 1px #c29644 inset}
+.schedule-goal-marker{
+ position:absolute;right:2px;top:2px;z-index:1;
+ font-size:9px;line-height:1.1;background:#b78125;color:#fff;
+ padding:2px 3px;border-radius:3px;white-space:nowrap;
+}
+.schedule-cell-race{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:#bce5f6;line-height:1.1}
+.schedule-goal-detail{padding:9px 10px;margin-bottom:10px;background:#283b55;border-left:3px solid #cf9f40;border-radius:5px;font-size:12px;line-height:1.5}
+.schedule-goal-detail[hidden],.schedule-race-picker[hidden],.schedule-race-info[hidden]{display:none!important}
+.schedule-race-picker{display:flex;flex-direction:column;gap:7px;padding:12px;margin:10px 0;background:#18283d;border:1px solid #465b76;border-radius:8px}
+.schedule-race-picker label{font-size:13px;font-weight:650}
+.schedule-race-picker select{width:100%;min-width:0;min-height:38px}
+.schedule-race-description{font-size:12px;color:#c4d6e9;line-height:1.5}
+.schedule-race-picker button{min-height:36px}
+.schedule-race-info{font-size:12px;color:#ecd7a2;line-height:1.5}
