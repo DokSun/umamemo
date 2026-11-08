@@ -27,7 +27,9 @@ const TOOLS={
  counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
   reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
-  reset(){state.scenario='';$('scenario').value='';save()}}
+  reset(){state.scenario='';$('scenario').value='';save()}},
+ schedule:{name:'스케줄표',scope:'session',element:'schedule-panel',
+  reset(){scheduleCurrent=emptySchedule();saveScheduleCurrent();renderSchedule()}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -47,24 +49,18 @@ function saveLayout(){try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout)
 function visibleToolIds(){return layout.mode==='single'?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
 function renderResetActions(){
  const ids=visibleToolIds();
- const allSession=ids.length>1&&ids.every(id=>TOOLS[id].scope==='session');
+ const sessionIds=ids.filter(id=>TOOLS[id].scope==='session');
  const primary=$('reset'),secondary=$('secondary-reset');
  const counterFooter=$('counter-reset-footer'),memoFooter=$('memo-reset-footer');
- if(allSession){
-  // A shared session reset appears once, at the bottom of the counter panel.
-  primary.textContent='육성 기록 통합 초기화';
-  primary.dataset.targets=ids.join(',');
-  counterFooter.hidden=false;
-  memoFooter.hidden=true;
- }else{
-  // Reset buttons belong to their own tool panels, including standalone mode.
-  primary.textContent=TOOLS.counter.name+' 초기화';
-  primary.dataset.targets='counter';
-  counterFooter.hidden=!ids.includes('counter');
-  secondary.textContent=TOOLS.memo.name+' 초기화';
-  secondary.dataset.targets='memo';
-  memoFooter.hidden=!ids.includes('memo');
- }
+ const scheduleFooter=$('schedule-reset-footer');
+ const unified=ids.length>1&&sessionIds.length===ids.length;
+ primary.textContent=unified?'육성 기록 통합 초기화':TOOLS.counter.name+' 초기화';
+ primary.dataset.targets=unified?ids.join(','):'counter';
+ counterFooter.hidden=!ids.includes('counter');
+ memoFooter.hidden=!ids.includes('memo');
+ secondary.dataset.targets='memo';
+ scheduleFooter.hidden=!ids.includes('schedule')||unified;
+ $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
@@ -91,7 +87,8 @@ function resetTargets(button){
  const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
  if(!ids.length)return;
  const desc=ids.length===1?TOOLS[ids[0]].name+'의 기록을':'현재 표시된 육성 기록을 모두';
- if((ids.length!==1||ids[0]!=='counter'||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'))return;
+ const sessionReset=ids.every(id=>TOOLS[id].scope==='session');
+ if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'))return;
  ids.forEach(id=>TOOLS[id].reset());
  toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
@@ -152,11 +149,190 @@ function initWorkspace(){
  });
  $('reset').addEventListener('click',()=>resetTargets($('reset')));
  $('secondary-reset').addEventListener('click',()=>resetTargets($('secondary-reset')));
+ $('schedule-reset').addEventListener('click',()=>resetTargets($('schedule-reset')));
  applyLayout();
 }
 
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
+
+// Schedule prototype: 66 half-month turns, independent working copy and reusable plans.
+// Goal races remain metadata-only until a verified character objective DB is connected.
+const SCHEDULE_YEARS={junior:4,classic:1,senior:1};
+const SCHEDULE_ACTIONS={
+ race:{label:'레이스',icon:'🏁'},target:{label:'목표 레이스',icon:'🏆'},
+ train:{label:'훈련',icon:'💪'},rest:{label:'휴식',icon:'💤'},
+ outing:{label:'외출',icon:'🚶'},clinic:{label:'보건실',icon:'🏥'},
+ other:{label:'기타',icon:'📝'}
+};
+function scheduleKey(kind){return 'uma-schedule-'+kind+'-v1-'+serverMode}
+function scheduleSlots(year){return (13-SCHEDULE_YEARS[year])*2}
+function emptySchedule(){
+ return {character:'',year:'junior',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)]))};
+}
+function normalizeSchedule(raw){
+ const result=emptySchedule();
+ if(!raw||typeof raw!=='object')return result;
+ result.character=typeof raw.character==='string'?raw.character.slice(0,60):'';
+ result.year=Object.hasOwn(SCHEDULE_YEARS,raw.year)?raw.year:'junior';
+ for(const year of Object.keys(SCHEDULE_YEARS)){
+  const entries=raw.turns?.[year];
+  if(!Array.isArray(entries))continue;
+  result.turns[year]=Array.from({length:scheduleSlots(year)},(_,i)=>Object.hasOwn(SCHEDULE_ACTIONS,entries[i])?entries[i]:null);
+ }
+ return result;
+}
+function readScheduleCurrent(){
+ try{return normalizeSchedule(JSON.parse(localStorage.getItem(scheduleKey('current'))))}
+ catch(e){console.warn('스케줄표 불러오기 실패',e);return emptySchedule()}
+}
+function readSchedulePlans(){
+ try{
+  const data=JSON.parse(localStorage.getItem(scheduleKey('plans')));
+  if(!Array.isArray(data))return [];
+  return data.filter(p=>p&&typeof p.name==='string'&&p.schedule).slice(0,50)
+   .map(p=>({id:String(p.id),name:p.name.slice(0,80),schedule:normalizeSchedule(p.schedule)}));
+ }catch(e){console.warn('저장된 계획 불러오기 실패',e);return []}
+}
+let scheduleCurrent=readScheduleCurrent();
+let schedulePlans=readSchedulePlans();
+let scheduleTurn=null;
+function saveScheduleCurrent(){
+ try{localStorage.setItem(scheduleKey('current'),JSON.stringify(scheduleCurrent))}
+ catch(e){toast('스케줄 저장 실패: 저장 공간을 확인해 주세요')}
+}
+function saveSchedulePlans(){
+ try{localStorage.setItem(scheduleKey('plans'),JSON.stringify(schedulePlans));return true}
+ catch(e){toast('계획 저장 실패: 저장 공간을 확인해 주세요');return false}
+}
+function renderSchedule(){
+ if(!$('schedule-grid'))return;
+ const year=scheduleCurrent.year;
+ $('schedule-character').value=scheduleCurrent.character;
+ $('schedule-plan-caption').textContent=scheduleCurrent.character||'자유 편집';
+ $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
+  const active=btn.dataset.scheduleYear===year;
+  btn.classList.toggle('active',active);
+  btn.setAttribute('aria-selected',String(active));
+ });
+ const start=SCHEDULE_YEARS[year];
+ const entries=scheduleCurrent.turns[year];
+ $('schedule-grid').innerHTML=entries.map((action,i)=>{
+  const month=start+Math.floor(i/2),half=i%2===0?'전반':'후반';
+  const symbol=action?SCHEDULE_ACTIONS[action].icon:'+';
+  const label=action?SCHEDULE_ACTIONS[action].label:'행동 추가';
+  return `<button type="button" class="schedule-cell ${action?'filled':''}" data-schedule-turn="${i}" aria-label="${month}월 ${half}: ${label}"><span class="schedule-cell-face" aria-hidden="true">${symbol}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+ }).join('');
+}
+function closeScheduleDialog(){
+ $('schedule-action-backdrop').hidden=true;
+ $('schedule-plans-backdrop').hidden=true;
+ scheduleTurn=null;
+ document.body.classList.remove('schedule-dialog-open');
+}
+function openScheduleDialog(which){
+ const target=$(which);
+ target.hidden=false;
+ document.body.classList.add('schedule-dialog-open');
+ target.querySelector('button')?.focus();
+}
+$('schedule-character').addEventListener('input',e=>{
+ scheduleCurrent.character=e.target.value.slice(0,60);
+ saveScheduleCurrent();
+ $('schedule-plan-caption').textContent=scheduleCurrent.character||'자유 편집';
+});
+$('schedule-panel').querySelector('.schedule-year-tabs').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-schedule-year]');
+ if(!btn)return;
+ scheduleCurrent.year=btn.dataset.scheduleYear;
+ saveScheduleCurrent();renderSchedule();
+});
+$('schedule-grid').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-schedule-turn]');
+ if(!btn)return;
+ scheduleTurn=Number(btn.dataset.scheduleTurn);
+ const month=SCHEDULE_YEARS[scheduleCurrent.year]+Math.floor(scheduleTurn/2);
+ $('schedule-action-title').textContent=month+'월 '+(scheduleTurn%2===0?'전반':'후반')+' · 행동 선택';
+ $('schedule-action-choices').replaceChildren(...Object.entries(SCHEDULE_ACTIONS).map(([key,action])=>{
+  const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
+  b.textContent=action.icon+' '+action.label;
+  if(scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]===key)b.classList.add('selected');
+  return b;
+ }));
+ openScheduleDialog('schedule-action-backdrop');
+});
+$('schedule-action-choices').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-schedule-action]');
+ if(!btn||scheduleTurn===null)return;
+ scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
+ saveScheduleCurrent();closeScheduleDialog();renderSchedule();
+});
+$('schedule-action-clear').addEventListener('click',()=>{
+ if(scheduleTurn===null)return;
+ scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=null;
+ saveScheduleCurrent();closeScheduleDialog();renderSchedule();
+});
+function renderSchedulePlans(){
+ const root=$('schedule-plan-list');
+ if(!schedulePlans.length){
+  root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다.</p>';
+  return;
+ }
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(p.schedule.character||'캐릭터 미지정')}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+}
+$('schedule-plans-open').addEventListener('click',()=>{renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
+$('schedule-plan-save').addEventListener('click',()=>{
+ const raw=prompt('저장할 계획의 이름을 입력하세요.');
+ if(raw===null)return;
+ const name=raw.trim().slice(0,80);
+ if(!name)return toast('계획 이름을 입력해 주세요');
+ if(schedulePlans.length>=50)return toast('계획은 최대 50개까지 저장할 수 있습니다');
+ const next={id:String(Date.now())+'-'+String(Math.random()).slice(2),name,schedule:normalizeSchedule(scheduleCurrent)};
+ schedulePlans.push(next);
+ if(!saveSchedulePlans()){schedulePlans.pop();return}
+ renderSchedulePlans();toast('계획을 저장했습니다');
+});
+$('schedule-plan-list').addEventListener('click',e=>{
+ const btn=e.target.closest('button');
+ if(!btn)return;
+ const match=Object.keys(btn.dataset).find(k=>k.startsWith('plan'));
+ if(!match)return;
+ const index=Number(btn.dataset[match]),entry=schedulePlans[index];
+ if(!entry)return;
+ if(match==='planLoad'){
+  if(!confirm('현재 스케줄을 '+entry.name+' 계획으로 교체할까요? 저장된 계획은 유지됩니다.'))return;
+  scheduleCurrent=normalizeSchedule(entry.schedule);
+  saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('계획을 불러왔습니다');
+ }else if(match==='planOverwrite'){
+  if(!confirm(entry.name+' 계획을 현재 스케줄로 덮어쓸까요?'))return;
+  const previous=entry.schedule;
+  entry.schedule=normalizeSchedule(scheduleCurrent);
+  if(!saveSchedulePlans()){entry.schedule=previous;return}
+  renderSchedulePlans();toast('계획을 덮어썼습니다');
+ }else if(match==='planRename'){
+  const raw=prompt('새 이름을 입력하세요.',entry.name);
+  if(raw===null||!raw.trim())return;
+  const previous=entry.name;entry.name=raw.trim().slice(0,80);
+  if(!saveSchedulePlans()){entry.name=previous;return}
+  renderSchedulePlans();
+ }else if(match==='planDelete'){
+  if(!confirm(entry.name+' 계획을 삭제할까요?'))return;
+  const removed=schedulePlans.splice(index,1);
+  if(!saveSchedulePlans()){schedulePlans.splice(index,0,removed[0]);return}
+  renderSchedulePlans();toast('계획을 삭제했습니다');
+ }
+});
+document.querySelectorAll('[data-schedule-close]').forEach(btn=>btn.addEventListener('click',closeScheduleDialog));
+['schedule-action-backdrop','schedule-plans-backdrop'].forEach(id=>{
+ $(id).addEventListener('click',e=>{if(e.target===$(id))closeScheduleDialog()});
+});
+document.addEventListener('keydown',e=>{
+ if(e.key==='Escape'&&(!$('schedule-action-backdrop').hidden||!$('schedule-plans-backdrop').hidden)){
+  e.preventDefault();closeScheduleDialog();
+ }
+});
+renderSchedule();
+
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>$('toast').style.display='none',3200)}
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function cardLabel(c){
@@ -172,7 +348,11 @@ function switchServer(next){
  KEY=next==='ko'?'uma-tracker-v1':'uma-tracker-v1-jp';
  try{localStorage.setItem(SERVER_KEY,next)}catch(err){console.warn('서버 선택 저장 실패',err)}
  state=readState();
+ scheduleCurrent=readScheduleCurrent();
+ schedulePlans=readSchedulePlans();
  $('scenario').value=state.scenario||'';
+ $('schedule-character').value=scheduleCurrent.character;
+ renderSchedule();
  render();
  toast(next==='ko'?'한국 서버 모드':'일본 서버 모드');
 }
