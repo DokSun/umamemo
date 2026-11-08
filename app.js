@@ -163,7 +163,7 @@ let scheduleDb={characters:[],races:[]};
 const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
 const SCHEDULE_YEAR_KO={junior:'주니어',classic:'클래식',senior:'시니어'};
 function scheduleGlobalTurn(year,halfMonthIndex){return SCHEDULE_YEAR_ORDER.indexOf(year)*24+halfMonthIndex+1}
-function findScheduleCharacter(){return scheduleDb.characters.find(c=>c.id===scheduleCurrent.character||c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character)}
+function findScheduleCharacter(){return scheduleDb.characters.find(c=>c.id===scheduleCurrent.character||c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character||c.legacyIds?.includes(scheduleCurrent.character))}
 function scheduleGoalAt(year,i){
  const character=findScheduleCharacter();
  if(!character)return null;
@@ -209,14 +209,12 @@ function scheduleGoalDetailHtml(goal){
 }
 function renderScheduleCharacterOptions(){
  const selector=$('schedule-character');
- const value=scheduleCurrent.character;
+ const selected=findScheduleCharacter();
+ const value=selected?.id||scheduleCurrent.character;
  selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
- for(const ch of scheduleDb.characters){
-  const suffix=ch.variantKo?' ['+ch.variantKo+']':ch.variant?' ['+ch.variant+' · 미번역]':'';
-  selector.add(new Option(ch.ko+suffix,ch.id||ch.ko));
- }
- if(value&&!scheduleDb.characters.some(ch=>ch.id===value||ch.ko===value||ch.en===value))selector.add(new Option(value+' (목표 정보 없음)',value));
- selector.value=scheduleDb.characters.find(ch=>ch.ko===value||ch.en===value)?.id||value;
+ for(const ch of scheduleDb.characters)selector.add(new Option(ch.ko,ch.id||ch.ko));
+ if(value&&!scheduleDb.characters.some(ch=>ch.id===value))selector.add(new Option(value+' (목표 정보 없음)',value));
+ selector.value=value;
 }
 function showScheduleRaceInfo(goal,year,i,selected){
  const info=$('schedule-race-info');
@@ -245,7 +243,7 @@ async function loadScheduleDatabase(){
   const response=await fetch('./data/schedule_jp.json',{cache:'no-store'});
   if(!response.ok)throw Error('일본 서버 DB HTTP '+response.status);
   const data=await response.json();
-  if(!Array.isArray(data.characters)||data.characters.length<200||
+  if(!Array.isArray(data.characters)||data.characters.length<100||
      !Array.isArray(data.races)||data.races.length<300)throw Error('일본 서버 DB 형식 또는 데이터 개수 오류');
   scheduleDb={characters:data.characters,races:data.races};
  }catch(err){
@@ -338,6 +336,20 @@ function scheduleActionIcon(action){
   return '<span class="type-icon type-icon-'+action.typeIcon+' schedule-type-icon" aria-hidden="true"></span>';
  return '<span class="schedule-emoji-icon" aria-hidden="true">'+escapeHTML(action.icon||'•')+'</span>';
 }
+// Race banner URLs follow the published Uma Guide race thumbnail convention.
+// A missing remote image gracefully reverts to the existing in-app race icon.
+function scheduleBannerHtml(raceId,action){
+ const id=Number(raceId);
+ if(!Number.isInteger(id)||id<=0||id>99999)return scheduleActionIcon(action);
+ return '<img class="schedule-race-banner" src="https://uma.guide/icon/race/thum_race_rt_000_'+String(id).padStart(4,'0')+'_00.webp" loading="lazy" referrerpolicy="no-referrer" alt="">'
+  +'<span class="schedule-banner-fallback" hidden>'+scheduleActionIcon(action)+'</span>';
+}
+$('schedule-grid').addEventListener('error',e=>{
+ if(!e.target?.classList?.contains('schedule-race-banner'))return;
+ e.target.hidden=true;
+ const backup=e.target.nextElementSibling;
+ if(backup)backup.hidden=false;
+},true);
 function renderSchedule(){
  if(!$('schedule-grid'))return;
  const activeYear=scheduleCurrent.year;
@@ -355,15 +367,18 @@ function renderSchedule(){
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
    const goal=scheduleGoalAt(year,i);
    const selection=scheduleCurrent.selectedRaces[year+'-'+i];
+   const selectedRace=action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
    const display=actions[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
    const seasonal=year==='junior'&&month>=4&&month<=6;
    const label=display?display.label:'행동 추가';
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const chosen=action==='race'&&selection?'<span class="schedule-cell-race">'+escapeHTML((scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&r.n===selection)||{}).ko||selection)+'</span>':'';
+   const target=goal?.o.find(o=>o.rid)||null;
+   const bannerRace=selectedRace?.rid||(!action||action==='target'||action==='race'?target?.rid:null);
+   const bannerAction=action==='race'?SCHEDULE_ACTIONS.race:SCHEDULE_ACTIONS.target;
+   const icon=bannerRace?scheduleBannerHtml(bannerRace,bannerAction):(display?scheduleActionIcon(display):(goal?scheduleActionIcon(SCHEDULE_ACTIONS.target):scheduleActionIcon(null)));
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
-   const goalSummary=goal?'<span class="schedule-cell-goal">'+escapeHTML(goal.o.map(scheduleGoalName).join(' / '))+'</span>':'';
-   const icon=display?scheduleActionIcon(display):(goal?scheduleActionIcon(SCHEDULE_ACTIONS.target):scheduleActionIcon(null));
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(label+goalTitle)}"><span class="schedule-cell-face">${icon}${mark}</span>${goalSummary}${chosen}<span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(label+goalTitle+raceTitle)}"><span class="schedule-cell-face">${icon}${mark}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
