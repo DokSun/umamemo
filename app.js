@@ -173,8 +173,11 @@ const SCHEDULE_ACTIONS={
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
 const SCHEDULE_SCENARIO_ACTIONS={basic:{}};
+// Legacy actions remain visible in existing records but are no longer choices for new turns.
 const LEGACY_SCHEDULE_ACTIONS={
- train:'power',clinic:null,other:null
+ train:{label:'훈련 (이전 기록)',icon:'💪'},
+ clinic:{label:'보건실 (이전 기록)',icon:'🏥'},
+ other:{label:'기타 (이전 기록)',icon:'📝'}
 };
 function scheduleAvailableActions(scenario='basic'){
  return {...SCHEDULE_ACTIONS,...(SCHEDULE_SCENARIO_ACTIONS[scenario]||{})};
@@ -200,7 +203,7 @@ function normalizeSchedule(raw){
   result.turns[year]=Array.from({length:24},(_,i)=>{
    const action=migrated[i];
    if(Object.hasOwn(allowed,action))return action;
-   if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return LEGACY_SCHEDULE_ACTIONS[action];
+   if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return action;
    return null;
   });
  }
@@ -244,7 +247,7 @@ function renderSchedule(){
  $('schedule-grid').innerHTML=entries.map((action,i)=>{
   const month=start+Math.floor(i/2),half=i%2===0?'전반':'후반';
   const actions=scheduleAvailableActions(scheduleCurrent.scenario);
-  const display=actions[action]||null;
+  const display=actions[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
   const symbol=display?display.icon:'+';
   const label=display?display.label:'행동 추가';
   const seasonal=year==='junior'&&month>=4&&month<=6;
