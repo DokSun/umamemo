@@ -515,7 +515,8 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-title').textContent=readOnly?'고정 목표 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반'):'행동 선택 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
- $('schedule-action-clear').hidden=readOnly;
+ // Goals are fixed, but their turn-free scenario actions must still be resettable.
+ $('schedule-action-clear').hidden=readOnly&&scheduleCurrent.scenario==='basic';
  if(readOnly){
   $('schedule-action-choices').replaceChildren();
   openScheduleDialog('schedule-action-backdrop');
@@ -602,9 +603,15 @@ $('schedule-action-choices').addEventListener('click',e=>{
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 $('schedule-action-clear').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn))return;
- scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=null;
- delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
+ if(scheduleTurn===null)return;
+ const year=scheduleCurrent.year;
+ const key=scheduleTurnEventKey(year,scheduleTurn);
+ // Keep the character's fixed goal. Clear all editable main and scenario actions.
+ if(!scheduleIsLockedGoal(year,scheduleTurn)){
+  scheduleCurrent.turns[year][scheduleTurn]=null;
+  delete scheduleCurrent.selectedRaces[key];
+ }
+ if(scheduleCurrent.scenarioEvents&&typeof scheduleCurrent.scenarioEvents==='object')delete scheduleCurrent.scenarioEvents[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 function renderSchedulePlans(){
