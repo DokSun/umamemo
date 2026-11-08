@@ -521,7 +521,7 @@ function renderScheduleOnsenControls(year,i){
  $('schedule-onsen-ticket').setAttribute('aria-pressed',String(events.includes('ticket')));
  $('schedule-onsen-status').textContent=ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':ticket===2?'이전 턴에서 사용한 온천권 효과가 유지되는 턴입니다.':'온천 종류 한 가지와 온천권 사용을 같은 턴에 기록할 수 있습니다.';
 }
-$('schedule-onsen-options').addEventListener('click',e=>{
+$('schedule-onsen-panel').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
  if(!button||scheduleTurn===null||scheduleCurrent.scenario!=='onsen')return;
  const id=button.dataset.onsenEvent;
