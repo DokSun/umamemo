@@ -173,9 +173,21 @@ function scheduleRacesAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  return scheduleDb.races.filter(r=>r.t===turn);
 }
+const SCHEDULE_RACE_TRANSLATIONS={
+ Turf:'잔디',Dirt:'더트',Left:'좌회전',Right:'우회전',Straight:'직선',
+ Sprint:'단거리',Mile:'마일',Medium:'중거리',Long:'장거리',
+ Tokyo:'도쿄',Kyoto:'교토',Nakayama:'나카야마',Hanshin:'한신',
+ Chukyo:'주쿄',Niigata:'니가타',Fukushima:'후쿠시마',
+ Sapporo:'삿포로',Hakodate:'하코다테',Kokura:'고쿠라',
+ Oi:'오이',Kawasaki:'가와사키',Funabashi:'후나바시',
+ Morioka:'모리오카',Nagoya:'나고야'
+};
+function localizeRaceField(value){
+ return SCHEDULE_RACE_TRANSLATIONS[value]||value||'';
+}
 function describeRace(r){
  if(!r)return '';
- return [r.g,r.track,r.surface,r.m?r.m+'m':'',r.dir].filter(Boolean).join(' · ');
+ return [r.g,localizeRaceField(r.track),localizeRaceField(r.surface),r.m?r.m+'m':'',localizeRaceField(r.dir)].filter(Boolean).join(' · ');
 }
 function renderScheduleCharacterOptions(){
  const selector=$('schedule-character');
