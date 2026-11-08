@@ -156,29 +156,53 @@ function initWorkspace(){
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 
-// Schedule prototype: 66 half-month turns, independent working copy and reusable plans.
-// Goal races remain metadata-only until a verified character objective DB is connected.
-const SCHEDULE_YEARS={junior:4,classic:1,senior:1};
+// Schedule prototype: 24 turns per year, reusable plans and expandable scenario actions.
+// Goals remain manual until a verified character goal-race database is available.
+const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
 const SCHEDULE_ACTIONS={
- race:{label:'레이스',icon:'🏁'},target:{label:'목표 레이스',icon:'🏆'},
- train:{label:'훈련',icon:'💪'},rest:{label:'휴식',icon:'💤'},
- outing:{label:'외출',icon:'🚶'},clinic:{label:'보건실',icon:'🏥'},
- other:{label:'기타',icon:'📝'}
+ speed:{label:'스피드 훈련',icon:'⚡'},
+ stamina:{label:'스태미나 훈련',icon:'❤️'},
+ power:{label:'파워 훈련',icon:'💪'},
+ guts:{label:'근성 훈련',icon:'🔥'},
+ wisdom:{label:'지능 훈련',icon:'🧠'},
+ rest:{label:'휴식',icon:'💤'},
+ outing:{label:'외출 (친구)',icon:'🤝'},
+ race:{label:'레이스',icon:'🏁'},
+ target:{label:'목표 레이스',icon:'🎯'}
 };
+// Each scenario may define its own extra actions in this registry later.
+// Entries are merged with the shared actions without replacing existing IDs.
+const SCHEDULE_SCENARIO_ACTIONS={basic:{}};
+const LEGACY_SCHEDULE_ACTIONS={
+ train:'power',clinic:null,other:null
+};
+function scheduleAvailableActions(scenario='basic'){
+ return {...SCHEDULE_ACTIONS,...(SCHEDULE_SCENARIO_ACTIONS[scenario]||{})};
+}
 function scheduleKey(kind){return 'uma-schedule-'+kind+'-v1-'+serverMode}
-function scheduleSlots(year){return (13-SCHEDULE_YEARS[year])*2}
+function scheduleSlots(year){return 24}
 function emptySchedule(){
- return {character:'',year:'junior',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)]))};
+ return {character:'',year:'junior',scenario:'basic',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)]))};
 }
 function normalizeSchedule(raw){
  const result=emptySchedule();
  if(!raw||typeof raw!=='object')return result;
  result.character=typeof raw.character==='string'?raw.character.slice(0,60):'';
  result.year=Object.hasOwn(SCHEDULE_YEARS,raw.year)?raw.year:'junior';
+ result.scenario=typeof raw.scenario==='string'&&Object.hasOwn(SCHEDULE_SCENARIO_ACTIONS,raw.scenario)?raw.scenario:'basic';
+ const allowed=scheduleAvailableActions(result.scenario);
  for(const year of Object.keys(SCHEDULE_YEARS)){
   const entries=raw.turns?.[year];
   if(!Array.isArray(entries))continue;
-  result.turns[year]=Array.from({length:scheduleSlots(year)},(_,i)=>Object.hasOwn(SCHEDULE_ACTIONS,entries[i])?entries[i]:null);
+  // Old junior schedules started at April (18 turns): shift to Jan-Dec,
+  // keeping saved April-December actions in their original calendar dates.
+  const migrated=year==='junior'&&entries.length===18?[...Array(6).fill(null),...entries]:entries;
+  result.turns[year]=Array.from({length:24},(_,i)=>{
+   const action=migrated[i];
+   if(Object.hasOwn(allowed,action))return action;
+   if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return LEGACY_SCHEDULE_ACTIONS[action];
+   return null;
+  });
  }
  return result;
 }
@@ -219,9 +243,12 @@ function renderSchedule(){
  const entries=scheduleCurrent.turns[year];
  $('schedule-grid').innerHTML=entries.map((action,i)=>{
   const month=start+Math.floor(i/2),half=i%2===0?'전반':'후반';
-  const symbol=action?SCHEDULE_ACTIONS[action].icon:'+';
-  const label=action?SCHEDULE_ACTIONS[action].label:'행동 추가';
-  return `<button type="button" class="schedule-cell ${action?'filled':''}" data-schedule-turn="${i}" aria-label="${month}월 ${half}: ${label}"><span class="schedule-cell-face" aria-hidden="true">${symbol}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+  const actions=scheduleAvailableActions(scheduleCurrent.scenario);
+  const display=actions[action]||null;
+  const symbol=display?display.icon:'+';
+  const label=display?display.label:'행동 추가';
+  const seasonal=year==='junior'&&month>=4&&month<=6;
+  return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''}" data-schedule-turn="${i}" aria-label="${month}월 ${half}: ${label}${seasonal?' (계절 설정 기간)':''}"><span class="schedule-cell-face" aria-hidden="true">${symbol}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
  }).join('');
 }
 function closeScheduleDialog(){
@@ -253,7 +280,7 @@ $('schedule-grid').addEventListener('click',e=>{
  scheduleTurn=Number(btn.dataset.scheduleTurn);
  const month=SCHEDULE_YEARS[scheduleCurrent.year]+Math.floor(scheduleTurn/2);
  $('schedule-action-title').textContent=month+'월 '+(scheduleTurn%2===0?'전반':'후반')+' · 행동 선택';
- $('schedule-action-choices').replaceChildren(...Object.entries(SCHEDULE_ACTIONS).map(([key,action])=>{
+ $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.textContent=action.icon+' '+action.label;
   if(scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]===key)b.classList.add('selected');
@@ -263,7 +290,7 @@ $('schedule-grid').addEventListener('click',e=>{
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null)return;
+ if(!btn||scheduleTurn===null||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
