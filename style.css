@@ -590,5 +590,6 @@ body.schedule-dialog-open{overflow:hidden}
 /* Original user-supplied action graphics, rendered in the same icon slots as five training types. */
 .schedule-action-image{display:block;width:100%;height:100%;object-fit:contain;flex:none;min-width:0}
 .schedule-action-choices .schedule-action-image{width:100%;height:auto;aspect-ratio:2/1;object-fit:contain}
-.schedule-cell-face .schedule-action-image{width:100%;height:100%;object-fit:contain}
+.schedule-cell-face:has(> .schedule-action-image){overflow:hidden}
+.schedule-cell-face > .schedule-action-image{position:absolute;inset:0;width:100%;height:100%;min-width:0;max-width:100%;max-height:100%;box-sizing:border-box;object-fit:contain;flex:none;border-radius:inherit}
 
