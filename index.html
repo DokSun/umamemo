@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261107-reset-popup-left"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261108-schedule-prototype"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">기능 선택</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 <div class="tool-menu-divider"></div>
 <div class="tool-server-row"><label class="server-label" for="server-mode">서버</label><select id="server-mode" aria-label="서버 선택"><option value="ko">한국</option><option value="jp">일본</option></select></div>
@@ -8,4 +8,38 @@
 </nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><label class="reset-popup-option" for="reset-popup-toggle"><span>초기화 팝업</span><input id="reset-popup-toggle" type="checkbox" role="switch" aria-label="이벤트 초기화 확인 팝업" checked><span class="reset-popup-track" aria-hidden="true"></span></label><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
 <aside id="memo-panel" class="panel tool-panel"><div class="panel-title"><h2>메모장</h2></div><textarea id="scenario"></textarea><div class="panel-reset-footer" id="memo-reset-footer"><button id="secondary-reset" type="button">메모장 초기화</button></div></aside>
-</main><div id="card-picker" class="picker-backdrop" hidden><section class="picker-dialog" role="dialog" aria-modal="true" aria-labelledby="picker-title"><div class="picker-heading"><h2 id="picker-title">서포트 카드 선택</h2><div class="picker-heading-actions"><button id="picker-clear" type="button">비우기</button><button id="picker-close" type="button" aria-label="닫기">✕</button></div></div><div id="picker-types" class="picker-types" role="group" aria-label="속성 선택"></div><div id="picker-rarities" class="picker-rarities" role="group" aria-label="등급 선택"></div><div id="picker-grid" class="picker-grid"></div><div id="picker-pager" class="picker-pager"></div></section></div><div id="toast" role="status" aria-live="polite"></div><script src="app.js?v=20261107-reset-popup-toggle" defer></script></body></html>
+<section id="schedule-panel" class="panel tool-panel" hidden>
+ <div class="panel-title"><h2>스케줄표 <small class="schedule-prototype-tag">프로토타입</small></h2></div>
+ <div class="schedule-toolbar">
+  <div class="schedule-plan-info"><strong>현재 육성</strong><span id="schedule-plan-caption">자유 편집</span></div>
+  <button type="button" id="schedule-plans-open">계획 관리</button>
+ </div>
+ <div class="schedule-character-row">
+  <label for="schedule-character">육성 캐릭터</label>
+  <input id="schedule-character" type="text" maxlength="60" placeholder="캐릭터 이름 (선택)" autocomplete="off">
+ </div>
+ <p class="schedule-goal-hint">목표 레이스 자동 표시는 캐릭터 DB 연동 예정입니다.</p>
+ <div class="schedule-year-tabs" role="tablist" aria-label="육성 시기">
+  <button type="button" role="tab" data-schedule-year="junior" aria-selected="true">주니어</button>
+  <button type="button" role="tab" data-schedule-year="classic" aria-selected="false">클래식</button>
+  <button type="button" role="tab" data-schedule-year="senior" aria-selected="false">시니어</button>
+ </div>
+ <div id="schedule-grid" class="schedule-grid" role="group" aria-label="스케줄 칸"></div>
+ <div class="panel-reset-footer" id="schedule-reset-footer"><button type="button" id="schedule-reset">스케줄표 초기화</button></div>
+</section>
+</main><div id="card-picker" class="picker-backdrop" hidden><section class="picker-dialog" role="dialog" aria-modal="true" aria-labelledby="picker-title"><div class="picker-heading"><h2 id="picker-title">서포트 카드 선택</h2><div class="picker-heading-actions"><button id="picker-clear" type="button">비우기</button><button id="picker-close" type="button" aria-label="닫기">✕</button></div></div><div id="picker-types" class="picker-types" role="group" aria-label="속성 선택"></div><div id="picker-rarities" class="picker-rarities" role="group" aria-label="등급 선택"></div><div id="picker-grid" class="picker-grid"></div><div id="picker-pager" class="picker-pager"></div></section></div><div id="schedule-action-backdrop" class="schedule-modal-backdrop" hidden>
+ <section class="schedule-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-action-title">
+  <div class="schedule-modal-head"><h3 id="schedule-action-title">행동 선택</h3><button type="button" data-schedule-close aria-label="닫기">✕</button></div>
+  <div id="schedule-action-choices" class="schedule-action-choices"></div>
+  <button type="button" id="schedule-action-clear" class="schedule-secondary-action">이 칸 비우기</button>
+ </section>
+</div>
+<div id="schedule-plans-backdrop" class="schedule-modal-backdrop" hidden>
+ <section class="schedule-modal schedule-plans-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-plans-title">
+  <div class="schedule-modal-head"><h3 id="schedule-plans-title">육성 계획 관리</h3><button type="button" data-schedule-close aria-label="닫기">✕</button></div>
+  <p class="schedule-plans-help">계획은 현재 스케줄과 별도로 보관됩니다. 불러오면 현재 스케줄만 교체됩니다.</p>
+  <button id="schedule-plan-save" type="button">현재 스케줄을 새 계획으로 저장</button>
+  <div id="schedule-plan-list" class="schedule-plan-list"></div>
+ </section>
+</div>
+<div id="toast" role="status" aria-live="polite"></div><script src="app.js?v=20261108-schedule-prototype" defer></script></body></html>
