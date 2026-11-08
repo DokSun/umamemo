@@ -271,8 +271,17 @@ const SCHEDULE_ACTIONS={
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
 const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{}};
-const SCHEDULE_ONSEN_EVENTS={digStart:{label:'굴착 시작',symbol:'⛏▶'},digFinish:{label:'굴착 완료',symbol:'⛏✓'},ticket:{label:'온천권 사용',symbol:'♨'}};
+// The nine original Onsen excavation icons are arranged in the order uploaded.
+// spriteIndex maps that visual order to the source image order in the sprite sheet.
+const SCHEDULE_ONSEN_SPRITE_ORDER=[4,3,1,2,0,8,7,6,5];
+const SCHEDULE_ONSEN_DIGS=Object.fromEntries(SCHEDULE_ONSEN_SPRITE_ORDER.map((spriteIndex,i)=>['dig'+(i+1),{label:'온천 '+(i+1),spriteIndex}]));
+const SCHEDULE_ONSEN_EVENTS={...SCHEDULE_ONSEN_DIGS,ticket:{label:'온천권 사용',symbol:'♨'}};
 const SCHEDULE_ONSEN_EVENT_IDS=Object.keys(SCHEDULE_ONSEN_EVENTS);
+function scheduleOnsenIconHtml(id){
+ const info=SCHEDULE_ONSEN_DIGS[id];
+ if(!info)return '';
+ return '<span class="schedule-onsen-icon" aria-hidden="true" style="background-position:'+((info.spriteIndex/8)*100)+'% 0"></span>';
+}
 function scheduleTurnEventKey(year,i){return year+'-'+i}
 function scheduleOnsenEvents(year,i){return scheduleCurrent.scenarioEvents?.[scheduleTurnEventKey(year,i)]||[]}
 function scheduleOnsenTicketTurn(year,i){
@@ -288,7 +297,8 @@ function scheduleOnsenBadges(year,i){
  if(scheduleCurrent.scenario!=='onsen')return '';
  const events=scheduleOnsenEvents(year,i);
  const badges=[];
- for(const key of ['digStart','digFinish'])if(events.includes(key))badges.push('<span class="schedule-onsen-badge" title="'+SCHEDULE_ONSEN_EVENTS[key].label+'">'+SCHEDULE_ONSEN_EVENTS[key].symbol+'</span>');
+ const dig=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
+ if(dig)badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+'">'+scheduleOnsenIconHtml(dig)+'</span>');
  const ticket=scheduleOnsenTicketTurn(year,i);
  if(ticket)badges.push('<span class="schedule-onsen-badge schedule-onsen-ticket" title="'+(ticket===1?'온천권 사용 · 효과 1턴째':'온천 효과 2턴째')+'">♨'+ticket+'</span>');
  return badges.length?'<span class="schedule-onsen-badges" aria-hidden="true">'+badges.join('')+'</span>':'';
@@ -503,11 +513,13 @@ $('schedule-grid').addEventListener('click',e=>{
 function renderScheduleOnsenControls(year,i){
  const events=scheduleOnsenEvents(year,i);
  const ticket=scheduleOnsenTicketTurn(year,i);
- $('schedule-onsen-options').innerHTML=SCHEDULE_ONSEN_EVENT_IDS.map(id=>{
-  const entry=SCHEDULE_ONSEN_EVENTS[id];
-  return '<button type="button" class="schedule-onsen-option '+(events.includes(id)?'selected':'')+'" data-onsen-event="'+id+'" aria-pressed="'+events.includes(id)+'">'+entry.symbol+' '+entry.label+'</button>';
+ $('schedule-onsen-options').innerHTML=Object.entries(SCHEDULE_ONSEN_DIGS).map(([id,entry])=>{
+  const selected=events.includes(id);
+  return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected?'selected':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+'" title="'+entry.label+'" aria-pressed="'+selected+'">'+scheduleOnsenIconHtml(id)+'</button>';
  }).join('');
- $('schedule-onsen-status').textContent=ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':ticket===2?'이전 턴에서 사용한 온천권 효과가 유지되는 턴입니다.':'굴착 시작·완료와 온천권을 같은 턴에 함께 기록할 수 있습니다.';
+ $('schedule-onsen-ticket').classList.toggle('selected',events.includes('ticket'));
+ $('schedule-onsen-ticket').setAttribute('aria-pressed',String(events.includes('ticket')));
+ $('schedule-onsen-status').textContent=ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':ticket===2?'이전 턴에서 사용한 온천권 효과가 유지되는 턴입니다.':'온천 종류 한 가지와 온천권 사용을 같은 턴에 기록할 수 있습니다.';
 }
 $('schedule-onsen-options').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
@@ -516,7 +528,8 @@ $('schedule-onsen-options').addEventListener('click',e=>{
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year,key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
- const next=current.includes(id)?current.filter(x=>x!==id):[...current,id];
+ // Exactly one excavation type per turn; ticket is independent.
+ const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]:[...current,id];
  if(next.length)scheduleCurrent.scenarioEvents[key]=next;
  else delete scheduleCurrent.scenarioEvents[key];
  saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,scheduleTurn);
