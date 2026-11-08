@@ -283,7 +283,10 @@ function scheduleOnsenIconHtml(id){
  return '<span class="schedule-onsen-icon" aria-hidden="true" style="background-position:'+((info.spriteIndex/8)*100)+'% 0"></span>';
 }
 function scheduleTurnEventKey(year,i){return year+'-'+i}
-function scheduleOnsenEvents(year,i){return scheduleCurrent.scenarioEvents?.[scheduleTurnEventKey(year,i)]||[]}
+function scheduleOnsenEvents(year,i){
+ const value=scheduleCurrent.scenarioEvents?.[scheduleTurnEventKey(year,i)];
+ return Array.isArray(value)?value.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_EVENTS,id)):[];
+}
 function scheduleOnsenTicketTurn(year,i){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
  if(index<0)return 0;
@@ -326,7 +329,7 @@ function normalizeSchedule(raw){
  if(raw.scenarioEvents&&typeof raw.scenarioEvents==='object'&&!Array.isArray(raw.scenarioEvents)){
   for(const [key,events] of Object.entries(raw.scenarioEvents)){
    if(!/^(junior|classic|senior)-([0-9]|1[0-9]|2[0-3])$/.test(key)||!Array.isArray(events))continue;
-   const valid=[...new Set(events.filter(id=>SCHEDULE_ONSEN_EVENT_IDS.includes(id)))];
+   const valid=[...new Set(events.filter(id=>typeof id==='string'&&SCHEDULE_ONSEN_EVENT_IDS.includes(id)))];
    if(valid.length)result.scenarioEvents[key]=valid;
   }
  }
@@ -425,7 +428,7 @@ function renderSchedule(){
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
    const icon=goal?scheduleBannerHtml(selectedGoal):(selectedRace?scheduleBannerHtml(selectedRace):(display?scheduleActionIcon(display):scheduleActionIcon(null)));
    const extras=scheduleOnsenBadges(year,i);
-   const extraTitle=scheduleCurrent.scenario==='onsen'?[...scheduleOnsenEvents(year,i).map(k=>SCHEDULE_ONSEN_EVENTS[k].label),...(scheduleOnsenTicketTurn(year,i)===2?['온천 효과 2턴째']:[])].join(' · '):'';
+   const extraTitle=scheduleCurrent.scenario==='onsen'?[...scheduleOnsenEvents(year,i).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i)===2?['온천 효과 2턴째']:[])].join(' · '):'';
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
@@ -528,6 +531,7 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year,key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
+ if(!scheduleCurrent.scenarioEvents||typeof scheduleCurrent.scenarioEvents!=='object')scheduleCurrent.scenarioEvents={};
  // Exactly one excavation type per turn; ticket is independent.
  const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]:[...current,id];
  if(next.length)scheduleCurrent.scenarioEvents[key]=next;
