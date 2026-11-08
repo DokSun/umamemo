@@ -511,6 +511,7 @@ $('schedule-grid').addEventListener('click',e=>{
  if(goal)detail.innerHTML=scheduleGoalDetailHtml(goal);
  const readOnly=!!goal;
  $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen';
+ $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen');
  if(scheduleCurrent.scenario==='onsen')renderScheduleOnsenControls(year,scheduleTurn);
  $('schedule-action-title').textContent=readOnly?'고정 목표 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반'):'행동 선택 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
