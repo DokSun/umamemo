@@ -194,13 +194,26 @@ function describeRace(r){
  if(!r)return '';
  return [r.g,localizeRaceField(r.track),localizeRaceField(r.surface),r.m?r.m+'m':'',localizeRaceField(r.dir)].filter(Boolean).join(' · ');
 }
+function scheduleRaceName(r){return r?.ko||r?.n||''}
+function scheduleGoalName(o){return o?.ko||o?.n||''}
+function scheduleGoalDetailHtml(goal){
+ if(!goal)return '';
+ const list=goal.o.map(o=>{
+  const hasRace=!!(o.track||o.m||o.g);
+  const title=escapeHTML(scheduleGoalName(o));
+  const details=hasRace?describeRace(o):o.d||'레이스 외 목표 또는 상세 정보 미등록';
+  const fan=o.f?' · 필요 팬 '+Number(o.f).toLocaleString():'';
+  return '<div class="schedule-goal-entry"><strong>'+title+'</strong><span>'+escapeHTML(details+fan)+'</span></div>';
+ }).join('');
+ return '<div class="schedule-goal-heading">'+(goal.c?'선택 목표':'육성 목표')+'</div>'+list;
+}
 function renderScheduleCharacterOptions(){
  const selector=$('schedule-character');
  const value=scheduleCurrent.character;
  selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
  for(const ch of scheduleDb.characters){
-  const suffix=ch.variant?' ['+ch.variant+']':'';
-  selector.add(new Option(ch.ko+suffix+(ch.en!==ch.ko?' ('+ch.en+')':''),ch.id||ch.ko));
+  const suffix=ch.variantKo?' ['+ch.variantKo+']':ch.variant?' ['+ch.variant+' · 미번역]':'';
+  selector.add(new Option(ch.ko+suffix,ch.id||ch.ko));
  }
  if(value&&!scheduleDb.characters.some(ch=>ch.id===value||ch.ko===value||ch.en===value))selector.add(new Option(value+' (목표 정보 없음)',value));
  selector.value=scheduleDb.characters.find(ch=>ch.ko===value||ch.en===value)?.id||value;
@@ -213,8 +226,8 @@ function showScheduleRaceInfo(goal,year,i,selected){
  const yearName=SCHEDULE_YEAR_KO[year];
  const date=(1+Math.floor(i/2))+'월 '+(i%2?'후반':'전반');
  info.hidden=false;
- const goals=active.map(x=>x.n).join(' / ');
- info.textContent=yearName+' '+date+' · '+(goal?'목표: '+goals+(goal.c?' (선택 목표)':''):'출전: '+selected)+(race?' · '+describeRace(race):'');
+ const goals=active.map(scheduleGoalName).join(' / ');
+ info.textContent=yearName+' '+date+' · '+(goal?'목표: '+goals+(goal.c?' (선택 목표)':''):'출전: '+(race? scheduleRaceName(race):selected))+(race?' · '+describeRace(race):'');
 }
 function renderScheduleGoalStatus(){
  const status=$('schedule-data-status');
@@ -330,7 +343,7 @@ function renderSchedule(){
  const activeYear=scheduleCurrent.year;
  renderScheduleCharacterOptions();
  renderScheduleGoalStatus();
- $('schedule-plan-caption').textContent=scheduleCurrent.character||'자유 편집';
+ $('schedule-plan-caption').textContent=findScheduleCharacter()?.ko||scheduleCurrent.character||'자유 편집';
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
   btn.classList.toggle('active',active);
@@ -346,10 +359,11 @@ function renderSchedule(){
    const seasonal=year==='junior'&&month>=4&&month<=6;
    const label=display?display.label:'행동 추가';
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const chosen=action==='race'&&selection?'<span class="schedule-cell-race">'+escapeHTML(selection)+'</span>':'';
-   const goalTitle=goal?' · 목표: '+goal.o.map(o=>o.n).join(' / '):'';
+   const chosen=action==='race'&&selection?'<span class="schedule-cell-race">'+escapeHTML((scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&r.n===selection)||{}).ko||selection)+'</span>':'';
+   const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
+   const goalSummary=goal?'<span class="schedule-cell-goal">'+escapeHTML(goal.o.map(scheduleGoalName).join(' / '))+'</span>':'';
    const icon=display?scheduleActionIcon(display):(goal?scheduleActionIcon(SCHEDULE_ACTIONS.target):scheduleActionIcon(null));
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(label+goalTitle)}"><span class="schedule-cell-face">${icon}${mark}</span>${chosen}<span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(label+goalTitle)}"><span class="schedule-cell-face">${icon}${mark}</span>${goalSummary}${chosen}<span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
@@ -389,12 +403,12 @@ $('schedule-grid').addEventListener('click',e=>{
  const goal=scheduleGoalAt(year,scheduleTurn);
  const detail=$('schedule-goal-detail');
  detail.hidden=!goal;
- if(goal)detail.textContent='캐릭터 목표: '+goal.o.map(o=>o.n+' ('+o.g+', '+o.d+')').join(' / ')+(goal.c?' · 선택 목표':'');
+ if(goal)detail.innerHTML=scheduleGoalDetailHtml(goal);
  const r= scheduleRacesAt(year,scheduleTurn);
  $('schedule-race-picker').hidden=!r.length;
  const select=$('schedule-race-select');
  select.replaceChildren(new Option('출전할 레이스 선택',''));
- for(let i=0;i<r.length;i++)select.add(new Option(r[i].n+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
+ for(let i=0;i<r.length;i++)select.add(new Option(scheduleRaceName(r[i])+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
  const selected=scheduleCurrent.selectedRaces[year+'-'+scheduleTurn];
  const previous=r.findIndex(x=>x.n===selected);
  select.value=previous>=0?String(previous):'';
@@ -441,7 +455,7 @@ function renderSchedulePlans(){
   root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다.</p>';
   return;
  }
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(p.schedule.character||'캐릭터 미지정')}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleDb.characters.find(c=>c.id===p.schedule.character)?.ko||p.schedule.character||'캐릭터 미지정')}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
 }
 $('schedule-plans-open').addEventListener('click',()=>{renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
 $('schedule-plan-save').addEventListener('click',()=>{
