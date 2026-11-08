@@ -39,9 +39,17 @@ for (const s of supports) {
   const key = norm((s.urlName || '').replace(/^\d+-/, ''));
   if (key && s.characterKo && !names.has(key)) names.set(key, s.characterKo);
 }
-const characters = rawCharacters
-  .filter(x => x && x.UmaId && x.UmaName && Array.isArray(x.UmaObjectives))
-  .map(x => {
+const characterGroups = new Map();
+for (const item of rawCharacters) {
+  if (!item?.UmaId || !item?.UmaName || !Array.isArray(item.UmaObjectives)) continue;
+  const key = norm(item.UmaName);
+  if (!characterGroups.has(key)) characterGroups.set(key, []);
+  characterGroups.get(key).push(item);
+}
+const characters = [...characterGroups.values()]
+  .map(group => {
+    group.sort((a,b) => Number(a.UmaId) - Number(b.UmaId));
+    const x = group[0];
     const grouped = new Map();
     for (const objective of x.UmaObjectives) {
       const turn = Number(objective.Turn);
@@ -60,11 +68,9 @@ const characters = rawCharacters
       id: 'uma-' + String(x.UmaId),
       en: x.UmaName,
       ko: translated?.name || names.get(norm(x.UmaName)) || extraKorean[x.UmaName] || x.UmaName,
-      variant: x.UmaNickname || '',
-      variantKo: translated?.nickname || '',
       jp: x.UmaNameJP || '',
-      variantJP: x.UmaNicknameJP || '',
-      server: x.UmaServer,
+      server: group.some(u => u.UmaServer === 'global') ? 'global' : 'jp',
+      legacyIds: group.map(u => 'uma-' + String(u.UmaId)),
       goals,
     };
   })
@@ -87,10 +93,16 @@ for (const x of rawRaces) {
       m: Number(x.distance) || 0,
       dir: '',
       f: 0,
+      rid: Number(x.race_id) || null,
     });
   }
 }
 races.sort((a, b) => a.t - b.t || a.n.localeCompare(b.n));
+const raceIdByName = new Map();
+for (const entry of rawRaces) {
+  const key = norm(entry.name_en || entry.name);
+  if(key && !raceIdByName.has(key)) raceIdByName.set(key, Number(entry.race_id) || null);
+}
 const lookupRace = new Map();
 for (const race of races) {
   const key = race.t + '|' + race.n.trim().toLowerCase();
@@ -100,18 +112,22 @@ for (const character of characters) {
   for (const goal of character.goals) {
     for (const objective of goal.o) {
       const race = lookupRace.get(goal.t + '|' + objective.n.trim().toLowerCase());
-      if (!race) continue;
+      if (!race) {
+        objective.rid = raceIdByName.get(norm(objective.n)) || null;
+        continue;
+      }
       objective.g = race.g;
       objective.s = race.surface;
       objective.track = race.track;
       objective.m = race.m;
       objective.dir = race.dir;
       objective.f = race.f || 0;
+      objective.rid = race.rid || null;
     }
   }
 }
 
-if (characters.length < 240 || races.length < 350 ||
+if (characters.length < 125 || races.length < 350 || characters.some(c => !/[가-힣]/.test(c.ko)) ||
     new Set(characters.map(c => c.id)).size !== characters.length) {
   throw Error('Normalized JP data failed validation; leaving existing snapshot intact.');
 }
