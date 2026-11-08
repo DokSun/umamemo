@@ -300,7 +300,7 @@ function scheduleOnsenUnlocked(id,year,i){
  const dig=SCHEDULE_ONSEN_DIGS[id];
  return !dig||scheduleGlobalTurn(year,i)>=dig.unlocksAt;
 }
-const SCHEDULE_ONSEN_EVENTS={...SCHEDULE_ONSEN_DIGS,ticket:{label:'온천권 일반',symbol:'♨'},ticketSuper:{label:'온천권 초회복',symbol:'✦♨'}};
+const SCHEDULE_ONSEN_EVENTS={...SCHEDULE_ONSEN_DIGS,ticket:{label:'온천권 회복',symbol:'♨'},ticketSuper:{label:'온천권 초회복',symbol:'✦♨'}};
 const SCHEDULE_ONSEN_TICKET_IDS=['ticket','ticketSuper'];
 function scheduleHasTicket(events){return Array.isArray(events)&&events.some(id=>SCHEDULE_ONSEN_TICKET_IDS.includes(id));}
 const SCHEDULE_ONSEN_EVENT_IDS=Object.keys(SCHEDULE_ONSEN_EVENTS);
@@ -325,7 +325,8 @@ function scheduleOnsenTicketStatus(year,i){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
  if(index<0)return {turn:0,superRecovery:false};
  if(scheduleOnsenTicketBlocked(year,i)){
-  return {turn:2,superRecovery:false}; // Super recovery itself occurs on the use turn, not on the lingering second turn.
+  const prevYear=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
+  return {turn:2,superRecovery:scheduleOnsenEvents(prevYear,(index-1)%24).includes('ticketSuper')};
  }
  const events=scheduleOnsenEvents(year,i);
  if(events.includes('ticketSuper'))return {turn:1,superRecovery:true};
@@ -573,7 +574,6 @@ $('schedule-grid').addEventListener('click',e=>{
 });
 function renderScheduleOnsenControls(year,i){
  const events=scheduleOnsenEvents(year,i);
- const ticket=scheduleOnsenTicketTurn(year,i);
  $('schedule-onsen-options').innerHTML=Object.entries(SCHEDULE_ONSEN_DIGS).map(([id,entry])=>{
   const selected=events.includes(id);
   if(!scheduleOnsenUnlocked(id,year,i))return '';
@@ -586,10 +586,8 @@ function renderScheduleOnsenControls(year,i){
   button.disabled=blocked;
   button.classList.toggle('selected',selected);
   button.setAttribute('aria-pressed',String(selected));
-  button.title=blocked?uiText('onsen.ticketBlockedTitle'):uiText(id==='ticket'?'onsen.ticketNormal':'onsen.ticketSuper');
+  button.title=uiText(id==='ticket'?'onsen.ticketNormal':'onsen.ticketSuper');
  }
- $('schedule-onsen-status').textContent=blocked?uiText('onsen.ticketBlocked'):ticket===1?uiText('onsen.ticketActive'):'';
- $('schedule-onsen-status').hidden=!$('schedule-onsen-status').textContent;
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
