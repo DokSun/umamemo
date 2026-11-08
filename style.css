@@ -586,3 +586,8 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-cell.seasonal .schedule-cell-face{border-style:dashed;background:#273346}
 .schedule-cell.seasonal .schedule-cell-label{color:#a6b6c9}
 #schedule-action-choices[hidden],#schedule-action-clear[hidden],#schedule-race-picker[hidden]{display:none!important}
+
+/* Original user-supplied action graphics, rendered in the same icon slots as five training types. */
+.schedule-action-image{display:block;width:auto;height:25px;max-width:calc(100% - 6px);object-fit:contain;flex:none}
+.schedule-action-choices .schedule-action-image{max-width:100%;height:25px}
+.schedule-cell-face .schedule-action-image{max-height:calc(100% - 4px)}

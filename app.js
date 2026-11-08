@@ -259,9 +259,9 @@ const SCHEDULE_ACTIONS={
  power:{label:'파워 훈련',typeIcon:'power'},
  guts:{label:'근성 훈련',typeIcon:'guts'},
  wisdom:{label:'지능 훈련',typeIcon:'wisdom'},
- rest:{label:'휴식',icon:'💤'},
- outing:{label:'외출',typeIcon:'friend'},
- race:{label:'레이스',icon:'🏁'}
+ rest:{label:'휴식',image:'./assets/ui/rest.png'},
+ outing:{label:'외출',image:'./assets/ui/outing.png'},
+ race:{label:'레이스',image:'./assets/ui/race.png'}
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
@@ -334,6 +334,7 @@ function saveSchedulePlans(){
 }
 function scheduleActionIcon(action){
  if(!action)return '<span class="schedule-empty-mark">+</span>';
+ if(action.image)return '<img class="schedule-action-image" src="'+escapeHTML(action.image)+'" alt="" aria-hidden="true" loading="lazy">';
  if(action.typeIcon&&['speed','stamina','power','guts','wisdom','friend','group'].includes(action.typeIcon))
   return '<span class="type-icon type-icon-'+action.typeIcon+' schedule-type-icon" aria-hidden="true"></span>';
  return '<span class="schedule-emoji-icon" aria-hidden="true">'+escapeHTML(action.icon||'•')+'</span>';
