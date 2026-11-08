@@ -382,7 +382,7 @@ function renderSchedule(){
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':(['rest','outing','race'].includes(action)?'schedule-action-'+action:'')}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle)}"><span class="schedule-cell-face">${icon}${mark}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle)}"><span class="schedule-cell-face">${icon}${mark}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
@@ -445,7 +445,7 @@ $('schedule-grid').addEventListener('click',e=>{
  updateSelectedRaceDescription();
  $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race')).map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
-  b.className='schedule-action-option'+(['rest','outing','race'].includes(key)?' schedule-action-'+key:'');
+  b.className='schedule-action-option';
   b.innerHTML=scheduleActionIcon(action);
    b.setAttribute('aria-label',action.label);
    b.title=action.label;
