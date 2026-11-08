@@ -455,3 +455,8 @@ body.schedule-dialog-open{overflow:hidden}
 @media(max-width:850px){
  #workspace.split.reversed #schedule-panel{grid-column:1;grid-row:auto}
 }
+
+/* Junior April-June season-adjustment period, indicated without blocking turn logging. */
+.schedule-cell.seasonal .schedule-cell-face{border-style:dashed;border-color:#70869a;background:#273346}
+.schedule-cell.seasonal .schedule-cell-label{color:#a6b6c9}
+.schedule-cell.seasonal.filled .schedule-cell-face{background:#385371;border-style:solid}
