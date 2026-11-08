@@ -159,6 +159,62 @@ const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,
 // Schedule prototype: 24 turns per year, reusable plans and expandable scenario actions.
 // Goals remain manual until a verified character goal-race database is available.
 const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
+let scheduleDb={characters:[],races:[]};
+const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
+const SCHEDULE_YEAR_KO={junior:'주니어',classic:'클래식',senior:'시니어'};
+function scheduleGlobalTurn(year,halfMonthIndex){return SCHEDULE_YEAR_ORDER.indexOf(year)*24+halfMonthIndex+1}
+function scheduleGoalAt(year,i){
+ const character=scheduleDb.characters.find(c=>c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character);
+ if(!character)return null;
+ const turn=scheduleGlobalTurn(year,i);
+ return character.goals.find(g=>g.t===turn)||null;
+}
+function scheduleRacesAt(year,i){
+ const turn=scheduleGlobalTurn(year,i);
+ return scheduleDb.races.filter(r=>r.t===turn);
+}
+function describeRace(r){
+ if(!r)return '';
+ return [r.g,r.track,r.surface,r.m?r.m+'m':'',r.dir].filter(Boolean).join(' · ');
+}
+function renderScheduleCharacterOptions(){
+ const selector=$('schedule-character');
+ const value=scheduleCurrent.character;
+ selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
+ for(const ch of scheduleDb.characters)selector.add(new Option(ch.ko+' ('+ch.en+')',ch.ko));
+ if(value&&!scheduleDb.characters.some(ch=>ch.ko===value||ch.en===value))selector.add(new Option(value+' (목표 정보 없음)',value));
+ selector.value=scheduleDb.characters.find(ch=>ch.en===value)?.ko||value;
+}
+function showScheduleRaceInfo(goal,year,i,selected){
+ const info=$('schedule-race-info');
+ const active=goal?.o||[];
+ const race=scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&r.n===selected);
+ if(!goal&&!race){info.hidden=true;info.textContent='';return}
+ const yearName=SCHEDULE_YEAR_KO[year];
+ const date=(1+Math.floor(i/2))+'월 '+(i%2?'후반':'전반');
+ info.hidden=false;
+ const goals=active.map(x=>x.n).join(' / ');
+ info.textContent=yearName+' '+date+' · '+(goal?'목표: '+goals+(goal.c?' (선택 목표)':''):'출전: '+selected)+(race?' · '+describeRace(race):'');
+}
+function renderScheduleGoalStatus(){
+ const status=$('schedule-data-status');
+ const character=scheduleDb.characters.find(c=>c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character);
+ if(!scheduleDb.characters.length)status.textContent='캐릭터·레이스 데이터를 불러오지 못했습니다. 직접 기록은 계속 사용할 수 있습니다.';
+ else if(character)status.textContent='목표 레이스 '+character.goals.length+'개 · 출처: GameTora 기반 글로벌 URA 데이터 (일본 서버 전체 미포함)';
+ else status.textContent='캐릭터를 선택하면 해당 캐릭터의 목표 레이스가 일정표에 표시됩니다. 제공 데이터: 71명 / 글로벌 URA 기준';
+}
+async function loadScheduleDatabase(){
+ try{
+  const response=await fetch('./data/schedule_gametora.json',{cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const raw=await response.json();
+  if(!Array.isArray(raw.characters)||!Array.isArray(raw.races))throw Error('schedule data format');
+  scheduleDb={characters:raw.characters,races:raw.races};
+  renderScheduleCharacterOptions();
+  renderSchedule();
+ }catch(err){console.error('스케줄표 DB 로딩 실패',err);renderScheduleGoalStatus()}
+}
+
 const SCHEDULE_ACTIONS={
  speed:{label:'스피드 훈련',typeIcon:'speed'},
  stamina:{label:'스태미나 훈련',typeIcon:'stamina'},
@@ -185,7 +241,7 @@ function scheduleAvailableActions(scenario='basic'){
 function scheduleKey(kind){return 'uma-schedule-'+kind+'-v1-'+serverMode}
 function scheduleSlots(year){return 24}
 function emptySchedule(){
- return {character:'',year:'junior',scenario:'basic',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)]))};
+ return {character:'',year:'junior',scenario:'basic',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)])),selectedRaces:{}};
 }
 function normalizeSchedule(raw){
  const result=emptySchedule();
@@ -193,6 +249,9 @@ function normalizeSchedule(raw){
  result.character=typeof raw.character==='string'?raw.character.slice(0,60):'';
  result.year=Object.hasOwn(SCHEDULE_YEARS,raw.year)?raw.year:'junior';
  result.scenario=typeof raw.scenario==='string'&&Object.hasOwn(SCHEDULE_SCENARIO_ACTIONS,raw.scenario)?raw.scenario:'basic';
+ if(raw.selectedRaces&&typeof raw.selectedRaces==='object'){
+  result.selectedRaces=Object.fromEntries(Object.entries(raw.selectedRaces).filter(([k,v])=>/^(junior|classic|senior)-([0-9]|1[0-9]|2[0-3])$/.test(k)&&typeof v==='string').map(([k,v])=>[k,v.slice(0,120)]));
+ }
  const allowed=scheduleAvailableActions(result.scenario);
  for(const year of Object.keys(SCHEDULE_YEARS)){
   const entries=raw.turns?.[year];
@@ -241,25 +300,30 @@ function scheduleActionIcon(action){
 function renderSchedule(){
  if(!$('schedule-grid'))return;
  const activeYear=scheduleCurrent.year;
- $('schedule-character').value=scheduleCurrent.character;
+ renderScheduleCharacterOptions();
+ renderScheduleGoalStatus();
  $('schedule-plan-caption').textContent=scheduleCurrent.character||'자유 편집';
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
   btn.classList.toggle('active',active);
   btn.setAttribute('aria-selected',String(active));
  });
- const names={junior:'주니어',classic:'클래식',senior:'시니어'};
  const actions=scheduleAvailableActions(scheduleCurrent.scenario);
- $('schedule-grid').innerHTML=Object.keys(SCHEDULE_YEARS).map(year=>{
-  const start=SCHEDULE_YEARS[year];
+ $('schedule-grid').innerHTML=SCHEDULE_YEAR_ORDER.map(year=>{
   const cells=scheduleCurrent.turns[year].map((action,i)=>{
-   const month=start+Math.floor(i/2),half=i%2===0?'전반':'후반';
+   const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
+   const goal=scheduleGoalAt(year,i);
+   const selection=scheduleCurrent.selectedRaces[year+'-'+i];
    const display=actions[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
-   const label=display?display.label:'행동 추가';
    const seasonal=year==='junior'&&month>=4&&month<=6;
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${names[year]} ${month}월 ${half}: ${escapeHTML(label)}${seasonal?' (계절 설정 기간)':''}"><span class="schedule-cell-face">${scheduleActionIcon(display)}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   const label=display?display.label:'행동 추가';
+   const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
+   const chosen=action==='race'&&selection?'<span class="schedule-cell-race">'+escapeHTML(selection)+'</span>':'';
+   const goalTitle=goal?' · 목표: '+goal.o.map(o=>o.n).join(' / '):'';
+   const icon=display?scheduleActionIcon(display):(goal?scheduleActionIcon(SCHEDULE_ACTIONS.target):scheduleActionIcon(null));
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(label+goalTitle)}"><span class="schedule-cell-face">${icon}${mark}</span>${chosen}<span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
-  return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${names[year]} 일정"><h3 class="schedule-year-heading">${names[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
+  return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
 }
 function closeScheduleDialog(){
@@ -274,10 +338,10 @@ function openScheduleDialog(which){
  document.body.classList.add('schedule-dialog-open');
  target.querySelector('button')?.focus();
 }
-$('schedule-character').addEventListener('input',e=>{
- scheduleCurrent.character=e.target.value.slice(0,60);
+$('schedule-character').addEventListener('change',e=>{
+ scheduleCurrent.character=e.target.value;
  saveScheduleCurrent();
- $('schedule-plan-caption').textContent=scheduleCurrent.character||'자유 편집';
+ renderSchedule();
 });
 $('schedule-panel').querySelector('.schedule-year-tabs').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-year]');
@@ -292,9 +356,21 @@ $('schedule-grid').addEventListener('click',e=>{
  if(!Object.hasOwn(SCHEDULE_YEARS,year))return;
  scheduleCurrent.year=year;
  scheduleTurn=Number(btn.dataset.scheduleTurn);
- const month=SCHEDULE_YEARS[year]+Math.floor(scheduleTurn/2);
- const yearNames={junior:'주니어',classic:'클래식',senior:'시니어'};
- $('schedule-action-title').textContent=yearNames[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반')+' · 행동 선택';
+ const month=1+Math.floor(scheduleTurn/2);
+ $('schedule-action-title').textContent=SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반')+' · 행동 선택';
+ const goal=scheduleGoalAt(year,scheduleTurn);
+ const detail=$('schedule-goal-detail');
+ detail.hidden=!goal;
+ if(goal)detail.textContent='캐릭터 목표: '+goal.o.map(o=>o.n+' ('+o.g+', '+o.d+')').join(' / ')+(goal.c?' · 선택 목표':'');
+ const r= scheduleRacesAt(year,scheduleTurn);
+ $('schedule-race-picker').hidden=!r.length;
+ const select=$('schedule-race-select');
+ select.replaceChildren(new Option('출전할 레이스 선택',''));
+ for(let i=0;i<r.length;i++)select.add(new Option(r[i].n+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
+ const selected=scheduleCurrent.selectedRaces[year+'-'+scheduleTurn];
+ const previous=r.findIndex(x=>x.n===selected);
+ select.value=previous>=0?String(previous):'';
+ updateSelectedRaceDescription();
  $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.className='schedule-action-option';
@@ -304,15 +380,31 @@ $('schedule-grid').addEventListener('click',e=>{
  }));
  openScheduleDialog('schedule-action-backdrop');
 });
+function updateSelectedRaceDescription(){
+ const index=$('schedule-race-select').value;
+ const race=scheduleTurn===null?null:scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number(index)];
+ $('schedule-race-description').textContent=index===''?'레이스를 선택하면 상세 정보가 표시됩니다.':describeRace(race)+(race?.f?' · 필요 팬 '+race.f.toLocaleString():'');
+}
+$('schedule-race-select').addEventListener('change',updateSelectedRaceDescription);
+$('schedule-race-apply').addEventListener('click',()=>{
+ if(scheduleTurn===null||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
+ const race=scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number($('schedule-race-select').value)];
+ if(!race)return;
+ scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]='race';
+ scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn]=race.n;
+ saveScheduleCurrent();closeScheduleDialog();renderSchedule();
+});
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
  if(!btn||scheduleTurn===null||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
+ if(btn.dataset.scheduleAction!=='race')delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 $('schedule-action-clear').addEventListener('click',()=>{
  if(scheduleTurn===null)return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=null;
+ delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 function renderSchedulePlans(){
@@ -393,7 +485,6 @@ function switchServer(next){
  scheduleCurrent=readScheduleCurrent();
  schedulePlans=readSchedulePlans();
  $('scenario').value=state.scenario||'';
- $('schedule-character').value=scheduleCurrent.character;
  renderSchedule();
  render();
  toast(next==='ko'?'한국 서버 모드':'일본 서버 모드');
@@ -603,4 +694,5 @@ $('slots').addEventListener('click',async e=>{const t=e.target.closest('button')
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
 initWorkspace();
 renderSchedule();
+loadScheduleDatabase();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
