@@ -218,7 +218,12 @@ function renderScheduleCharacterOptions(){
  const selected=findScheduleCharacter();
  const value=selected?.id||scheduleCurrent.character;
  selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
- for(const ch of scheduleDb.characters)selector.add(new Option(ch.ko,ch.id||ch.ko));
+ for(const ch of scheduleDb.characters){
+  const isSelected=(ch.id||ch.ko)===value;
+  const option=new Option((isSelected?'✓ ':'')+ch.ko,ch.id||ch.ko);
+  if(isSelected){option.classList.add('current-character');option.style.fontWeight='bold';}
+  selector.add(option);
+ }
  if(value&&!scheduleDb.characters.some(ch=>ch.id===value))selector.add(new Option(value+' (목표 정보 없음)',value));
  selector.value=value;
 }
@@ -400,7 +405,13 @@ function openScheduleDialog(which){
  target.querySelector('button')?.focus();
 }
 $('schedule-character').addEventListener('change',e=>{
- scheduleCurrent.character=e.target.value;
+ const next=e.target.value;
+ const previous=findScheduleCharacter()?.id||scheduleCurrent.character;
+ if(next===previous)return;
+ // Clear only the working schedule. Saved plans and support-event progress remain intact.
+ scheduleCurrent.character=next;
+ for(const year of Object.keys(SCHEDULE_YEARS))scheduleCurrent.turns[year]=Array(scheduleSlots(year)).fill(null);
+ scheduleCurrent.selectedRaces={};
  saveScheduleCurrent();
  renderSchedule();
 });
