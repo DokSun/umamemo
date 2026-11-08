@@ -540,7 +540,7 @@ function renderScheduleOnsenControls(year,i){
  ticketButton.classList.toggle('selected',!blocked&&events.includes('ticket'));
  ticketButton.setAttribute('aria-pressed',String(!blocked&&events.includes('ticket')));
  ticketButton.title=blocked?'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.':'온천권 사용';
- $('schedule-onsen-status').textContent=blocked?'온천권 효과가 적용 중입니다.':ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':'';
+ $('schedule-onsen-status').textContent=blocked?'이미 온천권 효과가 적용 중입니다.':ticket===1?'온천권 사용: 이 턴과 다음 턴에 효과 적용':'';
  $('schedule-onsen-status').hidden=!$('schedule-onsen-status').textContent;
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
