@@ -539,3 +539,8 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-race-description{font-size:12px;color:#c4d6e9;line-height:1.5}
 .schedule-race-picker button{min-height:36px}
 .schedule-race-info{font-size:12px;color:#ecd7a2;line-height:1.5}
+
+/* Links to the canonical Korean GameTora character and race indexes. */
+.schedule-source-links{display:flex;flex-wrap:wrap;gap:7px 14px;font-size:12px}
+.schedule-source-links a{color:#92c8ff;text-decoration:underline;text-underline-offset:2px}
+.schedule-source-links a:hover{color:#d3eaff}
