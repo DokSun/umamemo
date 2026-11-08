@@ -654,3 +654,13 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-cell-face .schedule-onsen-dig-badge{position:absolute;left:2px;top:2px;right:auto;bottom:auto}
 .schedule-cell-face .schedule-onsen-ticket{position:absolute;right:2px;bottom:2px;left:auto;top:auto}
 .schedule-onsen-ticket-choice:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(.65)}
+
+/* Browser-local copy editor (accessed from the function menu). */
+.ui-text-modal{width:min(580px,100%)}
+.ui-text-info{font-size:12px;color:#c4d4e4;line-height:1.5;margin:0 0 14px}
+.ui-text-fields{display:grid;grid-template-columns:1fr;gap:12px}
+.ui-text-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#d6e3f0}
+.ui-text-field textarea{min-height:58px;resize:vertical;font-size:13px;font-weight:400;line-height:1.4}
+.ui-text-actions{position:sticky;bottom:-15px;display:flex;gap:8px;justify-content:flex-end;background:#1c2c43;padding:12px 0 2px;margin-top:8px}
+.ui-text-actions button{min-height:39px}
+#ui-text-save{background:#276e5a;border-color:#6fd5b2;font-weight:700}
