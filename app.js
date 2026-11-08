@@ -157,7 +157,7 @@ function initWorkspace(){
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 
 // Schedule prototype: 24 turns per year, reusable plans and expandable scenario actions.
-// Goals remain manual until a verified character goal-race database is available.
+// Character goals are fixed using the local career database.
 const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
 let scheduleDb={characters:[],races:[]};
 const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
@@ -172,8 +172,10 @@ function scheduleGoalAt(year,i){
 }
 function scheduleRacesAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
+ if(year==='junior'&&i<=12)return []; // Debut only through July first half
  return scheduleDb.races.filter(r=>r.t===turn);
 }
+let scheduleRaceKoNames={};
 const SCHEDULE_RACE_TRANSLATIONS={
  Turf:'잔디',Dirt:'더트',Left:'좌회전',Right:'우회전',Straight:'직선',
  Sprint:'단거리',Mile:'마일',Medium:'중거리',Long:'장거리',
@@ -194,8 +196,8 @@ function describeRace(r){
  if(!r)return '';
  return [r.g,localizeRaceField(r.track),localizeRaceField(r.surface),r.m?r.m+'m':'',localizeRaceField(r.dir)].filter(Boolean).join(' · ');
 }
-function scheduleRaceName(r){return r?.ko||r?.n||''}
-function scheduleGoalName(o){return o?.ko||o?.n||''}
+function scheduleRaceName(r){return r?.ko||scheduleRaceKoNames[r?.n]||r?.n||''}
+function scheduleGoalName(o){return o?.ko||scheduleRaceKoNames[o?.n]||o?.n||''}
 function scheduleGoalDetailHtml(goal){
  if(!goal)return '';
  const list=goal.o.map(o=>{
@@ -246,6 +248,9 @@ async function loadScheduleDatabase(){
   if(!Array.isArray(data.characters)||data.characters.length<100||
      !Array.isArray(data.races)||data.races.length<300)throw Error('일본 서버 DB 형식 또는 데이터 개수 오류');
   scheduleDb={characters:data.characters,races:data.races};
+   try{const kr=await fetch('./data/race_ko_names.json',{cache:'no-store'});
+    if(kr.ok){const names=(await kr.json()).names;scheduleRaceKoNames=names&&typeof names==='object'?names:{};}
+   }catch(e){console.warn('레이스 한국어 목록 로드 실패',e)}
  }catch(err){
   // Never substitute global-only objectives when JP loading fails.
   console.error('일본 서버 스케줄 DB 불러오기 실패',err);
@@ -299,6 +304,7 @@ function normalizeSchedule(raw){
   const migrated=year==='junior'&&entries.length===18?[...Array(6).fill(null),...entries]:entries;
   result.turns[year]=Array.from({length:24},(_,i)=>{
    const action=migrated[i];
+   if(action==='race'&&year==='junior'&&i<=12)return null;
    if(Object.hasOwn(allowed,action))return action;
    if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return action;
    // Old manually assigned goals no longer exist as selectable actions.
@@ -306,6 +312,7 @@ function normalizeSchedule(raw){
    return null;
   });
  }
+ for(let i=0;i<=12;i++)delete result.selectedRaces['junior-'+i];
  return result;
 }
 function readScheduleCurrent(){
@@ -343,10 +350,10 @@ function scheduleBannerHtml(race){
  const label=scheduleGoalName(race)||scheduleRaceName(race)||'목표 레이스';
  const grade=String(race?.g||'').toUpperCase();
  const fallback='<span class="schedule-ko-banner schedule-banner-fallback" aria-hidden="true"'
-   +(Number.isInteger(Number(race?.rid))&&Number(race.rid)>0?' hidden':'')+'>'
+   +((race?.n==='Junior Make Debut'||Number.isInteger(Number(race?.rid))&&Number(race.rid)>0)?' hidden':'')+'>'
    +'<span class="schedule-ko-banner-grade">'+escapeHTML(grade||'목표')+'</span>'
    +'<span class="schedule-ko-banner-name">'+escapeHTML(label)+'</span></span>';
- const id=Number(race?.rid);
+ const id=race?.n==='Junior Make Debut'?9002:Number(race?.rid);
  if(!Number.isInteger(id)||id<=0)return fallback;
  const url='https://media.gametora.com/umamusume/races/banners/ko/'+id+'.png';
  return '<img class="schedule-race-banner" src="'+url+'" alt="" loading="lazy"'
@@ -371,8 +378,8 @@ function renderSchedule(){
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
    const goal=scheduleGoalAt(year,i);
    const selection=scheduleCurrent.selectedRaces[year+'-'+i];
-   const selectedRace=action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
-   const display=actions[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
+   const selectedRace=!(year==='junior'&&i<=12)&&action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
+   const display=(year==='junior'&&i<=12&&action==='race')?null:(actions[action]||LEGACY_SCHEDULE_ACTIONS[action]||null);
    const seasonal=scheduleIsPrepTurn(year,i);
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
@@ -442,7 +449,7 @@ $('schedule-grid').addEventListener('click',e=>{
  const previous=r.findIndex(x=>x.n===selected);
  select.value=previous>=0?String(previous):'';
  updateSelectedRaceDescription();
- $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).map(([key,action])=>{
+ $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race')).map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.className='schedule-action-option';
   b.innerHTML=scheduleActionIcon(action)+'<span>'+escapeHTML(action.label)+'</span>';
@@ -458,7 +465,7 @@ function updateSelectedRaceDescription(){
 }
 $('schedule-race-select').addEventListener('change',updateSelectedRaceDescription);
 $('schedule-race-apply').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
+ if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
  const race=scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number($('schedule-race-select').value)];
  if(!race)return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]='race';
@@ -467,7 +474,7 @@ $('schedule-race-apply').addEventListener('click',()=>{
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
+ if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  if(btn.dataset.scheduleAction!=='race')delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
