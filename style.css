@@ -544,3 +544,5 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-source-links{display:flex;flex-wrap:wrap;gap:7px 14px;font-size:12px}
 .schedule-source-links a{color:#92c8ff;text-decoration:underline;text-underline-offset:2px}
 .schedule-source-links a:hover{color:#d3eaff}
+
+/* External source shortcuts removed from the schedule UI. */
