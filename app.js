@@ -156,41 +156,7 @@ function initWorkspace(){
 
 const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,JSON.stringify(state));
 
-/* User-editable UI copy. Overrides are private to the current browser, not shared site-wide. */
-const UI_TEXT_KEY='uma-ui-text-overrides-v1';
-const UI_TEXT_DEFAULTS=Object.freeze({
- 'onsen.heading':'온천 시나리오',
- 'onsen.digHint':'굴착할 온천 선택 (하나만 선택)',
- 'onsen.ticketLabel':'♨ 온천권 사용',
- 'onsen.ticketBlocked':'이미 온천권 효과가 적용 중입니다.',
- 'onsen.ticketActive':'온천권 사용: 이 턴과 다음 턴에 효과 적용',
- 'onsen.ticketBlockedTitle':'이전 턴의 온천권 효과가 지속 중이므로 이 턴에는 사용할 수 없습니다.',
- 'race.selectHint':'레이스를 선택하면 상세 정보가 표시됩니다.',
- 'race.selectHeading':'이번 턴 레이스 선택',
- 'plans.help':'계획은 현재 스케줄과 별도로 보관됩니다. 불러오면 현재 스케줄만 교체됩니다.',
- 'plans.empty':'저장된 계획이 없습니다.'
-});
-const UI_TEXT_LABELS={
- 'onsen.heading':'온천 · 제목',
- 'onsen.digHint':'온천 · 굴착 안내',
- 'onsen.ticketLabel':'온천 · 온천권 버튼',
- 'onsen.ticketBlocked':'온천 · 사용 불가 안내',
- 'onsen.ticketActive':'온천 · 사용 직후 안내',
- 'onsen.ticketBlockedTitle':'온천 · 사용 불가 툴팁',
- 'race.selectHint':'레이스 · 선택 전 안내',
- 'race.selectHeading':'레이스 · 선택 항목 제목',
- 'plans.help':'계획 관리 · 설명',
- 'plans.empty':'계획 관리 · 비어 있을 때 안내'
-};
-function readUiTextOverrides(){
- try{
-  const obj=JSON.parse(localStorage.getItem(UI_TEXT_KEY));
-  if(!obj||typeof obj!=='object'||Array.isArray(obj))return {};
-  return Object.fromEntries(Object.entries(obj).filter(([key,value])=>Object.hasOwn(UI_TEXT_DEFAULTS,key)&&typeof value==='string').map(([key,value])=>[key,value.slice(0,500)]));
- }catch(e){console.warn('UI 문구 설정을 불러오지 못했습니다',e);return {}}
-}
-let uiTextOverrides=readUiTextOverrides();
-function uiText(key){return Object.hasOwn(uiTextOverrides,key)?uiTextOverrides[key]:UI_TEXT_DEFAULTS[key]}
+/* Apply developer-maintained strings from ui-text.js. */
 function applyUiTexts(){
  const bindings={
   'onsen.heading':'.schedule-onsen-panel h4',
@@ -203,60 +169,7 @@ function applyUiTexts(){
   const node=document.querySelector(selector);
   if(node)node.textContent=uiText(key);
  }
- if(typeof scheduleTurn!=='undefined'&&scheduleTurn!==null&&scheduleCurrent?.scenario==='onsen')renderScheduleOnsenControls(scheduleCurrent.year,scheduleTurn);
- if($('schedule-race-select'))updateSelectedRaceDescription();
- if($('schedule-plans-backdrop')&&!$('schedule-plans-backdrop').hidden)renderSchedulePlans();
 }
-function openUiTextEditor(){
- const root=$('ui-text-fields');
- root.replaceChildren(...Object.entries(UI_TEXT_DEFAULTS).map(([key])=>{
-  const row=document.createElement('label');
-  row.className='ui-text-field';
-  const name=document.createElement('span');name.textContent=UI_TEXT_LABELS[key]||key;
-  const input=document.createElement('textarea');input.rows=2;input.maxLength=500;input.dataset.uiTextKey=key;input.value=uiText(key);
-  row.append(name,input);
-  return row;
- }));
- toggleToolMenu(false);
- $('ui-text-backdrop').hidden=false;
- document.body.classList.add('schedule-dialog-open');
- root.querySelector('textarea')?.focus();
-}
-function closeUiTextEditor(){
- $('ui-text-backdrop').hidden=true;
- document.body.classList.remove('schedule-dialog-open');
-}
-$('ui-text-open').addEventListener('click',openUiTextEditor);
-$('ui-text-close').addEventListener('click',closeUiTextEditor);
-$('ui-text-backdrop').addEventListener('click',e=>{if(e.target===$('ui-text-backdrop'))closeUiTextEditor()});
-$('ui-text-save').addEventListener('click',()=>{
- const next={};
- for(const field of $('ui-text-fields').querySelectorAll('[data-ui-text-key]')){
-  const key=field.dataset.uiTextKey;
-  if(!Object.hasOwn(UI_TEXT_DEFAULTS,key))continue;
-  const value=field.value.slice(0,500);
-  if(value!==UI_TEXT_DEFAULTS[key])next[key]=value;
- }
- try{localStorage.setItem(UI_TEXT_KEY,JSON.stringify(next))}
- catch(e){toast('문구 저장에 실패했습니다. 브라우저 저장 공간을 확인해 주세요.');return}
- uiTextOverrides=next;
- closeUiTextEditor();
- applyUiTexts();
- toast('문구를 저장했습니다.');
-});
-$('ui-text-reset').addEventListener('click',()=>{
- if(!confirm('편집한 UI 문구를 모두 기본 문구로 되돌릴까요?'))return;
- try{localStorage.removeItem(UI_TEXT_KEY)}
- catch(e){toast('문구 초기화에 실패했습니다.');return}
- uiTextOverrides={};
- closeUiTextEditor();
- applyUiTexts();
- toast('기본 문구로 되돌렸습니다.');
-});
-document.addEventListener('keydown',e=>{
- if(e.key==='Escape'&&!$('ui-text-backdrop').hidden){e.preventDefault();closeUiTextEditor()}
-});
-
 
 // Schedule: 24 turns per year, reusable plans and expandable scenario actions.
 // Character goals are fixed using the local career database.
