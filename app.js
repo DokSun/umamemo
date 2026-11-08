@@ -273,7 +273,7 @@ const SCHEDULE_ACTIONS={
 const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{}};
 // The nine original Onsen excavation icons are arranged in the order uploaded.
 // spriteIndex maps that visual order to the source image order in the sprite sheet.
-const SCHEDULE_ONSEN_SPRITE_ORDER=[4,3,1,2,0,8,7,6,5];
+const SCHEDULE_ONSEN_SPRITE_ORDER=[0,1,2,3,4,5,6,7,8];
 // Global turn numbers are 1-based: junior turn 3, classic Jan early, senior Jan early, senior Sep late.
 const SCHEDULE_ONSEN_UNLOCK_TURNS=[3,3,3,25,25,25,25,49,66];
 const SCHEDULE_ONSEN_DIGS=Object.fromEntries(SCHEDULE_ONSEN_SPRITE_ORDER.map((spriteIndex,i)=>['dig'+(i+1),{label:'온천 '+(i+1),spriteIndex,unlocksAt:SCHEDULE_ONSEN_UNLOCK_TURNS[i]}]));

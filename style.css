@@ -644,7 +644,7 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-onsen-subheading{font-size:12px;color:#bcd4e2;margin:0 0 8px}
 .schedule-onsen-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 .schedule-onsen-dig-choice{display:flex;align-items:center;justify-content:center;padding:5px;min-height:58px}
-.schedule-onsen-icon{display:block;width:42px;height:42px;max-width:100%;aspect-ratio:1;background-image:url('./assets/ui/onsen-excavations.webp');background-repeat:no-repeat;background-size:900% 100%;border-radius:50%;flex-shrink:0}
+.schedule-onsen-icon{display:block;width:42px;height:42px;max-width:100%;aspect-ratio:1;background-image:url('./assets/ui/onsen-excavations.webp?v=20261109-correct-order');background-repeat:no-repeat;background-size:900% 100%;border-radius:50%;flex-shrink:0}
 .schedule-onsen-ticket-choice{display:block;width:100%;margin-top:9px}
 .schedule-onsen-dig-badge{display:block;width:clamp(18px,2.1vw,26px);height:clamp(18px,2.1vw,26px);flex-shrink:0;border-radius:50%;background:white;border:1px solid #c9daed;overflow:hidden;box-shadow:0 1px 3px #000b}
 .schedule-onsen-dig-badge .schedule-onsen-icon{width:100%;height:100%}
