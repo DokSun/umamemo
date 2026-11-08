@@ -452,7 +452,9 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race')).map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.className='schedule-action-option';
-  b.innerHTML=scheduleActionIcon(action)+'<span>'+escapeHTML(action.label)+'</span>';
+  b.innerHTML=scheduleActionIcon(action);
+   b.setAttribute('aria-label',action.label);
+   b.title=action.label;
   if(scheduleCurrent.turns[year][scheduleTurn]===key)b.classList.add('selected');
   return b;
  }));
