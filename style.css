@@ -583,7 +583,6 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-cell.locked-goal{cursor:help}
 .schedule-cell.locked-goal .schedule-cell-face{border-color:#dbad58}
 .schedule-prep-label{font-size:11px;color:#b0c1d3;font-weight:700}
-.schedule-cell.seasonal{cursor:default}
 .schedule-cell.seasonal .schedule-cell-face{border-style:dashed;background:#273346}
 .schedule-cell.seasonal .schedule-cell-label{color:#a6b6c9}
 #schedule-action-choices[hidden],#schedule-action-clear[hidden],#schedule-race-picker[hidden]{display:none!important}
