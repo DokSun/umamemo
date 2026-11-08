@@ -620,3 +620,8 @@ body.schedule-dialog-open{overflow:hidden}
   aspect-ratio:auto;
   object-fit:fill;
 }
+
+/* Highlight the current trainee in the native character selector. */
+#schedule-character{font-weight:700;border-color:#7abca3}
+#schedule-character option.current-character{background:#276e5a;color:#fff;font-weight:700}
+#schedule-character option:checked{background:#276e5a;color:#fff;font-weight:700}
