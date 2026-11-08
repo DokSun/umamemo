@@ -163,8 +163,9 @@ let scheduleDb={characters:[],races:[]};
 const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
 const SCHEDULE_YEAR_KO={junior:'주니어',classic:'클래식',senior:'시니어'};
 function scheduleGlobalTurn(year,halfMonthIndex){return SCHEDULE_YEAR_ORDER.indexOf(year)*24+halfMonthIndex+1}
+function findScheduleCharacter(){return scheduleDb.characters.find(c=>c.id===scheduleCurrent.character||c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character)}
 function scheduleGoalAt(year,i){
- const character=scheduleDb.characters.find(c=>c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character);
+ const character=findScheduleCharacter();
  if(!character)return null;
  const turn=scheduleGlobalTurn(year,i);
  return character.goals.find(g=>g.t===turn)||null;
@@ -193,9 +194,12 @@ function renderScheduleCharacterOptions(){
  const selector=$('schedule-character');
  const value=scheduleCurrent.character;
  selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
- for(const ch of scheduleDb.characters)selector.add(new Option(ch.ko+' ('+ch.en+')',ch.ko));
- if(value&&!scheduleDb.characters.some(ch=>ch.ko===value||ch.en===value))selector.add(new Option(value+' (목표 정보 없음)',value));
- selector.value=scheduleDb.characters.find(ch=>ch.en===value)?.ko||value;
+ for(const ch of scheduleDb.characters){
+  const suffix=ch.variant?' ['+ch.variant+']':'';
+  selector.add(new Option(ch.ko+suffix+(ch.en!==ch.ko?' ('+ch.en+')':''),ch.id||ch.ko));
+ }
+ if(value&&!scheduleDb.characters.some(ch=>ch.id===value||ch.ko===value||ch.en===value))selector.add(new Option(value+' (목표 정보 없음)',value));
+ selector.value=scheduleDb.characters.find(ch=>ch.ko===value||ch.en===value)?.id||value;
 }
 function showScheduleRaceInfo(goal,year,i,selected){
  const info=$('schedule-race-info');
@@ -210,10 +214,53 @@ function showScheduleRaceInfo(goal,year,i,selected){
 }
 function renderScheduleGoalStatus(){
  const status=$('schedule-data-status');
- const character=scheduleDb.characters.find(c=>c.ko===scheduleCurrent.character||c.en===scheduleCurrent.character);
- if(!scheduleDb.characters.length)status.textContent='캐릭터·레이스 데이터를 불러오지 못했습니다. 직접 기록은 계속 사용할 수 있습니다.';
- else if(character)status.textContent='목표 레이스 '+character.goals.length+'개 · 출처: GameTora 기반 글로벌 URA 데이터 (일본 서버 전체 미포함)';
- else status.textContent='캐릭터를 선택하면 해당 캐릭터의 목표 레이스가 일정표에 표시됩니다. 제공 데이터: 71명 / 글로벌 URA 기준';
+ const character=findScheduleCharacter();
+ if(!scheduleDb.characters.length)status.textContent='DB를 불러오지 못했습니다. 직접 기록은 계속 사용할 수 있습니다.';
+ else if(character)status.textContent='목표 '+character.goals.length+'개 · 캐릭터 '+scheduleDb.characters.length+'종 / 레이스 일정 '+scheduleDb.races.length+'건 · 데이터 출처: GameTora 기반 공개 자료';
+ else status.textContent='캐릭터 선택 시 목표를 자동 표시합니다. 등록 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건';
+}
+const SCHEDULE_EXTERNAL={
+ uma:'https://raw.githubusercontent.com/daftuyda/UmaTools/main/assets/uma_data.json',
+ races:'https://raw.githubusercontent.com/daftuyda/UmaTools/main/assets/races.json'
+};
+function convertExternalCharacters(raw,local){
+ const known=new Map(local.map(c=>[c.en.toLowerCase().replace(/[^a-z0-9]/g,''),c.ko]));
+ const seen=new Set();
+ return raw.filter(x=>x&&x.UmaId&&x.UmaName&&Array.isArray(x.UmaObjectives)).map(x=>{
+  const id='uma-'+String(x.UmaId);
+  const en=x.UmaName;
+  const ko=known.get(en.toLowerCase().replace(/[^a-z0-9]/g,''))||en;
+  const goals=x.UmaObjectives.map(g=>{
+   const t=Number(g.Turn);
+   if(!Number.isInteger(t)||t<1||t>72)return null;
+   const n=String(g.ObjectiveName||'').trim();
+   return {t,c:false,o:[{n,g:'',s:'',d:String(g.ObjectiveCondition||''),f:0}]};
+  }).filter(Boolean);
+  return {id,en,ko,variant:x.UmaNickname||'',goals};
+ }).filter(c=>{if(seen.has(c.id))return false;seen.add(c.id);return true});
+}
+function convertExternalRaces(raw){
+ const races=[];
+ const mapGrade={100:'G1',200:'G2',300:'G3',400:'OP',500:'Pre-OP'};
+ for(const item of raw){
+  if(!item||!Array.isArray(item.instances))continue;
+  for(const inst of item.instances){
+   const year=Number(inst.year),month=Number(inst.month),half=Number(inst.half);
+   if(![1,2,3].includes(year)||month<1||month>12||![1,2].includes(half))continue;
+   const t=(year-1)*24+(month-1)*2+half;
+   races.push({n:String(item.name_en||item.name||''),t,g:mapGrade[Number(item.grade)]||'',track:String(item.venue||''),surface:Number(item.terrain)===1?'잔디':Number(item.terrain)===2?'더트':'',m:Number(item.distance)||0,dir:'',f:0});
+  }
+ }
+ return races;
+}
+async function fetchScheduleJson(url){
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),9000);
+ try{
+  const response=await fetch(url,{signal:controller.signal,cache:'no-store'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  return await response.json();
+ }finally{clearTimeout(timeout)}
 }
 async function loadScheduleDatabase(){
  try{
@@ -222,9 +269,28 @@ async function loadScheduleDatabase(){
   const raw=await response.json();
   if(!Array.isArray(raw.characters)||!Array.isArray(raw.races))throw Error('schedule data format');
   scheduleDb={characters:raw.characters,races:raw.races};
-  renderScheduleCharacterOptions();
   renderSchedule();
- }catch(err){console.error('스케줄표 DB 로딩 실패',err);renderScheduleGoalStatus()}
+ }catch(err){console.warn('기본 스케줄 DB 읽기 실패',err);renderScheduleGoalStatus()}
+ // The public GameTora-derived dataset extends the bundled fallback.
+ // Never erase local data if external hosting or CORS is unavailable.
+ const [uma,races]=await Promise.allSettled([
+  fetchScheduleJson(SCHEDULE_EXTERNAL.uma),
+  fetchScheduleJson(SCHEDULE_EXTERNAL.races)
+ ]);
+ if(uma.status==='fulfilled'&&Array.isArray(uma.value)){
+  const converted=convertExternalCharacters(uma.value,scheduleDb.characters);
+  if(converted.length>scheduleDb.characters.length/2){
+   const ids=new Set(converted.map(c=>c.en.toLowerCase()));
+   scheduleDb.characters=[...converted,...scheduleDb.characters.filter(c=>!ids.has(c.en.toLowerCase()))];
+  }
+ }
+ if(races.status==='fulfilled'&&Array.isArray(races.value)){
+  const converted=convertExternalRaces(races.value);
+  if(converted.length>100)scheduleDb.races=converted;
+ }
+ if(uma.status==='rejected')console.warn('확장 캐릭터 DB 사용 불가: 기본 DB 유지',uma.reason);
+ if(races.status==='rejected')console.warn('확장 레이스 DB 사용 불가: 기본 DB 유지',races.reason);
+ renderSchedule();
 }
 
 const SCHEDULE_ACTIONS={
