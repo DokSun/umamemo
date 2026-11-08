@@ -657,3 +657,16 @@ body.schedule-dialog-open{overflow:hidden}
 
 /* Compact guidance follows the ticket button, before excavation choices. */
 .schedule-onsen-panel .schedule-onsen-status:not([hidden]){margin:0 0 9px}
+
+/* Responsive two-column action picker: main action/race on the left, scenario controls on the right. */
+.schedule-action-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
+.schedule-action-main,.schedule-action-scenario{min-width:0}
+.schedule-action-scenario:has(> .schedule-onsen-panel[hidden]){display:none}
+.schedule-action-scenario .schedule-onsen-panel{margin:0 0 12px}
+.schedule-action-main .schedule-race-picker{margin:0 0 12px}
+@media(min-width:760px){
+ .schedule-action-modal.has-scenario{width:min(900px,100%)}
+ .schedule-action-modal.has-scenario .schedule-action-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+ .schedule-action-modal.has-scenario .schedule-action-main{padding-right:4px}
+ .schedule-action-modal.has-scenario .schedule-action-scenario{border-left:1px solid #3f5570;padding-left:18px}
+}
