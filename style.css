@@ -557,3 +557,15 @@ body.schedule-dialog-open{overflow:hidden}
 @container schedule-workspace (min-width:1050px){
  #schedule-panel .schedule-cell-goal{font-size:9px}
 }
+
+
+/* The race thumbnail fills the same icon area as training actions. */
+.schedule-cell-face .schedule-race-banner{
+ display:block;width:100%;height:100%;object-fit:contain;max-width:100%;
+ border-radius:inherit;
+}
+.schedule-cell-face .schedule-race-banner[hidden],
+.schedule-cell-face .schedule-banner-fallback[hidden]{display:none!important}
+.schedule-cell-face .schedule-banner-fallback{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.schedule-cell-face:has(.schedule-race-banner){overflow:hidden}
+.schedule-cell.has-goal .schedule-goal-marker{font-size:9px}
