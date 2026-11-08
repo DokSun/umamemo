@@ -337,16 +337,20 @@ function scheduleActionIcon(action){
   return '<span class="type-icon type-icon-'+action.typeIcon+' schedule-type-icon" aria-hidden="true"></span>';
  return '<span class="schedule-emoji-icon" aria-hidden="true">'+escapeHTML(action.icon||'•')+'</span>';
 }
-// Race banner URLs follow the published Uma Guide race thumbnail convention.
-// A missing remote image gracefully reverts to the existing in-app race icon.
-// Use a Korean in-app banner while no verified KR-client banner source is available.
-// Never silently display a Global/EN thumbnail as a Korean asset.
-function scheduleBannerHtml(race,goal){
- const label=scheduleGoalName(race)||'목표 레이스';
+// GameTora hosts Korean race banners by race ID. Fall back to a Korean
+// text label for races without a banner or without a stable race ID.
+function scheduleBannerHtml(race){
+ const label=scheduleGoalName(race)||scheduleRaceName(race)||'목표 레이스';
  const grade=String(race?.g||'').toUpperCase();
- return '<span class="schedule-ko-banner" aria-hidden="true">'
-  +'<span class="schedule-ko-banner-grade">'+escapeHTML(grade||'목표')+'</span>'
-  +'<span class="schedule-ko-banner-name">'+escapeHTML(label)+'</span></span>';
+ const fallback='<span class="schedule-ko-banner schedule-banner-fallback" aria-hidden="true"'
+   +(Number.isInteger(Number(race?.rid))&&Number(race.rid)>0?' hidden':'')+'>'
+   +'<span class="schedule-ko-banner-grade">'+escapeHTML(grade||'목표')+'</span>'
+   +'<span class="schedule-ko-banner-name">'+escapeHTML(label)+'</span></span>';
+ const id=Number(race?.rid);
+ if(!Number.isInteger(id)||id<=0)return fallback;
+ const url='https://media.gametora.com/umamusume/races/banners/ko/'+id+'.png';
+ return '<img class="schedule-race-banner" src="'+url+'" alt="" loading="lazy"'
+  +' onerror="this.hidden=true;this.nextElementSibling.hidden=false">'+fallback;
 }
 function scheduleIsPrepTurn(year,i){return year==='junior'&&i<12}
 function scheduleIsLockedGoal(year,i){return !!scheduleGoalAt(year,i)}
@@ -373,7 +377,7 @@ function renderSchedule(){
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const icon=goal?scheduleBannerHtml(selectedGoal,goal):(display?scheduleActionIcon(display):scheduleActionIcon(null));
+   const icon=goal?scheduleBannerHtml(selectedGoal):(selectedRace?scheduleBannerHtml(selectedRace):(display?scheduleActionIcon(display):scheduleActionIcon(null)));
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
