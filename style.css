@@ -591,3 +591,20 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-action-image{display:block;width:auto;height:25px;max-width:calc(100% - 6px);object-fit:contain;flex:none}
 .schedule-action-choices .schedule-action-image{max-width:100%;height:25px}
 .schedule-cell-face .schedule-action-image{max-height:calc(100% - 4px)}
+
+/* Color a chosen rest, outing or race turn, matching its supplied Korean icon. */
+.schedule-cell.schedule-action-rest .schedule-cell-face,
+.schedule-cell.schedule-action-rest:hover .schedule-cell-face,
+.schedule-cell.schedule-action-rest.seasonal .schedule-cell-face,
+.schedule-cell.schedule-action-rest.seasonal.filled .schedule-cell-face{background:#74bf21;border-color:#a8e856}
+.schedule-cell.schedule-action-outing .schedule-cell-face,
+.schedule-cell.schedule-action-outing:hover .schedule-cell-face,
+.schedule-cell.schedule-action-outing.seasonal .schedule-cell-face,
+.schedule-cell.schedule-action-outing.seasonal.filled .schedule-cell-face{background:#f4ae12;border-color:#ffd452}
+.schedule-cell.schedule-action-race .schedule-cell-face,
+.schedule-cell.schedule-action-race:hover .schedule-cell-face,
+.schedule-cell.schedule-action-race.seasonal .schedule-cell-face,
+.schedule-cell.schedule-action-race.seasonal.filled .schedule-cell-face{background:#ed5495;border-color:#ffa1c8}
+.schedule-action-choices button.schedule-action-rest.selected{background:#74bf21;border-color:#a8e856}
+.schedule-action-choices button.schedule-action-outing.selected{background:#f4ae12;border-color:#ffd452}
+.schedule-action-choices button.schedule-action-race.selected{background:#ed5495;border-color:#ffa1c8}
