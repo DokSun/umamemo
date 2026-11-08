@@ -233,17 +233,6 @@ function showScheduleRaceInfo(goal,year,i,selected){
  const goals=active.map(scheduleGoalName).join(' / ');
  info.textContent=yearName+' '+date+' · '+(goal?'목표: '+goals+(goal.c?' (선택 목표)':''):'출전: '+(race? scheduleRaceName(race):selected))+(race?' · '+describeRace(race):'');
 }
-function renderScheduleGoalStatus(){
- const status=$('schedule-data-status');
- const character=findScheduleCharacter();
- if(!scheduleDb.characters.length){
-  status.textContent='일본 서버 DB를 불러오지 못했습니다. 직접 스케줄 기록은 계속 사용할 수 있습니다.';
- }else if(character){
-  status.textContent='일본 서버 DB · 목표 '+character.goals.length+'개 · 육성 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건';
- }else{
-  status.textContent='일본 서버 기준 · 육성 캐릭터 '+scheduleDb.characters.length+'종 · 레이스 일정 '+scheduleDb.races.length+'건 · 캐릭터 선택 시 목표 자동 표시';
- }
-}
 async function loadScheduleDatabase(){
  try{
   const response=await fetch('./data/schedule_jp.json',{cache:'no-store'});
@@ -370,7 +359,6 @@ function renderSchedule(){
  if(!$('schedule-grid'))return;
  const activeYear=scheduleCurrent.year;
  renderScheduleCharacterOptions();
- renderScheduleGoalStatus();
  $('schedule-plan-caption').textContent=findScheduleCharacter()?.ko||scheduleCurrent.character||'자유 편집';
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
