@@ -206,13 +206,13 @@ const SCHEDULE_RACE_TRANSLATIONS={
  Turf:'잔디',Dirt:'더트',Left:'좌회전',Right:'우회전',Straight:'직선',
  Sprint:'단거리',Mile:'마일',Medium:'중거리',Long:'장거리',
  Tokyo:'도쿄',Kyoto:'교토',Nakayama:'나카야마',Hanshin:'한신',
- Chukyo:'주쿄',Niigata:'니가타',Fukushima:'후쿠시마',
- Sapporo:'삿포로',Hakodate:'하코다테',Kokura:'고쿠라',
+ Chukyo:'츄쿄',Niigata:'니가타',Fukushima:'후쿠시마',
+ Sapporo:'삿포로',Hakodate:'하코다테',Kokura:'코쿠라',
  Oi:'오이',Kawasaki:'가와사키',Funabashi:'후나바시',
  Morioka:'모리오카',Nagoya:'나고야',
  '札幌':'삿포로','函館':'하코다테','福島':'후쿠시마','新潟':'니가타',
- '中山':'나카야마','東京':'도쿄','中京':'주쿄','京都':'교토',
- '阪神':'한신','小倉':'고쿠라','大井':'오이','船橋':'후나바시',
+ '中山':'나카야마','東京':'도쿄','中京':'츄쿄','京都':'교토',
+ '阪神':'한신','小倉':'코쿠라','大井':'오이','船橋':'후나바시',
  '盛岡':'모리오카','佐賀':'사가','ロンシャン':'롱샹','サンタアニタパーク':'산타 아니타 파크'
 };
 function localizeRaceField(value){
@@ -552,7 +552,7 @@ $('schedule-grid').addEventListener('click',e=>{
  if(goal)detail.innerHTML=scheduleGoalDetailHtml(goal);
  const readOnly=!!goal;
  $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(year,scheduleTurn)<3;
- $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen');
+ $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen'&&scheduleGlobalTurn(year,scheduleTurn)>=3);
  if(scheduleCurrent.scenario==='onsen')renderScheduleOnsenControls(year,scheduleTurn);
  $('schedule-action-title').textContent=(readOnly?'목표 · ':'')+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
