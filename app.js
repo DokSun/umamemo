@@ -191,15 +191,13 @@ function scheduleGoalAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  return character.goals.find(g=>g.t===turn)||null;
 }
-const SCHEDULE_RACE_GRADE_RANK={G1:0,G2:1,G3:2,OP:3,other:4};
-function scheduleRaceGradeRank(grade){return SCHEDULE_RACE_GRADE_RANK[String(grade||'').toUpperCase()]??SCHEDULE_RACE_GRADE_RANK[grade]??5}
 function scheduleRacesAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  if(year==='junior'&&i<=12)return []; // Debut only through July first half
+ // Race ID ascending is the canonical priority; names/grades do not affect order.
  return scheduleDb.races.filter(r=>r.t===turn).sort((a,b)=>
-  scheduleRaceGradeRank(a.g)-scheduleRaceGradeRank(b.g)||
-  scheduleRaceName(a).localeCompare(scheduleRaceName(b),'ko')||
-  (a.rid||0)-(b.rid||0));
+  (Number(a.rid)||Number.MAX_SAFE_INTEGER)-(Number(b.rid)||Number.MAX_SAFE_INTEGER)||
+  scheduleRaceName(a).localeCompare(scheduleRaceName(b),'ko'));
 }
 let scheduleRaceKoNames={};
 const SCHEDULE_RACE_TRANSLATIONS={
