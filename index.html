@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261109-races-order-ko-junior"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261109-plan-record-separation"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">기능 선택</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 <div class="tool-menu-divider"></div>
 <div class="tool-server-row"><label class="server-label" for="server-mode">서버</label><select id="server-mode" aria-label="서버 선택"><option value="ko">한국</option><option value="jp">일본</option></select></div>
@@ -11,9 +11,10 @@
 <section id="schedule-panel" class="panel tool-panel" hidden>
  <div class="panel-title"><h2>스케줄표</h2></div>
  <div class="schedule-toolbar">
-  <div class="schedule-plan-info"><strong>현재 육성</strong><span id="schedule-plan-caption">자유 편집</span></div>
+  <div class="schedule-plan-info"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-plan-caption">계획 미선택</span></div>
   <button type="button" id="schedule-plans-open">계획 관리</button>
  </div>
+ <div id="schedule-plan-edit-bar" class="schedule-plan-edit-bar" hidden><span>계획 편집 중 · 실제 육성 기록은 변경되지 않습니다.</span><div><button type="button" id="schedule-plan-edit-save">계획 저장</button><button type="button" id="schedule-plan-edit-cancel">취소</button></div></div>
  <div class="schedule-character-row">
   <label for="schedule-character">육성 캐릭터</label>
   <select id="schedule-character" aria-label="육성 캐릭터 선택"><option value="">캐릭터 선택 (목표 레이스 표시)</option></select>
@@ -38,9 +39,9 @@
 <div id="schedule-plans-backdrop" class="schedule-modal-backdrop" hidden>
  <section class="schedule-modal schedule-plans-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-plans-title">
   <div class="schedule-modal-head"><h3 id="schedule-plans-title">육성 계획 관리</h3><button type="button" data-schedule-close aria-label="닫기">✕</button></div>
-  <p class="schedule-plans-help">계획은 현재 스케줄과 별도로 보관됩니다. 불러오면 현재 스케줄만 교체됩니다.</p>
-  <button id="schedule-plan-save" type="button">현재 스케줄을 새 계획으로 저장</button>
+  <p class="schedule-plans-help">참고 계획은 실제 육성 기록을 덮어쓰지 않습니다. 실제 행동을 기록하면 계획 대신 실제 행동이 표시됩니다.</p>
+  <button id="schedule-plan-new" type="button">새 계획 작성</button><button id="schedule-plan-save" type="button">현재 육성 기록을 계획으로 저장</button>
   <div id="schedule-plan-list" class="schedule-plan-list"></div>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-onsen-super-continuous" defer></script><script src="app.js?v=20261109-working-only-reset" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-record-separation" defer></script><script src="app.js?v=20261109-plan-record-separation" defer></script></body></html>
