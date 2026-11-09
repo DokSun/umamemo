@@ -29,7 +29,7 @@ const TOOLS={
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
  schedule:{name:'스케줄표',scope:'session',element:'schedule-panel',
-  reset(){scheduleCurrent=emptySchedule();saveScheduleCurrent();renderSchedule()}}
+  reset(){resetCurrentScheduleOnly()}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -86,11 +86,13 @@ function applyLayout(){
 function resetTargets(button){
  const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
  if(!ids.length)return;
- const desc=ids.length===1?TOOLS[ids[0]].name+'의 기록을':'현재 표시된 육성 기록을 모두';
+ const includesSchedule=ids.includes('schedule');
+ const desc=ids.length===1?(includesSchedule?'현재 육성 스케줄을':TOOLS[ids[0]].name+'의 기록을'):'현재 표시된 육성 기록을 모두';
  const sessionReset=ids.every(id=>TOOLS[id].scope==='session');
- if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'))return;
+ const planNotice=includesSchedule?'\n\n저장된 육성 계획은 삭제되지 않으며, 계획 관리에서 다시 불러올 수 있습니다.':'';
+ if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'+planNotice))return;
  ids.forEach(id=>TOOLS[id].reset());
- toast(ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
+ toast(includesSchedule?(ids.length>1?'현재 육성 기록을 초기화했습니다. 저장된 계획은 유지됩니다.':'현재 육성 스케줄을 초기화했습니다. 저장된 계획은 유지됩니다.'):ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
 function toggleToolMenu(open){
  const menu=$('tool-menu');
@@ -437,6 +439,14 @@ function readSchedulePlans(){
 let scheduleCurrent=readScheduleCurrent();
 let schedulePlans=readSchedulePlans();
 let scheduleTurn=null;
+// Reset the working cultivation only. Saved plans are separate and must never be cleared here.
+function resetCurrentScheduleOnly(){
+ scheduleCurrent=emptySchedule();
+ scheduleTurn=null;
+ saveScheduleCurrent();
+ if($('schedule-action-backdrop')&&!$('schedule-action-backdrop').hidden)closeScheduleDialog();
+ renderSchedule();
+}
 function saveScheduleCurrent(){
  try{localStorage.setItem(scheduleKey('current'),JSON.stringify(scheduleCurrent))}
  catch(e){toast('스케줄 저장 실패: 저장 공간을 확인해 주세요')}
