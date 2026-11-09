@@ -287,7 +287,7 @@ const SCHEDULE_ACTIONS={
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
-const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{}};
+const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',text:'PR'}}};
 // The nine original Onsen excavation icons are arranged in the order uploaded.
 // spriteIndex maps that visual order to the source image order in the sprite sheet.
 // Sprite positions follow the images' upload order (5,4,2,3,1,9,8,7,6), not filename order.
@@ -439,6 +439,7 @@ function saveSchedulePlans(){
 function scheduleActionIcon(action){
  if(!action)return '<span class="schedule-empty-mark">+</span>';
  if(action.image)return '<img class="schedule-action-image" src="'+escapeHTML(action.image)+'" alt="" aria-hidden="true" loading="lazy">';
+ if(action.text)return '<span class="schedule-pr-icon" aria-hidden="true">'+escapeHTML(action.text)+'</span>';
  if(action.typeIcon&&['speed','stamina','power','guts','wisdom','friend','group'].includes(action.typeIcon))
   return '<span class="type-icon type-icon-'+action.typeIcon+' schedule-type-icon" aria-hidden="true"></span>';
  return '<span class="schedule-emoji-icon" aria-hidden="true">'+escapeHTML(action.icon||'•')+'</span>';
@@ -561,7 +562,14 @@ $('schedule-grid').addEventListener('click',e=>{
  const previous=r.findIndex(x=>x.n===selected);
  select.value=previous>=0?String(previous):'';
  updateSelectedRaceDescription();
- $('schedule-action-choices').replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario)).filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race')).map(([key,action])=>{
+ // Keep training in the first row, followed by scenario-specific training, then rest/outing/race.
+ const actionOrder=['speed','stamina','power','guts','wisdom','pr','rest','outing','race'];
+ const choices=$('schedule-action-choices');
+ choices.classList.toggle('with-sixth-training',Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),'pr'));
+ choices.replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario))
+  .filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race'))
+  .sort(([x],[y])=>(actionOrder.indexOf(x)===-1?99:actionOrder.indexOf(x))-(actionOrder.indexOf(y)===-1?99:actionOrder.indexOf(y)))
+  .map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.className='schedule-action-option';
   b.innerHTML=scheduleActionIcon(action);
