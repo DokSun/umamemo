@@ -670,9 +670,14 @@ body.schedule-dialog-open{overflow:hidden}
 }
 
 /* First row: five training choices; second row: rest, outing, race. */
-.schedule-action-choices{grid-template-columns:repeat(15,minmax(0,1fr));gap:8px 5px}
-.schedule-action-choices > [data-schedule-action]{grid-column:span 5}
-.schedule-action-choices > [data-schedule-action="speed"],.schedule-action-choices > [data-schedule-action="stamina"],.schedule-action-choices > [data-schedule-action="power"],.schedule-action-choices > [data-schedule-action="guts"],.schedule-action-choices > [data-schedule-action="wisdom"]{grid-column:span 3}
+.schedule-action-choices{grid-template-columns:repeat(30,minmax(0,1fr));gap:8px 5px}
+.schedule-action-choices > [data-schedule-action]{grid-column:span 10}
+.schedule-action-choices > [data-schedule-action="speed"],.schedule-action-choices > [data-schedule-action="stamina"],.schedule-action-choices > [data-schedule-action="power"],.schedule-action-choices > [data-schedule-action="guts"],.schedule-action-choices > [data-schedule-action="wisdom"]{grid-column:span 6}
+.schedule-action-choices.with-sixth-training > [data-schedule-action="speed"],.schedule-action-choices.with-sixth-training > [data-schedule-action="stamina"],.schedule-action-choices.with-sixth-training > [data-schedule-action="power"],.schedule-action-choices.with-sixth-training > [data-schedule-action="guts"],.schedule-action-choices.with-sixth-training > [data-schedule-action="wisdom"],.schedule-action-choices.with-sixth-training > [data-schedule-action="pr"]{grid-column:span 5}
+.schedule-pr-icon{display:inline-flex;align-items:center;justify-content:center;font-size:clamp(15px,2vw,23px);line-height:1;font-weight:900;letter-spacing:-.03em;color:#ffdc80;text-shadow:0 1px 1px #0009}
+.schedule-action-choices [data-schedule-action="pr"]{background:#3a4b64;border-color:#967f4d}
+.schedule-action-choices [data-schedule-action="pr"].selected{background:#276e5a;border-color:#6fd5b2}
+.schedule-cell-face > .schedule-pr-icon{font-size:clamp(19px,2.5vw,29px)}
 /* Place ticket modes and excavation options side by side. */
 .schedule-onsen-sides{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px;align-items:start}
 .schedule-onsen-ticket-area,.schedule-onsen-dig-area{min-width:0}
