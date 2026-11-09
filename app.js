@@ -737,9 +737,12 @@ function renderSchedulePlans(){
   root.querySelector('.schedule-plans-empty').textContent=uiText('plans.empty');
   return;
  }
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-load="${i}">불러오기</button><button type="button" data-plan-overwrite="${i}">덮어쓰기</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}${p.id===scheduleActivePlanId?' · 참고 중':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}">${p.id===scheduleActivePlanId?'참고 해제':'참고하기'}</button><button type="button" data-plan-edit="${i}">계획 편집</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
 }
-$('schedule-plans-open').addEventListener('click',()=>{renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
+$('schedule-plan-edit-save').addEventListener('click',()=>scheduleFinishPlanEdit(true));
+$('schedule-plan-edit-cancel').addEventListener('click',()=>scheduleFinishPlanEdit(false));
+$('schedule-plans-open').addEventListener('click',()=>{if(scheduleEditingPlan)return toast('계획 편집을 저장하거나 취소해 주세요');renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
+$('schedule-plan-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
 $('schedule-plan-save').addEventListener('click',()=>{
  const raw=prompt('저장할 계획의 이름을 입력하세요.');
  if(raw===null)return;
@@ -749,7 +752,7 @@ $('schedule-plan-save').addEventListener('click',()=>{
  const next={id:String(Date.now())+'-'+String(Math.random()).slice(2),name,schedule:normalizeSchedule(scheduleCurrent)};
  schedulePlans.push(next);
  if(!saveSchedulePlans()){schedulePlans.pop();return}
- renderSchedulePlans();toast('계획을 저장했습니다');
+ renderSchedulePlans();toast('현재 육성 기록을 별도 계획으로 저장했습니다');
 });
 $('schedule-plan-list').addEventListener('click',e=>{
  const btn=e.target.closest('button');
@@ -758,27 +761,32 @@ $('schedule-plan-list').addEventListener('click',e=>{
  if(!match)return;
  const index=Number(btn.dataset[match]),entry=schedulePlans[index];
  if(!entry)return;
- if(match==='planLoad'){
-  if(!confirm('현재 스케줄을 '+entry.name+' 계획으로 교체할까요? 저장된 계획은 유지됩니다.'))return;
-  scheduleCurrent=normalizeSchedule(entry.schedule);
-  saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('계획을 불러왔습니다');
- }else if(match==='planOverwrite'){
-  if(!confirm(entry.name+' 계획을 현재 스케줄로 덮어쓸까요?'))return;
-  const previous=entry.schedule;
-  entry.schedule=normalizeSchedule(scheduleCurrent);
-  if(!saveSchedulePlans()){entry.schedule=previous;return}
-  renderSchedulePlans();toast('계획을 덮어썼습니다');
+ if(match==='planUse'){
+  if(entry.id===scheduleActivePlanId){
+   scheduleSetActivePlan('');renderSchedulePlans();renderSchedule();return;
+  }
+  if(scheduleCurrent.character&&scheduleCurrent.character!==entry.schedule.character&&Object.values(scheduleCurrent.turns).some(xs=>xs.some(Boolean))){
+   if(!confirm('현재 육성 캐릭터가 다릅니다. 실제 행동 기록을 유지하고 참고 계획의 캐릭터로 변경할까요?'))return;
+  }
+  // Only copy scenario/character context, NEVER the plan's actions or effects.
+  scheduleCurrent.character=entry.schedule.character;
+  scheduleCurrent.scenario=entry.schedule.scenario;
+  scheduleSetActivePlan(entry.id);
+  saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('참고 계획을 선택했습니다');
+ }else if(match==='planEdit'){
+  scheduleBeginPlanEdit(entry);
  }else if(match==='planRename'){
   const raw=prompt('새 이름을 입력하세요.',entry.name);
   if(raw===null||!raw.trim())return;
   const previous=entry.name;entry.name=raw.trim().slice(0,80);
   if(!saveSchedulePlans()){entry.name=previous;return}
-  renderSchedulePlans();
+  renderSchedulePlans();renderSchedule();
  }else if(match==='planDelete'){
   if(!confirm(entry.name+' 계획을 삭제할까요?'))return;
   const removed=schedulePlans.splice(index,1);
   if(!saveSchedulePlans()){schedulePlans.splice(index,0,removed[0]);return}
-  renderSchedulePlans();toast('계획을 삭제했습니다');
+  if(entry.id===scheduleActivePlanId)scheduleSetActivePlan('');
+  renderSchedulePlans();renderSchedule();toast('계획을 삭제했습니다');
  }
 });
 document.querySelectorAll('[data-schedule-close]').forEach(btn=>btn.addEventListener('click',closeScheduleDialog));
