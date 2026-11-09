@@ -699,3 +699,13 @@ body.schedule-dialog-open{overflow:hidden}
 /* PR activity shares the native 128x128 format of the five supplied training icons. */
 .schedule-action-choices .schedule-action-option[data-schedule-action="pr"] > .schedule-action-image{width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain}
 .schedule-cell-face > .schedule-action-image[src*="pr-training-matched.svg"]{position:relative;inset:auto;width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;flex:none;border-radius:0}
+
+/* Optional guidance plan: planned turns appear only when actual turn has no record. */
+#schedule-panel .schedule-plan-edit-bar[hidden]{display:none!important}
+.schedule-plan-edit-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:9px;border:1px solid #7864b6;border-radius:8px;background:#352c54;font-size:12px}
+.schedule-plan-edit-bar>div{display:flex;gap:6px}
+.schedule-plan-edit-bar #schedule-plan-edit-save{background:#287e61;border-color:#58bd93}
+#schedule-grid .schedule-cell.planned .schedule-cell-face{border-style:dashed;border-color:#9aadc5;opacity:.76}
+#schedule-grid .schedule-cell.planned .schedule-cell-label{color:#aec0d9}
+#schedule-plan-new{width:100%;min-height:40px;margin:8px 0 4px}
+#schedule-plan-save{margin:4px 0 12px}
