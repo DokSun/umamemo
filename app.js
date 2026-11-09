@@ -287,7 +287,7 @@ const SCHEDULE_ACTIONS={
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
-const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',text:'PR'}}};
+const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',image:'./assets/ui/pr-training.png'}}};
 // The nine original Onsen excavation icons are arranged in the order uploaded.
 // spriteIndex maps that visual order to the source image order in the sprite sheet.
 // Sprite positions follow the images' upload order (5,4,2,3,1,9,8,7,6), not filename order.
