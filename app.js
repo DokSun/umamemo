@@ -86,6 +86,7 @@ function applyLayout(){
 function resetTargets(button){
  const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
  if(!ids.length)return;
+ if(ids.includes('schedule')&&scheduleEditingPlan)return toast('계획 편집을 저장하거나 취소한 후 초기화해 주세요');
  const includesSchedule=ids.includes('schedule');
  const desc=ids.length===1?(includesSchedule?'현재 육성 스케줄을':TOOLS[ids[0]].name+'의 기록을'):'현재 표시된 육성 기록을 모두';
  const sessionReset=ids.every(id=>TOOLS[id].scope==='session');
@@ -483,6 +484,7 @@ function scheduleFinishPlanEdit(save=false){
 }
 // Reset the working cultivation only. Saved plans are separate and must never be cleared here.
 function resetCurrentScheduleOnly(){
+ if(scheduleEditingPlan)return;
  scheduleCurrent=emptySchedule();
  const guide=scheduleActivePlan()?.schedule;
  if(guide){scheduleCurrent.character=guide.character;scheduleCurrent.scenario=guide.scenario;}
@@ -541,14 +543,15 @@ function renderSchedule(){
   btn.classList.toggle('active',active);
   btn.setAttribute('aria-selected',String(active));
  });
- const actions=scheduleAvailableActions(scheduleCurrent.scenario);
  $('schedule-grid').innerHTML=SCHEDULE_YEAR_ORDER.map(year=>{
   const cells=scheduleCurrent.turns[year].map((recordedAction,i)=>{
     const running=scheduleCurrent;
     const key=scheduleTurnEventKey(year,i);
     const recordedEvents=Array.isArray(running.scenarioEvents[key])&&running.scenarioEvents[key].length>0;
     const hasRecorded=Boolean(recordedAction)||recordedEvents;
-    const isGuide=Boolean(guide&&!hasRecorded);
+    const planHasAction=Boolean(guide?.turns[year]?.[i]);
+    const planHasEvent=Array.isArray(guide?.scenarioEvents[key])&&guide.scenarioEvents[key].length>0;
+    const isGuide=Boolean(guide&&!hasRecorded&&(planHasAction||planHasEvent));
     if(isGuide)scheduleCurrent=guide;
     const action=isGuide?(guide.turns[year]?.[i]||null):recordedAction;
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
