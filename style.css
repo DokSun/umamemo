@@ -695,3 +695,7 @@ body.schedule-dialog-open{overflow:hidden}
 /* PR megaphone icon is the same 36x36 badge format as the five training icons. */
 .schedule-action-choices .schedule-action-option[data-schedule-action="pr"] > .schedule-action-image{width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;border-radius:0}
 .schedule-cell-face > .schedule-action-image[src*="pr-training.png"]{position:relative;inset:auto;width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;flex:none;border-radius:0}
+
+/* PR activity shares the native 128x128 format of the five supplied training icons. */
+.schedule-action-choices .schedule-action-option[data-schedule-action="pr"] > .schedule-action-image{width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain}
+.schedule-cell-face > .schedule-action-image[src*="pr-training-matched.svg"]{position:relative;inset:auto;width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;flex:none;border-radius:0}
