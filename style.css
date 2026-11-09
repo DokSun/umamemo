@@ -675,7 +675,7 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-action-choices > [data-schedule-action="speed"],.schedule-action-choices > [data-schedule-action="stamina"],.schedule-action-choices > [data-schedule-action="power"],.schedule-action-choices > [data-schedule-action="guts"],.schedule-action-choices > [data-schedule-action="wisdom"]{grid-column:span 6}
 .schedule-action-choices.with-sixth-training > [data-schedule-action="speed"],.schedule-action-choices.with-sixth-training > [data-schedule-action="stamina"],.schedule-action-choices.with-sixth-training > [data-schedule-action="power"],.schedule-action-choices.with-sixth-training > [data-schedule-action="guts"],.schedule-action-choices.with-sixth-training > [data-schedule-action="wisdom"],.schedule-action-choices.with-sixth-training > [data-schedule-action="pr"]{grid-column:span 5}
 .schedule-pr-icon{display:inline-flex;align-items:center;justify-content:center;font-size:clamp(15px,2vw,23px);line-height:1;font-weight:900;letter-spacing:-.03em;color:#ffdc80;text-shadow:0 1px 1px #0009}
-.schedule-action-choices [data-schedule-action="pr"]{background:#3a4b64;border-color:#967f4d}
+.schedule-action-choices [data-schedule-action="pr"]{background:#8e3833;border-color:#ff925d}
 .schedule-action-choices [data-schedule-action="pr"].selected{background:#276e5a;border-color:#6fd5b2}
 .schedule-cell-face > .schedule-pr-icon{font-size:clamp(19px,2.5vw,29px)}
 /* Place ticket modes and excavation options side by side. */
