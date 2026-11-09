@@ -191,10 +191,15 @@ function scheduleGoalAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  return character.goals.find(g=>g.t===turn)||null;
 }
+const SCHEDULE_RACE_GRADE_RANK={G1:0,G2:1,G3:2,OP:3,other:4};
+function scheduleRaceGradeRank(grade){return SCHEDULE_RACE_GRADE_RANK[String(grade||'').toUpperCase()]??SCHEDULE_RACE_GRADE_RANK[grade]??5}
 function scheduleRacesAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  if(year==='junior'&&i<=12)return []; // Debut only through July first half
- return scheduleDb.races.filter(r=>r.t===turn);
+ return scheduleDb.races.filter(r=>r.t===turn).sort((a,b)=>
+  scheduleRaceGradeRank(a.g)-scheduleRaceGradeRank(b.g)||
+  scheduleRaceName(a).localeCompare(scheduleRaceName(b),'ko')||
+  (a.rid||0)-(b.rid||0));
 }
 let scheduleRaceKoNames={};
 const SCHEDULE_RACE_TRANSLATIONS={
@@ -217,8 +222,9 @@ function describeRace(r){
  if(!r)return '';
  return [r.g,localizeRaceField(r.track),localizeRaceField(r.surface),r.m?r.m+'m':'',localizeRaceField(r.dir)].filter(Boolean).join(' · ');
 }
-function scheduleRaceName(r){return r?.ko||scheduleRaceKoNames[r?.n]||r?.n||''}
-function scheduleGoalName(o){return o?.ko||scheduleRaceKoNames[o?.n]||o?.n||''}
+// The curated translation table takes precedence over stale localized fields in the JP race database.
+function scheduleRaceName(r){return scheduleRaceKoNames[r?.n]||r?.ko||r?.n||''}
+function scheduleGoalName(o){return scheduleRaceKoNames[o?.n]||o?.ko||o?.n||''}
 function scheduleGoalDetailHtml(goal){
  if(!goal)return '';
  const list=goal.o.map(o=>{
@@ -311,6 +317,7 @@ function scheduleOnsenIconHtml(id){
 }
 function scheduleTurnEventKey(year,i){return year+'-'+i}
 function scheduleOnsenEvents(year,i){
+ if(scheduleGlobalTurn(year,i)<3)return [];
  const value=scheduleCurrent.scenarioEvents?.[scheduleTurnEventKey(year,i)];
  return Array.isArray(value)?value.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_EVENTS,id)&&scheduleOnsenUnlocked(id,year,i)):[];
 }
@@ -375,7 +382,7 @@ function normalizeSchedule(raw){
    if(!/^(junior|classic|senior)-([0-9]|1[0-9]|2[0-3])$/.test(key)||!Array.isArray(events))continue;
    const [eventYear,eventTurnText]=key.split('-');
    const eventTurn=Number(eventTurnText);
-   const valid=[...new Set(events.filter(id=>typeof id==='string'&&SCHEDULE_ONSEN_EVENT_IDS.includes(id)&&scheduleOnsenUnlocked(id,eventYear,eventTurn)))];
+   const valid=scheduleGlobalTurn(eventYear,eventTurn)<3?[]:[...new Set(events.filter(id=>typeof id==='string'&&SCHEDULE_ONSEN_EVENT_IDS.includes(id)&&scheduleOnsenUnlocked(id,eventYear,eventTurn)))];
    if(valid.length)result.scenarioEvents[key]=valid;
   }
  }
@@ -544,7 +551,7 @@ $('schedule-grid').addEventListener('click',e=>{
  detail.hidden=!goal;
  if(goal)detail.innerHTML=scheduleGoalDetailHtml(goal);
  const readOnly=!!goal;
- $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen';
+ $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(year,scheduleTurn)<3;
  $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen');
  if(scheduleCurrent.scenario==='onsen')renderScheduleOnsenControls(year,scheduleTurn);
  $('schedule-action-title').textContent=(readOnly?'목표 · ':'')+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
@@ -603,7 +610,7 @@ function renderScheduleOnsenControls(year,i){
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
- if(!button||scheduleTurn===null||scheduleCurrent.scenario!=='onsen')return;
+ if(!button||scheduleTurn===null||scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(scheduleCurrent.year,scheduleTurn)<3)return;
  const id=button.dataset.onsenEvent;
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year;
