@@ -59,7 +59,7 @@ function renderResetActions(){
  counterFooter.hidden=!ids.includes('counter');
  memoFooter.hidden=!ids.includes('memo');
  secondary.dataset.targets='memo';
- scheduleFooter.hidden=!ids.includes('schedule')||unified;
+ scheduleFooter.hidden=!ids.includes('schedule');
  $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
@@ -287,7 +287,7 @@ const SCHEDULE_ACTIONS={
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
-const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',image:'./assets/ui/pr-training-matched.svg'}}};
+const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',image:'./assets/ui/pr-training-matched.svg',unlocksAt:3}}};
 // The nine original Onsen excavation icons are arranged in the order uploaded.
 // spriteIndex maps that visual order to the source image order in the sprite sheet.
 // Sprite positions follow the images' upload order (5,4,2,3,1,9,8,7,6), not filename order.
@@ -355,6 +355,10 @@ const LEGACY_SCHEDULE_ACTIONS={
 function scheduleAvailableActions(scenario='basic'){
  return {...SCHEDULE_ACTIONS,...(SCHEDULE_SCENARIO_ACTIONS[scenario]||{})};
 }
+// A scenario-specific command can be used from its unlock turn onward.
+function scheduleActionUnlocked(action,year,i){
+ return !action?.unlocksAt||scheduleGlobalTurn(year,i)>=action.unlocksAt;
+}
 function scheduleKey(kind){return 'uma-schedule-'+kind+'-v1-'+serverMode}
 function scheduleSlots(year){return 24}
 function emptySchedule(){
@@ -403,7 +407,7 @@ function normalizeSchedule(raw){
   result.turns[year]=Array.from({length:24},(_,i)=>{
    const action=migrated[i];
    if(action==='race'&&year==='junior'&&i<=12)return null;
-   if(Object.hasOwn(allowed,action))return action;
+   if(Object.hasOwn(allowed,action)&&scheduleActionUnlocked(allowed[action],year,i))return action;
    if(Object.hasOwn(LEGACY_SCHEDULE_ACTIONS,action))return action;
    // Old manually assigned goals no longer exist as selectable actions.
    if(action==='target')return null;
@@ -534,7 +538,7 @@ $('schedule-grid').addEventListener('click',e=>{
  scheduleCurrent.year=year;
  scheduleTurn=clickedTurn;
  const month=1+Math.floor(scheduleTurn/2);
- $('schedule-action-title').textContent=SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반')+' · 행동 선택';
+ $('schedule-action-title').textContent=SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  const goal=scheduleGoalAt(year,scheduleTurn);
  const detail=$('schedule-goal-detail');
  detail.hidden=!goal;
@@ -543,7 +547,7 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen';
  $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen');
  if(scheduleCurrent.scenario==='onsen')renderScheduleOnsenControls(year,scheduleTurn);
- $('schedule-action-title').textContent=readOnly?'고정 목표 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반'):'행동 선택 · '+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
+ $('schedule-action-title').textContent=(readOnly?'목표 · ':'')+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
  // Goals are fixed, but their turn-free scenario actions must still be resettable.
@@ -565,9 +569,9 @@ $('schedule-grid').addEventListener('click',e=>{
  // Keep training in the first row, followed by scenario-specific training, then rest/outing/race.
  const actionOrder=['speed','stamina','power','guts','wisdom','pr','rest','outing','race'];
  const choices=$('schedule-action-choices');
- choices.classList.toggle('with-sixth-training',Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),'pr'));
+ choices.classList.toggle('with-sixth-training',Boolean(scheduleAvailableActions(scheduleCurrent.scenario).pr&&scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario).pr,year,scheduleTurn)));
  choices.replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario))
-  .filter(([key])=>!(year==='junior'&&scheduleTurn<=12&&key==='race'))
+  .filter(([key,action])=>scheduleActionUnlocked(action,year,scheduleTurn)&&!(year==='junior'&&scheduleTurn<=12&&key==='race'))
   .sort(([x],[y])=>(actionOrder.indexOf(x)===-1?99:actionOrder.indexOf(x))-(actionOrder.indexOf(y)===-1?99:actionOrder.indexOf(y)))
   .map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
@@ -635,7 +639,7 @@ $('schedule-race-apply').addEventListener('click',()=>{
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction))return;
+ if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction)||!scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario)[btn.dataset.scheduleAction],scheduleCurrent.year,scheduleTurn))return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  if(btn.dataset.scheduleAction!=='race')delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
