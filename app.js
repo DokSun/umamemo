@@ -439,15 +439,60 @@ function readSchedulePlans(){
 let scheduleCurrent=readScheduleCurrent();
 let schedulePlans=readSchedulePlans();
 let scheduleTurn=null;
+let scheduleActivePlanId='';
+try{scheduleActivePlanId=localStorage.getItem(scheduleKey('active-plan'))||''}catch(e){}
+let scheduleEditingPlan=null, scheduleRunBeforeEdit=null;
+function scheduleActivePlan(){return schedulePlans.find(p=>p.id===scheduleActivePlanId)||null}
+function scheduleSetActivePlan(id){
+ scheduleActivePlanId=id;
+ try{if(id)localStorage.setItem(scheduleKey('active-plan'),id);else localStorage.removeItem(scheduleKey('active-plan'))}catch(e){console.warn(e)}
+}
+function scheduleBeginPlanEdit(entry){
+ if(scheduleEditingPlan)return;
+ scheduleRunBeforeEdit=scheduleCurrent;
+ scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:normalizeSchedule(entry?.schedule||emptySchedule())};
+ scheduleCurrent=scheduleEditingPlan.schedule;
+ scheduleCurrent.year=scheduleRunBeforeEdit.year;
+ closeScheduleDialog();renderSchedule();
+}
+function scheduleFinishPlanEdit(save=false){
+ if(!scheduleEditingPlan)return;
+ if(save){
+  const raw=prompt('계획 이름',scheduleEditingPlan.name||'새 육성 계획');
+  if(raw===null)return;
+  const name=raw.trim().slice(0,80);
+  if(!name)return toast('계획 이름을 입력해 주세요');
+  if(scheduleEditingPlan.id){
+   const entry=schedulePlans.find(p=>p.id===scheduleEditingPlan.id);
+   if(!entry)return toast('저장된 계획을 찾을 수 없습니다');
+   const previous={name:entry.name,schedule:entry.schedule};
+   entry.name=name;entry.schedule=normalizeSchedule(scheduleCurrent);
+   if(!saveSchedulePlans()){Object.assign(entry,previous);return}
+  }else{
+   if(schedulePlans.length>=50)return toast('계획은 최대 50개까지 저장할 수 있습니다');
+   const entry={id:String(Date.now())+'-'+Math.random().toString(36).slice(2),name,schedule:normalizeSchedule(scheduleCurrent)};
+   schedulePlans.push(entry);
+   if(!saveSchedulePlans()){schedulePlans.pop();return}
+   scheduleSetActivePlan(entry.id);
+  }
+ }
+ scheduleCurrent=scheduleRunBeforeEdit;
+ scheduleRunBeforeEdit=null;scheduleEditingPlan=null;
+ closeScheduleDialog();renderSchedule();
+ if(save)toast('계획을 저장했습니다');
+}
 // Reset the working cultivation only. Saved plans are separate and must never be cleared here.
 function resetCurrentScheduleOnly(){
  scheduleCurrent=emptySchedule();
+ const guide=scheduleActivePlan()?.schedule;
+ if(guide){scheduleCurrent.character=guide.character;scheduleCurrent.scenario=guide.scenario;}
  scheduleTurn=null;
  saveScheduleCurrent();
  if($('schedule-action-backdrop')&&!$('schedule-action-backdrop').hidden)closeScheduleDialog();
  renderSchedule();
 }
 function saveScheduleCurrent(){
+ if(scheduleEditingPlan)return; // draft must never overwrite actual records
  try{localStorage.setItem(scheduleKey('current'),JSON.stringify(scheduleCurrent))}
  catch(e){toast('스케줄 저장 실패: 저장 공간을 확인해 주세요')}
 }
@@ -483,9 +528,14 @@ function scheduleIsLockedGoal(year,i){return !!scheduleGoalAt(year,i)}
 function renderSchedule(){
  if(!$('schedule-grid'))return;
  const activeYear=scheduleCurrent.year;
+ const guide=!scheduleEditingPlan?scheduleActivePlan()?.schedule:null;
  renderScheduleCharacterOptions();
  $('schedule-scenario').value=scheduleCurrent.scenario;
- $('schedule-plan-caption').textContent=findScheduleCharacter()?.ko||scheduleCurrent.character||'자유 편집';
+ $('schedule-plan-caption').textContent=scheduleEditingPlan?'계획 편집: '+(scheduleEditingPlan.name||'새 계획'):guide?'참고 계획: '+scheduleActivePlan().name:findScheduleCharacter()?.ko||scheduleCurrent.character||'계획 미선택';
+ $('schedule-work-title').textContent=scheduleEditingPlan?'육성 계획 편집':'현재 육성';
+ $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
+ $('schedule-reset-footer').hidden=!!scheduleEditingPlan||!visibleToolIds().includes('schedule');
+ $('schedule-panel').classList.toggle('editing-plan',!!scheduleEditingPlan);
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
   btn.classList.toggle('active',active);
@@ -493,7 +543,14 @@ function renderSchedule(){
  });
  const actions=scheduleAvailableActions(scheduleCurrent.scenario);
  $('schedule-grid').innerHTML=SCHEDULE_YEAR_ORDER.map(year=>{
-  const cells=scheduleCurrent.turns[year].map((action,i)=>{
+  const cells=scheduleCurrent.turns[year].map((recordedAction,i)=>{
+    const running=scheduleCurrent;
+    const key=scheduleTurnEventKey(year,i);
+    const recordedEvents=Array.isArray(running.scenarioEvents[key])&&running.scenarioEvents[key].length>0;
+    const hasRecorded=Boolean(recordedAction)||recordedEvents;
+    const isGuide=Boolean(guide&&!hasRecorded);
+    if(isGuide)scheduleCurrent=guide;
+    const action=isGuide?(guide.turns[year]?.[i]||null):recordedAction;
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
    const goal=scheduleGoalAt(year,i);
    const selection=scheduleCurrent.selectedRaces[year+'-'+i];
@@ -509,7 +566,8 @@ function renderSchedule(){
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+    if(isGuide)scheduleCurrent=running;
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${isGuide?'planned':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
@@ -530,6 +588,7 @@ $('schedule-character').addEventListener('change',e=>{
  const next=e.target.value;
  const previous=findScheduleCharacter()?.id||scheduleCurrent.character;
  if(next===previous)return;
+ if(!scheduleEditingPlan&&scheduleActivePlanId&&next!==scheduleActivePlan()?.schedule.character)scheduleSetActivePlan('');
  // Clear only the working schedule. Saved plans and support-event progress remain intact.
  scheduleCurrent.character=next;
  for(const year of Object.keys(SCHEDULE_YEARS))scheduleCurrent.turns[year]=Array(scheduleSlots(year)).fill(null);
@@ -749,6 +808,8 @@ function switchServer(next){
  state=readState();
  scheduleCurrent=readScheduleCurrent();
  schedulePlans=readSchedulePlans();
+ scheduleEditingPlan=null;scheduleRunBeforeEdit=null;
+ try{scheduleActivePlanId=localStorage.getItem(scheduleKey('active-plan'))||''}catch(e){scheduleActivePlanId=''}
  $('scenario').value=state.scenario||'';
  renderSchedule();
  render();
