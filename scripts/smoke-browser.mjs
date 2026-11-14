@@ -63,7 +63,22 @@ try{
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Senior plan action must not change current junior turn');
  if(!(await page.locator('#schedule-grid [data-schedule-year-cell="senior"][data-schedule-turn="17"]').isDisabled()))throw new Error('Future senior planned action must remain unrecordable');
+ // Cultivation information is summarized in the global header, not editable inline.
+ if(await page.locator('#schedule-panel #schedule-character').count())throw new Error('Character selector must be outside schedule');
+ if(!(await page.locator('#schedule-header-character').isVisible()))throw new Error('Header cultivation summary missing');
+ await page.locator('#settings-open').click();
+ if(!(await page.locator('#settings-backdrop').isVisible()))throw new Error('Settings panel did not open');
+ await page.locator('[data-settings-tab="counter"]').click();
+ if(!(await page.locator('#reset-popup-toggle').isVisible()))throw new Error('Counter settings were not moved');
+ await page.locator('[data-settings-tab="general"]').click();
+ if(!(await page.locator('#server-mode').isVisible()))throw new Error('General server configuration missing');
+ if(!(await page.locator('#split-toggle').isVisible()))throw new Error('General display configuration missing');
+ await page.locator('[data-settings-tab="cultivation"]').click();
+ if(!(await page.locator('#schedule-character').isVisible()))throw new Error('Cultivation character configuration missing');
+ await page.locator('#schedule-scenario').selectOption('onsen');
+ if(!(await page.locator('#schedule-header-scenario').innerText()).includes('온천향'))throw new Error('Header scenario did not update');
  await page.locator('#schedule-plans-open').click();
+ if(!(await page.locator('#schedule-plans-backdrop').isVisible()))throw new Error('Plan manager did not open from settings');
  await page.locator('#schedule-plan-new').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Plan editing did not open');
  await page.locator('#schedule-plan-edit-cancel').click();

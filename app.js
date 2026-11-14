@@ -106,6 +106,56 @@ function toggleToolMenu(open){
   $('tool-menu-close').focus();
  }
 }
+// Common settings are independent of the displayed work panel.
+let settingsReturnFocus=null;
+function showSettingsTab(tab){
+ const valid=['cultivation','counter','general'];
+ const active=valid.includes(tab)?tab:'cultivation';
+ $('settings-backdrop').querySelectorAll('[data-settings-tab]').forEach(button=>{
+  const selected=button.dataset.settingsTab===active;
+  button.classList.toggle('active',selected);
+  button.setAttribute('aria-selected',String(selected));
+ });
+ $('settings-backdrop').querySelectorAll('[data-settings-pane]').forEach(pane=>{
+  pane.hidden=pane.dataset.settingsPane!==active;
+ });
+ $('settings-cultivation-hint').textContent=scheduleEditingPlan?
+  '계획 편집 중입니다. 여기서 변경한 캐릭터·시나리오는 계획에만 반영됩니다.':
+  '육성 중에는 고정되는 정보입니다. 캐릭터를 바꾸면 현재 육성 스케줄과 진행 기록이 초기화됩니다.';
+}
+function openSettings(tab='cultivation'){
+ if(!$('tool-menu').hidden)toggleToolMenu(false);
+ settingsReturnFocus=document.activeElement;
+ showSettingsTab(tab);
+ $('settings-backdrop').hidden=false;
+ document.body.classList.add('settings-open');
+ $('settings-backdrop').querySelector('[data-settings-tab="'+tab+'"]')?.focus();
+}
+function closeSettings(){
+ $('settings-backdrop').hidden=true;
+ document.body.classList.remove('settings-open');
+ if(settingsReturnFocus?.isConnected)settingsReturnFocus.focus();
+ settingsReturnFocus=null;
+}
+function initSettings(){
+ $('settings-open').addEventListener('click',()=>openSettings('cultivation'));
+ $('tool-settings-open').addEventListener('click',()=>openSettings('cultivation'));
+ $('schedule-edit-settings-open').addEventListener('click',()=>openSettings('cultivation'));
+ $('settings-close').addEventListener('click',closeSettings);
+ $('settings-backdrop').addEventListener('click',e=>{if(e.target===$('settings-backdrop'))closeSettings()});
+ $('settings-backdrop').querySelectorAll('[data-settings-tab]').forEach(btn=>btn.addEventListener('click',()=>showSettingsTab(btn.dataset.settingsTab)));
+ document.addEventListener('keydown',e=>{
+  if($('settings-backdrop').hidden)return;
+  if(e.key==='Escape'){e.preventDefault();closeSettings();return}
+  if(e.key==='Tab'){
+   const controls=[...$('settings-backdrop').querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled])')]
+    .filter(node=>node.getClientRects().length);
+   const first=controls[0],last=controls[controls.length-1];
+   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+  }
+ });
+}
 function initWorkspace(){
  $('tool-menu-list').replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
   const btn=document.createElement('button');
@@ -617,6 +667,8 @@ function renderSchedule(){
  const activeYear=scheduleCurrent.year;
  renderScheduleCharacterOptions();
  $('schedule-scenario').value=scheduleCurrent.scenario;
+ $('schedule-header-character').textContent=findScheduleCharacter()?.ko||scheduleCurrent.character||'캐릭터 미지정';
+ $('schedule-header-scenario').textContent=$('schedule-scenario').selectedOptions[0]?.textContent||'기본';
  $('schedule-plan-caption').textContent=scheduleEditingPlan?'계획 편집: '+(scheduleEditingPlan.name||'새 계획'):scheduleActivePlan()?'초기 계획: '+scheduleActivePlan().name:findScheduleCharacter()?.ko||scheduleCurrent.character||'초기 계획 미지정';
  $('schedule-work-title').textContent=scheduleEditingPlan?'육성 계획 편집':'현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
@@ -673,6 +725,10 @@ $('schedule-character').addEventListener('change',e=>{
  const next=e.target.value;
  const previous=findScheduleCharacter()?.id||scheduleCurrent.character;
  if(next===previous)return;
+ if(!scheduleEditingPlan&&scheduleCompletedPrefix()>0&&!confirm('육성 캐릭터를 변경하면 현재 스케줄과 진행 기록이 초기화됩니다. 변경할까요?')){
+  e.target.value=previous;
+  return;
+ }
  if(!scheduleEditingPlan&&scheduleActivePlanId&&next!==scheduleActivePlan()?.schedule.character)scheduleSetActivePlan('');
  // Clear only the working schedule. Saved plans and support-event progress remain intact.
  scheduleCurrent.character=next;
@@ -782,6 +838,10 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
 });
 $('schedule-scenario').addEventListener('change',e=>{
  if(!Object.hasOwn(SCHEDULE_SCENARIO_ACTIONS,e.target.value))return;
+ if(!scheduleEditingPlan&&scheduleCompletedPrefix()>0&&!confirm('육성 시나리오를 변경하면 현재 육성의 시나리오 설정이 변경됩니다. 계속할까요?')){
+  e.target.value=scheduleCurrent.scenario;
+  return;
+ }
  scheduleCurrent.scenario=e.target.value;
  if(!scheduleEditingPlan&&scheduleActivePlanId&&e.target.value!==scheduleActivePlan()?.schedule.scenario)scheduleSetActivePlan('');
  saveScheduleCurrent();renderSchedule();
@@ -851,7 +911,7 @@ function renderSchedulePlans(){
 }
 $('schedule-plan-edit-save').addEventListener('click',()=>scheduleFinishPlanEdit(true));
 $('schedule-plan-edit-cancel').addEventListener('click',()=>scheduleFinishPlanEdit(false));
-$('schedule-plans-open').addEventListener('click',()=>{if(scheduleEditingPlan)return toast('계획 편집을 저장하거나 취소해 주세요');renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
+$('schedule-plans-open').addEventListener('click',()=>{if(scheduleEditingPlan)return toast('계획 편집을 저장하거나 취소해 주세요');closeSettings();renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
 $('schedule-plan-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
 $('schedule-plan-save').addEventListener('click',()=>{
  const raw=prompt('저장할 계획의 이름을 입력하세요.');
@@ -1135,6 +1195,7 @@ $('slots').addEventListener('change',e=>{
 });
 $('slots').addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;let i,j;if(t.dataset.openPicker!==undefined){pickerOpen(Number(t.dataset.openPicker))}else if(t.dataset.step){[i,j]=t.dataset.step.split(':').map(Number);const s=state.slots[i];s.step=s.step>=j?j-1:j;updateEvents(i);save()}else if(t.dataset.random){[i,j]=t.dataset.random.split(':').map(Number);state.slots[i].random[j]=!state.slots[i].random[j];updateEvents(i);save()}});
 $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=>{state.scenario=e.target.value;save()});
+initSettings();
 initWorkspace();
 applyUiTexts();
 renderSchedule();
