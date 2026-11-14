@@ -86,6 +86,26 @@ try{
  await page.locator('#schedule-plan-new').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Plan editing did not open');
  await page.locator('#schedule-plan-edit-cancel').click();
+ // The plan and record tools have distinct navigation and browsing surfaces.
+ if(!(await page.locator('#plan-panel').isVisible()))throw new Error('Plan workspace not visible after exiting plan editor');
+ if(await page.locator('#schedule-panel').isVisible())throw new Error('Record workspace should not be shown while browsing plans');
+ if((await page.locator('#plan-quick-list [data-plan-open-id]').count())<1)throw new Error('Stored plan not shown in dedicated plan tool');
+ await page.locator('#tool-menu-toggle').click();
+ if(!(await page.locator('[data-tool-category="plan"]').isVisible()))throw new Error('Plan menu group missing');
+ if(!(await page.locator('[data-tool-category="record"]').isVisible()))throw new Error('Record menu group missing');
+ await page.locator('#tool-menu-list [data-tool="schedule"]').click();
+ if(!(await page.locator('#schedule-panel').isVisible()))throw new Error('Record scheduler not restored');
+ if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Switching tools altered actual record progress');
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="plan"]').click();
+ await page.locator('#plan-create-new').click();
+ if(!(await page.locator('#schedule-plan-edit-save').isVisible()))throw new Error('New plan editor did not open');
+ await page.locator('#schedule-grid [data-schedule-year-cell="senior"][data-schedule-turn="17"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="power"]').click();
+ await page.locator('#schedule-plan-edit-cancel').click();
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="schedule"]').click();
+ if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Editing plan mutated current record progress');
  if(errors.length)throw new Error('Browser JavaScript errors: '+errors.join('; '));
  console.log('PASS: browser startup, counters, schedule and plans');
 }finally{if(browser)await browser.close();server.kill()}

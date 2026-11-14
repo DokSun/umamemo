@@ -28,8 +28,8 @@ const TOOLS={
   reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
- schedule:{name:'스케줄표',scope:'session',element:'schedule-panel',
-  reset(){resetCurrentScheduleOnly()}}
+ schedule:{name:'육성 기록',group:'record',scope:'session',element:'schedule-panel',reset(){resetCurrentScheduleOnly()}},
+ plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -71,6 +71,7 @@ function applyLayout(){
  workspace.style.setProperty('--counter-share',layout.ratio+'fr');
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
+ if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
  $('split-toggle').checked=!solo;
  $('split-ratio').querySelectorAll('input[type="radio"]').forEach(r=>{r.checked=Number(r.value)===layout.ratio});
  $('split-options').hidden=solo;
@@ -157,18 +158,21 @@ function initSettings(){
  });
 }
 function initWorkspace(){
- $('tool-menu-list').replaceChildren(...Object.entries(TOOLS).map(([id,t])=>{
-  const btn=document.createElement('button');
-  btn.type='button';btn.dataset.tool=id;
-  btn.textContent=t.name;
-  btn.className='tool-menu-item';
-  return btn;
- }));
+ const nodes=[];
+ for(const [category,heading,ids] of [['plan','계획',['plan']],['record','기록',['schedule','counter','memo']]]){
+  const group=document.createElement('div');group.className='tool-menu-heading tool-menu-group-heading';group.dataset.toolCategory=category;group.textContent=heading;nodes.push(group);
+  for(const id of ids){const tool=TOOLS[id];const btn=document.createElement('button');btn.type='button';btn.dataset.tool=id;btn.textContent=tool.name;btn.className='tool-menu-item';nodes.push(btn);}
+ }
+ $('tool-menu-list').replaceChildren(...nodes);
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
  $('tool-menu-close').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-backdrop').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-list').addEventListener('click',e=>{
   const btn=e.target.closest('[data-tool]');if(!btn)return;
+  if(scheduleEditingPlan&&btn.dataset.tool!=='plan'){
+   if(!confirm('저장하지 않은 계획 편집을 취소하고 다른 기능으로 이동할까요?'))return;
+   scheduleFinishPlanEdit(false);
+  }
   if(layout.mode==='split'&&btn.dataset.tool==='counter')layout.mode='single';
   layout.tool=btn.dataset.tool;
   applyLayout();
@@ -589,6 +593,7 @@ function scheduleBeginPlanEdit(entry){
  scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:normalizeSchedule(entry?.schedule||emptySchedule())};
  scheduleCurrent=scheduleEditingPlan.schedule;
  scheduleCurrent.year=scheduleRunBeforeEdit.year;
+ layout.tool='plan';applyLayout();
  closeScheduleDialog();renderSchedule();
 }
 function scheduleFinishPlanEdit(save=false){
@@ -613,7 +618,7 @@ function scheduleFinishPlanEdit(save=false){
  }
  scheduleCurrent=scheduleRunBeforeEdit;
  scheduleRunBeforeEdit=null;scheduleEditingPlan=null;
- closeScheduleDialog();renderSchedule();
+ closeScheduleDialog();applyLayout();renderSchedule();renderPlanPanel();
  if(save)toast('계획을 저장했습니다');
 }
 // Reset the working cultivation only. Saved plans are separate and must never be cleared here.
@@ -663,6 +668,11 @@ function scheduleIsPrepTurn(year,i){return year==='junior'&&i<12}
 function scheduleIsLockedGoal(year,i){return !!scheduleGoalAt(year,i)}
 function renderSchedule(){
  if(!$('schedule-grid'))return;
+ if(layout.tool==='plan'){
+  $('plan-panel').hidden=Boolean(scheduleEditingPlan);
+  $('schedule-panel').hidden=!scheduleEditingPlan;
+ }
+ renderPlanPanel();
  const activeYear=scheduleCurrent.year;
  renderScheduleCharacterOptions();
  $('schedule-scenario').value=scheduleCurrent.scenario;
@@ -899,7 +909,30 @@ $('schedule-action-clear').addEventListener('click',()=>{
  else delete scheduleCurrent.scenarioEvents[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
+function renderPlanPanel(){
+ const root=$('plan-quick-list');
+ if(!root)return;
+ $('plan-count').textContent=schedulePlans.length+'개 저장';
+ if(!schedulePlans.length){
+  root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';
+  return;
+ }
+ root.innerHTML=schedulePlans.map(plan=>{
+  const used=plan.id===scheduleActivePlanId;
+  const filled=SCHEDULE_YEAR_ORDER.reduce((sum,year)=>sum+plan.schedule.turns[year].filter(Boolean).length,0);
+  return '<div class="plan-library-row"><div><strong>'+escapeHTML(plan.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(plan.schedule.character))+' · '+filled+'/72턴'+(used?' · 육성 초기 계획':'')+'</small></div><button type="button" data-plan-open-id="'+escapeHTML(plan.id)+'">계획 편집</button></div>';
+ }).join('');
+}
+$('plan-quick-list').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-plan-open-id]');
+ if(!btn)return;
+ const entry=schedulePlans.find(p=>p.id===btn.dataset.planOpenId);
+ if(entry)scheduleBeginPlanEdit(entry);
+});
+$('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
+$('plan-library-open').addEventListener('click',()=>$('schedule-plans-open').click());
 function renderSchedulePlans(){
+ renderPlanPanel();
  const root=$('schedule-plan-list');
  if(!schedulePlans.length){
   root.innerHTML='<p class="schedule-plans-empty"></p>';

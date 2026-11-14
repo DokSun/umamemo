@@ -1,10 +1,10 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261114-label-placement"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><button type="button" id="settings-open" class="header-settings-button" aria-label="설정 열기">⚙ 설정</button></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
-<div class="tool-drawer-header"><strong id="tool-menu-title">기능 선택</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261114-plan-record-tools"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><button type="button" id="settings-open" class="header-settings-button" aria-label="설정 열기">⚙ 설정</button></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<div class="tool-drawer-header"><strong id="tool-menu-title">계획 · 기록</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 <div class="tool-menu-divider"></div><button type="button" id="tool-settings-open" class="tool-menu-item">⚙ 기능 설정</button></nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
 <aside id="memo-panel" class="panel tool-panel"><div class="panel-title"><h2>메모장</h2></div><textarea id="scenario"></textarea><div class="panel-reset-footer" id="memo-reset-footer"><button id="secondary-reset" type="button">메모장 초기화</button></div></aside>
 <section id="schedule-panel" class="panel tool-panel" hidden>
- <div class="panel-title schedule-title-row"><h2>스케줄표</h2><span id="schedule-plan-caption">초기 계획 미지정</span></div>
+ <div class="panel-title schedule-title-row"><h2>육성 기록</h2><span id="schedule-plan-caption">초기 계획 미지정</span></div>
  <div id="schedule-plan-edit-bar" class="schedule-plan-edit-bar" hidden><span>계획 편집 중 · 실제 육성 기록은 변경되지 않습니다.</span><div><button type="button" id="schedule-edit-settings-open">계획 정보 수정</button><button type="button" id="schedule-plan-edit-save">계획 저장</button><button type="button" id="schedule-plan-edit-cancel">취소</button></div></div>
  <div id="schedule-training-levels" class="schedule-training-levels" aria-label="현재 훈련 레벨">
   <div class="schedule-level-head"><strong>훈련 레벨 현황</strong><span id="schedule-current-turn" class="schedule-current-turn" aria-live="polite">현재 주니어 1월 전반 · 1/72턴</span></div>
@@ -18,6 +18,12 @@
  </div>
  <div id="schedule-grid" class="schedule-years" role="group" aria-label="주니어·클래식·시니어 스케줄"></div>
  <div class="panel-reset-footer" id="schedule-reset-footer"><button type="button" id="schedule-reset">현재 육성 초기화</button></div>
+</section>
+<section id="plan-panel" class="panel tool-panel" hidden>
+ <div class="panel-title"><h2>육성 계획</h2><span id="plan-count" class="plan-count">0개 저장</span></div>
+ <p class="plan-library-hint">72턴을 자유롭게 계획하는 기능입니다. 실제 기록과 현재 턴은 변경되지 않습니다.</p>
+ <div class="plan-library-actions"><button type="button" id="plan-create-new">새 계획 작성</button><button type="button" id="plan-library-open">계획 관리</button></div>
+ <div id="plan-quick-list" class="plan-quick-list" aria-label="저장한 육성 계획"></div>
 </section>
 </main><div id="settings-backdrop" class="settings-backdrop" hidden>
  <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
@@ -63,4 +69,4 @@
   <div id="schedule-plan-list" class="schedule-plan-list"></div>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261114-label-placement" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261114-plan-record-tools" defer></script></body></html>
