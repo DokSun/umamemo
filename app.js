@@ -960,6 +960,7 @@ $('schedule-action-clear').addEventListener('click',()=>{
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 let planPreviewId='';
+let planPreviewYear='junior';
 function renderPlanPreview(){
  const root=$('plan-preview');
  if(!root)return;
@@ -986,7 +987,10 @@ function renderPlanPreview(){
   }).join('');
   return '<section class="plan-preview-year"><h4>'+SCHEDULE_YEAR_KO[year]+'</h4><div class="plan-preview-cells">'+cells+'</div></section>';
  }).join('');
- root.innerHTML='<div class="plan-preview-title"><strong>'+escapeHTML(plan.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(source.character))+' · '+escapeHTML(scheduleScenarioLabel(source.scenario))+'</small></div><div class="plan-preview-years">'+sections+'</div>';
+ const tabs='<div class="plan-preview-year-tabs" role="tablist" aria-label="미리보기 연도">'
+  +SCHEDULE_YEAR_ORDER.map(year=>'<button type="button" role="tab" data-plan-preview-year="'+year+'" aria-selected="'+(planPreviewYear===year)+'" class="'+(planPreviewYear===year?'active':'')+'">'+SCHEDULE_YEAR_KO[year]+'</button>').join('')
+  +'</div>';
+ root.innerHTML='<div class="plan-preview-title"><strong>'+escapeHTML(plan.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(source.character))+' · '+escapeHTML(scheduleScenarioLabel(source.scenario))+'</small></div>'+tabs+'<div class="plan-preview-years" data-active-preview-year="'+planPreviewYear+'">'+sections+'</div>';
 }
 function renderPlanPanel(){
  const root=$('plan-quick-list');
@@ -1000,6 +1004,20 @@ function renderPlanPanel(){
  root.innerHTML=schedulePlans.map((p,i)=>'<div class="plan-library-row '+(p.id===scheduleActivePlanId?'selected-plan ':'')+(p.id===planPreviewId?'previewed-plan':'')+'" data-plan-preview="'+i+'" tabindex="0" role="group" aria-label="'+escapeHTML(p.name)+' 계획 항목. 클릭하여 미리보기"><div class="plan-library-details"><strong>'+escapeHTML(p.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(p.schedule.character))+' · '+escapeHTML(scheduleScenarioLabel(p.schedule.scenario))+(p.id===scheduleActivePlanId?' · 선택됨':'')+'</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="'+i+'" aria-pressed="'+(p.id===scheduleActivePlanId)+'">'+(p.id===scheduleActivePlanId?'선택 해제':'선택')+'</button><button type="button" data-plan-edit="'+i+'">편집</button><button type="button" data-plan-delete="'+i+'">삭제</button></div></div>').join('');
  renderPlanPreview();
 }
+$('plan-preview').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-plan-preview-year]');
+ if(!btn)return;
+ const year=btn.dataset.planPreviewYear;
+ if(!SCHEDULE_YEAR_ORDER.includes(year))return;
+ planPreviewYear=year;
+ const years=$('plan-preview').querySelector('.plan-preview-years');
+ if(years)years.dataset.activePreviewYear=year;
+ $('plan-preview').querySelectorAll('[data-plan-preview-year]').forEach(tab=>{
+  const active=tab.dataset.planPreviewYear===year;
+  tab.classList.toggle('active',active);
+  tab.setAttribute('aria-selected',String(active));
+ });
+});
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
 $('schedule-plan-name').addEventListener('input',e=>{
  if(!scheduleEditingPlan)return;
