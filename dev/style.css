@@ -923,3 +923,59 @@ header .header-settings-button{order:initial;margin-left:auto}
 #tool-menu-list .tool-setting-panel #swap-panels{
  align-self:flex-start;min-height:37px;
 }
+
+/* Drawer settings sized to fit narrow screens without overflow. */
+#tool-menu-list .tool-setting-panel{
+ box-sizing:border-box;width:calc(100% - 7px);
+ padding:12px 10px;overflow-wrap:anywhere;
+}
+#tool-menu-list .tool-setting-panel *,
+#tool-menu-list .tool-setting-panel *::before,
+#tool-menu-list .tool-setting-panel *::after{box-sizing:border-box}
+#tool-menu-list .tool-setting-panel .tool-server-row{
+ display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);
+ gap:8px;align-items:center;
+}
+#tool-menu-list .tool-setting-panel .tool-server-row select{
+ width:100%;max-width:100%;min-width:0;flex:none;
+}
+#tool-menu-list .tool-setting-panel .mode-switch-row{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:9px;min-width:0;padding:7px 0;
+}
+#tool-menu-list .tool-setting-panel .mode-switch-row>span:first-child{
+ flex:1;min-width:0;
+}
+#tool-menu-list .tool-setting-panel .mode-switch-track{flex:none}
+#tool-menu-list .tool-setting-panel .reset-popup-option{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:9px;width:100%;padding:7px 0;
+}
+#tool-menu-list .tool-setting-panel .reset-popup-option>span:first-child{
+ flex:1;min-width:0;
+}
+#tool-menu-list .tool-setting-panel .tool-menu-extras{
+ width:100%;min-width:0;
+}
+#tool-menu-list .tool-setting-panel .ratio-fieldset{
+ display:block;width:100%;min-width:0;
+}
+#tool-menu-list .tool-setting-panel .ratio-fieldset legend{
+ width:100%;margin:0 0 7px;line-height:1.5;
+}
+#tool-menu-list .tool-setting-panel .ratio-segments{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:4px;width:100%;min-width:0;
+}
+#tool-menu-list .tool-setting-panel .ratio-segments label{
+ display:block;min-width:0;width:100%;
+}
+#tool-menu-list .tool-setting-panel .ratio-segments span{
+ display:flex;align-items:center;justify-content:center;
+ width:100%;min-width:0;min-height:39px;
+ padding:6px 2px;white-space:nowrap;font-size:12px;
+}
+#tool-menu-list .tool-setting-panel #swap-panels{
+ display:block;width:100%;min-height:39px;
+ padding:8px 10px;text-align:center;
+}

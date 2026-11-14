@@ -129,7 +129,7 @@ function toggleInlineSettings(tab){
  if(open)button.scrollIntoView({block:'nearest'});
 }
 function setupInlineSettings(){
- for(const tab of ['cultivation','counter','general']){
+ for(const tab of ['counter','general']){
   const source=$('settings-source').querySelector('[data-settings-pane="'+tab+'"]');
   const button=$('tool-menu-list').querySelector('[data-settings-open="'+tab+'"]');
   const target=$(button.getAttribute('aria-controls'));
@@ -177,7 +177,7 @@ function initWorkspace(){
  settingsGroup.dataset.toolCategory='settings';
  settingsGroup.textContent='설정';
  nodes.push(settingsGroup);
- for(const [tab,label] of [['cultivation','육성 설정'],['counter','카운팅 설정'],['general','화면·서버 설정']]){
+ for(const [tab,label] of [['counter','카운팅 설정'],['general','화면·서버 설정']]){
   const btn=document.createElement('button');
   btn.type='button';btn.className='tool-menu-item tool-menu-setting-item';
   btn.dataset.settingsOpen=tab;btn.textContent=label;
