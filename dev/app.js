@@ -550,7 +550,6 @@ function renderScheduleTrainingLevels(){
  const current=scheduleCurrentTurn(),completed=current-1;
  $('schedule-current-turn').textContent=scheduleProgressLabel(current);
  const status=TrainingLevels.calculate(scheduleCurrent,completed);
- $('schedule-training-note').textContent=status.summerCamp?'여름합숙 · 모든 훈련 Lv.5 (레벨 상승 횟수에 미포함)':completed===72?'72턴 종료 · 최종 일반 훈련 레벨':'일반 훈련 4회당 +1 · 새해마다 모든 훈련 +1';
  $('schedule-training-grid').innerHTML=status.levels.map(e=>`<div class="schedule-level-item" aria-label="${e.label} Lv.${e.level}, 일반 훈련 ${e.count}회"><span class="type-icon type-icon-${e.type} schedule-level-type-icon" aria-hidden="true"></span><span class="schedule-level-name">${e.label}</span><strong>Lv.${e.level}</strong><small>${status.summerCamp?'합숙':e.baseLevel===5?'MAX':e.count%4+'/4회'}</small></div>`).join('');
 }
 // The selected plan is an editable starting snapshot, not a display overlay.
