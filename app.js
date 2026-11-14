@@ -24,11 +24,11 @@ let confirmCounterReset=true;
 try{confirmCounterReset=localStorage.getItem(RESET_POPUP_KEY)!=='off'}catch(e){console.warn('초기화 팝업 설정 읽기 실패',e)}
 
 const TOOLS={
- counter:{name:uiText('counter.title'),scope:'session',element:'counter-panel',
+ counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
   reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
- memo:{name:uiText('memo.title'),scope:'independent',element:'memo-panel',
+ memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
- schedule:{name:uiText('schedule.title'),scope:'session',element:'schedule-panel',
+ schedule:{name:'스케줄표',scope:'session',element:'schedule-panel',
   reset(){resetCurrentScheduleOnly()}}
 };
 function readLayout(){
@@ -54,7 +54,7 @@ function renderResetActions(){
  const counterFooter=$('counter-reset-footer'),memoFooter=$('memo-reset-footer');
  const scheduleFooter=$('schedule-reset-footer');
  const unified=ids.length>1&&sessionIds.length===ids.length;
- primary.textContent=unified?uiText('counter.unifiedReset'):uiText('counter.reset');
+ primary.textContent=unified?'육성 기록 통합 초기화':TOOLS.counter.name+' 초기화';
  primary.dataset.targets=unified?ids.join(','):'counter';
  counterFooter.hidden=!ids.includes('counter');
  memoFooter.hidden=!ids.includes('memo');
@@ -161,7 +161,15 @@ const $=id=>document.getElementById(id);const save=()=>localStorage.setItem(KEY,
 
 /* Apply developer-maintained strings from ui-text.js. */
 function applyUiTexts(){
- const bindings=Object.fromEntries(UI_TEXT_ITEMS.filter(x=>x.selector).map(x=>[x.key,x.selector]));
+ const bindings={
+  'onsen.heading':'.schedule-onsen-panel h4',
+  'onsen.digHint':'.schedule-onsen-subheading',
+  'onsen.ticketLabel':'#schedule-onsen-ticket-label',
+  'onsen.ticketNormal':'#schedule-onsen-ticket',
+  'onsen.ticketSuper':'#schedule-onsen-ticket-super',
+  'race.selectHeading':'label[for="schedule-race-select"]',
+  'plans.help':'.schedule-plans-help'
+ };
  for(const [key,selector] of Object.entries(bindings)){
   const node=document.querySelector(selector);
   if(node)node.textContent=uiText(key);
@@ -173,7 +181,7 @@ function applyUiTexts(){
 const SCHEDULE_YEARS={junior:1,classic:1,senior:1};
 let scheduleDb={characters:[],races:[]};
 const SCHEDULE_YEAR_ORDER=['junior','classic','senior'];
-const SCHEDULE_YEAR_KO={junior:uiText('schedule.junior'),classic:uiText('schedule.classic'),senior:uiText('schedule.senior')};
+const SCHEDULE_YEAR_KO={junior:'주니어',classic:'클래식',senior:'시니어'};
 function scheduleGlobalTurn(year,halfMonthIndex){return SCHEDULE_YEAR_ORDER.indexOf(year)*24+halfMonthIndex+1}
 function findScheduleCharacter(value=scheduleCurrent.character){return scheduleDb.characters.find(c=>c.id===value||c.ko===value||c.en===value||c.legacyIds?.includes(value))}
 function scheduleCharacterLabel(value){
@@ -233,7 +241,7 @@ function renderScheduleCharacterOptions(){
  const selector=$('schedule-character');
  const selected=findScheduleCharacter();
  const value=selected?.id||scheduleCurrent.character;
- selector.replaceChildren(new Option(uiText('schedule.characterSelect'),''));
+ selector.replaceChildren(new Option('캐릭터 선택 (목표 레이스 표시)',''));
  for(const ch of scheduleDb.characters){
   const isSelected=(ch.id||ch.ko)===value;
   const option=new Option(ch.ko,ch.id||ch.ko);
@@ -483,10 +491,10 @@ function scheduleBeginPlanEdit(entry){
 function scheduleFinishPlanEdit(save=false){
  if(!scheduleEditingPlan)return;
  if(save){
-  const raw=prompt(uiText('plans.namePrompt'),scheduleEditingPlan.name||uiText('plans.newName'));
+  const raw=prompt('계획 이름',scheduleEditingPlan.name||'새 육성 계획');
   if(raw===null)return;
   const name=raw.trim().slice(0,80);
-  if(!name)return toast(uiText('plans.nameRequired'));
+  if(!name)return toast('계획 이름을 입력해 주세요');
   if(scheduleEditingPlan.id){
    const entry=schedulePlans.find(p=>p.id===scheduleEditingPlan.id);
    if(!entry)return toast('저장된 계획을 찾을 수 없습니다');
@@ -503,7 +511,7 @@ function scheduleFinishPlanEdit(save=false){
  scheduleCurrent=scheduleRunBeforeEdit;
  scheduleRunBeforeEdit=null;scheduleEditingPlan=null;
  closeScheduleDialog();renderSchedule();
- if(save)toast(uiText('plans.saveSuccess'));
+ if(save)toast('계획을 저장했습니다');
 }
 // Reset the working cultivation only. Saved plans are separate and must never be cleared here.
 function resetCurrentScheduleOnly(){
@@ -555,7 +563,7 @@ function renderSchedule(){
  renderScheduleCharacterOptions();
  $('schedule-scenario').value=scheduleCurrent.scenario;
  $('schedule-plan-caption').textContent=scheduleEditingPlan?'계획 편집: '+(scheduleEditingPlan.name||'새 계획'):scheduleActivePlan()?'초기 계획: '+scheduleActivePlan().name:findScheduleCharacter()?.ko||scheduleCurrent.character||'초기 계획 미지정';
- $('schedule-work-title').textContent=scheduleEditingPlan?'육성 계획 편집':uiText('schedule.current');
+ $('schedule-work-title').textContent=scheduleEditingPlan?'육성 계획 편집':'현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
  $('schedule-reset-footer').hidden=!!scheduleEditingPlan||!visibleToolIds().includes('schedule');
  $('schedule-panel').classList.toggle('editing-plan',!!scheduleEditingPlan);
@@ -650,7 +658,7 @@ $('schedule-grid').addEventListener('click',e=>{
  const r= scheduleRacesAt(year,scheduleTurn);
  $('schedule-race-picker').hidden=!r.length;
  const select=$('schedule-race-select');
- select.replaceChildren(new Option(uiText('action.racePlaceholder'),''));
+ select.replaceChildren(new Option('출전할 레이스 선택',''));
  for(let i=0;i<r.length;i++)select.add(new Option(scheduleRaceName(r[i])+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
  const selected=scheduleCurrent.selectedRaces[year+'-'+scheduleTurn];
  const previous=r.findIndex(x=>x.n===selected);
@@ -986,15 +994,15 @@ function pickerRender(){
   const src=remoteImages[String(c.id)],name=escapeHTML(cardLabel(c));
   const image=validRemoteURL(src)?
    `<img src="${escapeHTML(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`:
-   '<span class="picker-noimage">'+escapeHTML(uiText('counter.noImage'))+'</span>';
+   '<span class="picker-noimage">이미지 없음</span>';
   return `<button type="button" class="picker-card" data-picker-card="${c.id}" title="${name}" aria-label="${escapeHTML(c.rarity)} ${escapeHTML(c.type)} ${name}">${image}</button>`;
  }).join(''):'<div class="picker-empty">검색 조건에 맞는 카드가 없습니다.</div>';
  const pager=$('picker-pager');
  const start=Math.max(0,Math.min(pickerPage-2,pages-5));
  const end=Math.min(pages,start+5);
- pager.innerHTML=`<button type="button" data-picker-page="${pickerPage-1}" ${pickerPage===0?'disabled':''} >${escapeHTML(uiText('counter.prev'))}</button><span class="picker-pages">${Array.from({length:end-start},(_,i)=>{
+ pager.innerHTML=`<button type="button" data-picker-page="${pickerPage-1}" ${pickerPage===0?'disabled':''}>◀ 이전</button><span class="picker-pages">${Array.from({length:end-start},(_,i)=>{
   const p=start+i;return `<button type="button" data-picker-page="${p}" class="${p===pickerPage?'active':''}" aria-current="${p===pickerPage?'page':'false'}">${p+1}</button>`;
- }).join('')}</span><button type="button" data-picker-page="${pickerPage+1}" ${pickerPage>=pages-1?'disabled':''} >${escapeHTML(uiText('counter.next'))}</button>`;
+ }).join('')}</span><button type="button" data-picker-page="${pickerPage+1}" ${pickerPage>=pages-1?'disabled':''}>다음 ▶</button>`;
 }
 $('picker-types').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-type]');if(!b)return;
