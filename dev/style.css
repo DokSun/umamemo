@@ -1059,3 +1059,9 @@ header .header-settings-button{order:initial;margin-left:auto}
 #tool-menu-list .permanent-settings-panel #split-options{display:flex!important}
 #tool-menu-list .permanent-settings-panel #split-options.inactive{opacity:.48}
 #tool-menu-list .permanent-settings-panel #split-options.inactive #swap-panels{cursor:not-allowed}
+
+/* Borderless permanent display/server controls. Retain internal control styling. */
+#tool-menu-list .permanent-settings-panel{
+ border:0;border-left:0;border-radius:0;box-shadow:none;background:transparent;
+ margin-left:0;width:100%;padding:12px 0 0;margin-top:auto;overflow:visible;
+}
