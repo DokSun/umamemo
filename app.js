@@ -443,38 +443,59 @@ let scheduleTurn=null;
 let scheduleActivePlanId='';
 try{scheduleActivePlanId=localStorage.getItem(scheduleKey('active-plan'))||''}catch(e){}
 let scheduleEditingPlan=null, scheduleRunBeforeEdit=null;
-// Tracks the final *completed* turn independently from the plan-seeded schedule.
-function readScheduleCompletedTurns(){
- try{return Math.max(0,Math.min(72,Math.trunc(Number(localStorage.getItem(scheduleKey('completed-turns')))||0)))}catch(e){return 0}
+// Actual completion is separate from plan-filled actions.
+function scheduleReadRecordedTurns(){
+ try{
+  const raw=localStorage.getItem(scheduleKey('recorded-turns-v2'));
+  if(raw!==null){const data=JSON.parse(raw);if(Array.isArray(data))return Array.from({length:72},(_,i)=>data[i]===true)}
+  const count=Math.max(0,Math.min(72,Math.trunc(Number(localStorage.getItem(scheduleKey('completed-turns')))||0)));
+  return Array.from({length:72},(_,i)=>i<count);
+ }catch(e){return Array(72).fill(false)}
 }
-let scheduleCompletedTurns=readScheduleCompletedTurns();
-function setScheduleCompletedTurns(value){
- scheduleCompletedTurns=Math.max(0,Math.min(72,Math.trunc(Number(value)||0)));
- try{localStorage.setItem(scheduleKey('completed-turns'),String(scheduleCompletedTurns))}catch(e){console.warn('진행 턴 저장 실패',e)}
- renderScheduleTrainingLevels();
+let scheduleRecordedTurns=scheduleReadRecordedTurns();
+function scheduleCompletedPrefix(){
+ const first=scheduleRecordedTurns.findIndex(done=>!done);
+ return first<0?72:first;
+}
+function scheduleCurrentTurn(){return scheduleCompletedPrefix()+1}
+function scheduleIsRecorded(year,i){return scheduleRecordedTurns[scheduleGlobalTurn(year,i)-1]===true}
+function scheduleSaveRecordedTurns(){
+ try{localStorage.setItem(scheduleKey('recorded-turns-v2'),JSON.stringify(scheduleRecordedTurns))}
+ catch(e){console.warn('진행 턴 저장 실패',e)}
+}
+function scheduleResetRecordedTurns(){
+ scheduleRecordedTurns=Array(72).fill(false);
+ scheduleSaveRecordedTurns();
+}
+function scheduleTurnEditable(year,i){
+ return scheduleEditingPlan||scheduleGlobalTurn(year,i)<=scheduleCurrentTurn();
+}
+function scheduleCompleteTurn(year,i){
+ if(scheduleEditingPlan)return;
+ const turn=scheduleGlobalTurn(year,i);
+ if(turn!==scheduleCurrentTurn())return;
+ scheduleRecordedTurns[turn-1]=true;
+ scheduleSaveRecordedTurns();
+ if(turn<72)scheduleCurrent.year=SCHEDULE_YEAR_ORDER[Math.floor(turn/24)];
+ saveScheduleCurrent();
 }
 function scheduleProgressLabel(turn){
- if(turn===0)return '육성 시작 전';
+ if(turn>72)return '육성 완료 · 72/72턴';
  const year=SCHEDULE_YEAR_ORDER[Math.floor((turn-1)/24)];
- const index=(turn-1)%24;
- return SCHEDULE_YEAR_KO[year]+' '+(Math.floor(index/2)+1)+'월 '+(index%2===0?'전반':'후반')+' 완료';
-}
-function initScheduleTrainingLevels(){
- const select=$('schedule-completed-turn');
- select.replaceChildren(...Array.from({length:73},(_,i)=>new Option(scheduleProgressLabel(i),String(i))));
- select.addEventListener('change',e=>setScheduleCompletedTurns(e.target.value));
+ const i=(turn-1)%24;
+ return '현재 '+SCHEDULE_YEAR_KO[year]+' '+(Math.floor(i/2)+1)+'월 '+(i%2===0?'전반':'후반')+' · '+turn+'/72턴';
 }
 function renderScheduleTrainingLevels(){
  const panel=$('schedule-training-levels');
  if(!panel)return;
  panel.hidden=Boolean(scheduleEditingPlan);
  if(scheduleEditingPlan)return;
- $('schedule-completed-turn').value=String(scheduleCompletedTurns);
- const status=TrainingLevels.calculate(scheduleCurrent,scheduleCompletedTurns);
- $('schedule-training-note').textContent=status.summerCamp?'여름합숙 · 모든 훈련 Lv.5 (레벨 상승 횟수에 미포함)':status.completed===72?'72턴 종료 · 최종 일반 훈련 레벨':'일반 훈련 4회당 +1 · 새해마다 모든 훈련 +1';
+ const current=scheduleCurrentTurn(),completed=current-1;
+ $('schedule-current-turn').textContent=scheduleProgressLabel(current);
+ const status=TrainingLevels.calculate(scheduleCurrent,completed);
+ $('schedule-training-note').textContent=status.summerCamp?'여름합숙 · 모든 훈련 Lv.5 (레벨 상승 횟수에 미포함)':completed===72?'72턴 종료 · 최종 일반 훈련 레벨':'일반 훈련 4회당 +1 · 새해마다 모든 훈련 +1';
  $('schedule-training-grid').innerHTML=status.levels.map(e=>`<div class="schedule-level-item" aria-label="${e.label} Lv.${e.level}, 일반 훈련 ${e.count}회"><span class="type-icon type-icon-${e.type} schedule-level-type-icon" aria-hidden="true"></span><span class="schedule-level-name">${e.label}</span><strong>Lv.${e.level}</strong><small>${status.summerCamp?'합숙':e.baseLevel===5?'MAX':e.count%4+'/4회'}</small></div>`).join('');
 }
-initScheduleTrainingLevels();
 // The selected plan is an editable starting snapshot, not a display overlay.
 function scheduleInitialRun(){
  const run=normalizeSchedule(scheduleActivePlan()?.schedule||emptySchedule());
@@ -549,7 +570,7 @@ function scheduleFinishPlanEdit(save=false){
 function resetCurrentScheduleOnly(){
  if(scheduleEditingPlan)return;
  scheduleCurrent=scheduleInitialRun();
- setScheduleCompletedTurns(0);
+ scheduleResetRecordedTurns();
  scheduleTurn=null;
  saveScheduleCurrent();
  if($('schedule-action-backdrop')&&!$('schedule-action-backdrop').hidden)closeScheduleDialog();
@@ -610,6 +631,11 @@ function renderSchedule(){
   const cells=scheduleCurrent.turns[year].map((action,i)=>{
     const source=scheduleCurrent;
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
+   const globalTurn=scheduleGlobalTurn(year,i);
+   const currentTurn=scheduleCurrentTurn();
+   const recorded=!scheduleEditingPlan&&scheduleIsRecorded(year,i);
+   const current=!scheduleEditingPlan&&globalTurn===currentTurn;
+   const future=!scheduleEditingPlan&&globalTurn>currentTurn;
    const goal=scheduleGoalAt(year,i,source);
    const selection=source.selectedRaces[year+'-'+i];
    const selectedRace=!(year==='junior'&&i<=12)&&action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
@@ -625,7 +651,7 @@ function renderSchedule(){
    const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
     
-   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
@@ -649,7 +675,7 @@ $('schedule-character').addEventListener('change',e=>{
  if(!scheduleEditingPlan&&scheduleActivePlanId&&next!==scheduleActivePlan()?.schedule.character)scheduleSetActivePlan('');
  // Clear only the working schedule. Saved plans and support-event progress remain intact.
  scheduleCurrent.character=next;
- if(!scheduleEditingPlan)setScheduleCompletedTurns(0);
+ if(!scheduleEditingPlan)scheduleResetRecordedTurns();
  for(const year of Object.keys(SCHEDULE_YEARS))scheduleCurrent.turns[year]=Array(scheduleSlots(year)).fill(null);
  scheduleCurrent.selectedRaces={};
  scheduleCurrent.scenarioEvents={};
@@ -668,6 +694,7 @@ $('schedule-grid').addEventListener('click',e=>{
  const year=btn.dataset.scheduleYearCell;
  if(!Object.hasOwn(SCHEDULE_YEARS,year))return;
  const clickedTurn=Number(btn.dataset.scheduleTurn);
+ if(!scheduleTurnEditable(year,clickedTurn))return toast('현재 턴부터 순서대로 기록해 주세요');
  scheduleCurrent.year=year;
  scheduleTurn=clickedTurn;
  const month=1+Math.floor(scheduleTurn/2);
@@ -684,7 +711,8 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
  // Goals are fixed, but their turn-free scenario actions must still be resettable.
- $('schedule-action-clear').hidden=readOnly&&scheduleCurrent.scenario==='basic';
+ $('schedule-action-clear').hidden=!scheduleEditingPlan&&!scheduleIsRecorded(year,scheduleTurn);
+ $('schedule-goal-complete').hidden=scheduleEditingPlan||!readOnly||scheduleGlobalTurn(year,scheduleTurn)!==scheduleCurrentTurn();
  if(readOnly){
   $('schedule-action-choices').replaceChildren();
   openScheduleDialog('schedule-action-backdrop');
@@ -736,7 +764,7 @@ function renderScheduleOnsenControls(year,i){
 }
 $('schedule-onsen-panel').addEventListener('click',e=>{
  const button=e.target.closest('[data-onsen-event]');
- if(!button||scheduleTurn===null||scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(scheduleCurrent.year,scheduleTurn)<3)return;
+ if(!button||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(scheduleCurrent.year,scheduleTurn)<3)return;
  const id=button.dataset.onsenEvent;
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id))return;
  const year=scheduleCurrent.year;
@@ -764,23 +792,39 @@ function updateSelectedRaceDescription(){
 }
 $('schedule-race-select').addEventListener('change',updateSelectedRaceDescription);
 $('schedule-race-apply').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
+ if(scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12)||$('schedule-race-select').value==='')return toast('레이스를 먼저 선택하세요');
  const race=scheduleRacesAt(scheduleCurrent.year,scheduleTurn)[Number($('schedule-race-select').value)];
  if(!race)return;
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]='race';
  scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn]=race.n;
+ scheduleCompleteTurn(scheduleCurrent.year,scheduleTurn);
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction)||!scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario)[btn.dataset.scheduleAction],scheduleCurrent.year,scheduleTurn))return;
+ if(!btn||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction)||!scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario)[btn.dataset.scheduleAction],scheduleCurrent.year,scheduleTurn))return;
+ if(btn.dataset.scheduleAction==='race')return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
- if(btn.dataset.scheduleAction!=='race')delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
+ delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
+ scheduleCompleteTurn(scheduleCurrent.year,scheduleTurn);
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
+});
+$('schedule-goal-complete').addEventListener('click',()=>{
+ if(scheduleTurn===null||scheduleEditingPlan||!scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn))return;
+ if(scheduleGlobalTurn(scheduleCurrent.year,scheduleTurn)!==scheduleCurrentTurn())return;
+ scheduleCompleteTurn(scheduleCurrent.year,scheduleTurn);
+ closeScheduleDialog();renderSchedule();
 });
 $('schedule-action-clear').addEventListener('click',()=>{
  if(scheduleTurn===null)return;
  const year=scheduleCurrent.year;
+ const turn=scheduleGlobalTurn(year,scheduleTurn);
+ if(!scheduleTurnEditable(year,scheduleTurn))return;
+ if(!scheduleEditingPlan){
+  if(turn!==scheduleCompletedPrefix())return toast('기록 취소는 마지막으로 완료한 턴부터 가능합니다');
+  scheduleRecordedTurns[turn-1]=false;
+  scheduleSaveRecordedTurns();
+ }
  const key=scheduleTurnEventKey(year,scheduleTurn);
  // Keep the character's fixed goal. Clear all editable main and scenario actions.
  if(!scheduleIsLockedGoal(year,scheduleTurn)){
@@ -832,7 +876,7 @@ $('schedule-plan-list').addEventListener('click',e=>{
   if(scheduleHasRunData(scheduleCurrent)&&!confirm('현재 육성 기록을 이 계획의 초기 상태로 교체할까요?\n\n기존 육성 기록은 사라지지만 저장된 계획은 변경되지 않습니다.'))return;
   scheduleSetActivePlan(entry.id);
   scheduleCurrent=scheduleInitialRun();
-  setScheduleCompletedTurns(0);
+  scheduleResetRecordedTurns();
   saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('계획을 육성 초기 상태로 지정했습니다');
  }else if(match==='planEdit'){
   scheduleBeginPlanEdit(entry);
@@ -876,7 +920,7 @@ function switchServer(next){
  try{localStorage.setItem(SERVER_KEY,next)}catch(err){console.warn('서버 선택 저장 실패',err)}
  state=readState();
  scheduleCurrent=readScheduleCurrent();
- scheduleCompletedTurns=readScheduleCompletedTurns();
+ scheduleRecordedTurns=scheduleReadRecordedTurns();
  schedulePlans=readSchedulePlans();
  scheduleEditingPlan=null;scheduleRunBeforeEdit=null;
  try{scheduleActivePlanId=localStorage.getItem(scheduleKey('active-plan'))||''}catch(e){scheduleActivePlanId=''}
