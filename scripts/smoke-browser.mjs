@@ -211,6 +211,37 @@ try{
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Editing plan mutated current record progress');
+ // End-to-end copy manager: catalog, navigation filter, persisted UI rewrite and reset.
+ await page.locator('#tool-menu-toggle').click();
+ if(!(await page.locator('#tool-menu-list [data-tool="texts"]').isVisible()))throw new Error('Text manager missing under Settings');
+ await page.locator('#tool-menu-list [data-tool="texts"]').click();
+ if(!(await page.locator('#text-panel').isVisible()))throw new Error('Text manager page not visible');
+ if(!(await page.locator('#text-manager-count').innerText()).includes('문구'))throw new Error('Text inventory did not load');
+ if((await page.locator('#text-manager-entry').count())!==0)throw new Error('Text management element id collision');
+ await page.locator('#text-manager-path').selectOption('계획 > 육성 계획');
+ await page.locator('#text-manager-search').fill('새 계획 작성');
+ const targetEntry=page.locator('.text-manager-entry').filter({has:page.locator('.text-manager-original', {hasText:'새 계획 작성'})}).first();
+ if(!(await targetEntry.isVisible()))throw new Error('Plan create wording missing from editable catalog');
+ await targetEntry.locator('textarea').fill('새 계획 만들기');
+ await targetEntry.getByRole('button',{name:'저장'}).click();
+ if(!(await page.locator('#text-manager-count').innerText()).includes('변경 1개'))throw new Error('Text edit did not persist');
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="plan"]').click();
+ if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text override did not update actual plan button');
+ await page.reload({waitUntil:'domcontentloaded'});
+ await page.locator('#slots > *').first().waitFor({timeout:20000});
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="plan"]').click();
+ if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text customization did not survive reload');
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="texts"]').click();
+ await page.locator('#text-manager-path').selectOption('계획 > 육성 계획');
+ await page.locator('#text-manager-search').fill('새 계획 작성');
+ const restoreEntry=page.locator('.text-manager-entry').filter({has:page.locator('.text-manager-original',{hasText:'새 계획 작성'})}).first();
+ await restoreEntry.getByRole('button',{name:'원래대로'}).click();
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#tool-menu-list [data-tool="plan"]').click();
+ if((await page.locator('#plan-create-new').innerText())!=='새 계획 작성')throw new Error('Restoring text did not update plan button');
  if(errors.length)throw new Error('Browser JavaScript errors: '+errors.join('; '));
  console.log('PASS: browser startup, counters, schedule and plans');
 }finally{if(browser)await browser.close();server.kill()}

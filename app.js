@@ -29,7 +29,8 @@ const TOOLS={
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
  schedule:{name:'육성 기록',group:'record',scope:'session',element:'schedule-panel',reset(){resetCurrentScheduleOnly()}},
- plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}}
+ plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}},
+ texts:{name:'텍스트 관리',group:'settings',scope:'independent',element:'text-panel',reset(){}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -63,6 +64,7 @@ function renderResetActions(){
  $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
+ if(layout.mode==='split'&&layout.tool==='texts')layout.mode='single';
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
  const ids=visibleToolIds(),workspace=$('workspace'),solo=layout.mode==='single';
  workspace.classList.toggle('single',solo);
@@ -182,6 +184,10 @@ function initWorkspace(){
   panel.className='tool-setting-panel';panel.hidden=true;
   nodes.push(btn,panel);
  }
+ const textsButton=document.createElement('button');
+ textsButton.type='button';textsButton.dataset.tool='texts';
+ textsButton.className='tool-menu-item';textsButton.textContent='텍스트 관리';
+ nodes.push(textsButton);
  $('tool-menu-list').replaceChildren(...nodes);
  setupInlineSettings();
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
@@ -195,6 +201,7 @@ function initWorkspace(){
    if(!confirm('저장하지 않은 계획 편집을 취소하고 다른 기능으로 이동할까요?'))return;
    scheduleFinishPlanEdit(false);
   }
+  if(btn.dataset.tool==='texts')layout.mode='single';
   if(layout.mode==='split'&&btn.dataset.tool==='counter')layout.mode='single';
   layout.tool=btn.dataset.tool;
   applyLayout();
@@ -1230,6 +1237,7 @@ $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=
 initSettings();
 initWorkspace();
 applyUiTexts();
+initTextManager();
 renderSchedule();
 loadScheduleDatabase();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
