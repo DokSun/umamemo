@@ -23,7 +23,15 @@ try{
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  await page.locator('#schedule-grid .schedule-cell').first().waitFor({timeout:20000});
  if((await page.locator('#schedule-grid .schedule-cell').count())!==72)throw new Error('Expected 72 turns');
- if(!(await page.locator('#schedule-reset').isVisible()))throw new Error('Schedule reset is hidden');
+ if(await page.locator('#schedule-reset').isVisible())throw new Error('Duplicate schedule reset should be hidden during simultaneous use');
+ if((await page.locator('#reset').innerText())!=='육성 기록 통합 초기화')throw new Error('Unified reset label missing in simultaneous use');
+ if((await page.locator('#reset').getAttribute('data-targets'))!=='counter,schedule')throw new Error('Unified reset must target counter and schedule');
+ await page.locator('#tool-menu-toggle').click();
+ await page.locator('#split-toggle').evaluate(el=>{el.checked=false;el.dispatchEvent(new Event('change',{bubbles:true}));});
+ if(!(await page.locator('#schedule-reset').isVisible()))throw new Error('Schedule reset must remain visible in single mode');
+ await page.locator('#split-toggle').evaluate(el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}));});
+ if(await page.locator('#schedule-reset').isVisible())throw new Error('Duplicate schedule reset returned in split mode');
+ await page.locator('#tool-menu-close').click();
  if((await page.locator('#schedule-training-grid .schedule-level-item').count())!==5)throw new Error('Expected five training levels');
  const current=page.locator('#schedule-current-turn');
  if(!(await current.innerText()).includes('1/72턴'))throw new Error('First current turn must be 1');
