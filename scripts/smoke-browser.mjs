@@ -81,6 +81,8 @@ try{
  if(await page.getByText('메모장은 별도의 설정 없이 기록 내용만 자동 저장됩니다.').count())throw new Error('Memo help should be removed');
  if(await page.locator('[data-settings-open="general"]').count())throw new Error('Screen/server settings must not be collapsible');
  if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Screen/server settings must always be expanded');
+ const borderless=await page.locator('#settings-inline-general').evaluate(el=>{const st=getComputedStyle(el);return st.borderTopWidth==='0px'&&st.borderLeftWidth==='0px'&&st.backgroundColor==='rgba(0, 0, 0, 0)';});
+ if(!borderless)throw new Error('Permanent settings outer frame must be removed');
  if(await page.locator('[data-tool="texts"], #text-panel, script[src*="text-manager"]').count())throw new Error('Text manager must be removed');
  if(await page.locator('[data-settings-open="cultivation"], #settings-inline-cultivation').count())throw new Error('Cultivation settings must be removed from the function drawer');
  if(await page.locator('#schedule-character').isVisible())throw new Error('Internal record fields must not appear as user settings');
