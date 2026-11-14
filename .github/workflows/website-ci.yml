@@ -1,0 +1,68 @@
+name: Verify site and publish development preview
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: website-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Static checks
+        run: node scripts/check-site.mjs .
+      - name: Install Chromium test runner
+        run: |
+          npm install --no-save playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Browser smoke test
+        run: node scripts/smoke-browser.mjs .
+  publish-preview:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Check out development
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+          path: source
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Generate isolated preview
+        run: |
+          node source/scripts/build-preview.mjs source output
+          node source/scripts/check-site.mjs output
+      - name: Check out stable main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: production
+      - name: Publish to /dev without changing production files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf production/dev
+          mkdir -p production/dev
+          cp -a output/. production/dev/
+          cd production
+          git add -A -- dev
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(preview): publish verified dev build"
+          git push origin HEAD:main
