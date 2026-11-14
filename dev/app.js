@@ -35,8 +35,7 @@ const TOOLS={
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
  schedule:{name:'육성 기록',group:'record',scope:'session',element:'schedule-panel',reset(){resetCurrentScheduleOnly()}},
- plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}},
- texts:{name:'텍스트 관리',group:'settings',scope:'independent',element:'text-panel',reset(){}}
+ plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -70,7 +69,6 @@ function renderResetActions(){
  $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
- if(layout.mode==='split'&&layout.tool==='texts')layout.mode='single';
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
  const ids=visibleToolIds(),workspace=$('workspace'),solo=layout.mode==='single';
  workspace.classList.toggle('single',solo);
@@ -133,8 +131,7 @@ function toggleInlineSettings(tab){
 function setupInlineSettings(){
  for(const tab of ['counter','general']){
   const source=$('settings-source').querySelector('[data-settings-pane="'+tab+'"]');
-  const button=$('tool-menu-list').querySelector('[data-settings-open="'+tab+'"]');
-  const target=$(button.getAttribute('aria-controls'));
+  const target=$('settings-inline-'+tab);
   source.hidden=false;
   target.appendChild(source);
  }
@@ -179,21 +176,25 @@ function initWorkspace(){
  settingsGroup.dataset.toolCategory='settings';
  settingsGroup.textContent='설정';
  nodes.push(settingsGroup);
- for(const [tab,label] of [['counter','카운팅 설정'],['general','화면·서버 설정']]){
-  const btn=document.createElement('button');
-  btn.type='button';btn.className='tool-menu-item tool-menu-setting-item';
-  btn.dataset.settingsOpen=tab;btn.textContent=label;
-  btn.setAttribute('aria-expanded','false');
-  btn.setAttribute('aria-controls','settings-inline-'+tab);
-  const panel=document.createElement('div');
-  panel.id='settings-inline-'+tab;
-  panel.className='tool-setting-panel';panel.hidden=true;
-  nodes.push(btn,panel);
- }
- const textsButton=document.createElement('button');
- textsButton.type='button';textsButton.dataset.tool='texts';
- textsButton.className='tool-menu-item';textsButton.textContent='텍스트 관리';
- nodes.push(textsButton);
+ const counterButton=document.createElement('button');
+ counterButton.type='button';
+ counterButton.className='tool-menu-item tool-menu-setting-item';
+ counterButton.dataset.settingsOpen='counter';
+ counterButton.textContent='카운팅 설정';
+ counterButton.setAttribute('aria-expanded','false');
+ counterButton.setAttribute('aria-controls','settings-inline-counter');
+ const counterPanel=document.createElement('div');
+ counterPanel.id='settings-inline-counter';
+ counterPanel.className='tool-setting-panel';
+ counterPanel.hidden=true;
+ nodes.push(counterButton,counterPanel);
+ const generalHeading=document.createElement('div');
+ generalHeading.className='tool-menu-group-heading tool-menu-heading general-settings-heading';
+ generalHeading.textContent='화면·서버 설정';
+ const generalPanel=document.createElement('div');
+ generalPanel.id='settings-inline-general';
+ generalPanel.className='tool-setting-panel permanent-settings-panel';
+ nodes.push(generalHeading,generalPanel);
  $('tool-menu-list').replaceChildren(...nodes);
  setupInlineSettings();
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
@@ -207,7 +208,6 @@ function initWorkspace(){
    if(!confirm('저장하지 않은 계획 편집을 취소하고 다른 기능으로 이동할까요?'))return;
    scheduleFinishPlanEdit(false);
   }
-  if(btn.dataset.tool==='texts')layout.mode='single';
   if(layout.mode==='split'&&btn.dataset.tool==='counter')layout.mode='single';
   layout.tool=btn.dataset.tool;
   applyLayout();
