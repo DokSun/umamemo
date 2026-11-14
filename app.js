@@ -333,7 +333,6 @@ async function loadScheduleDatabase(){
   scheduleDb={characters:[],races:[]};
  }
  renderSchedule();
- if($('schedule-plans-backdrop')&&!$('schedule-plans-backdrop').hidden)renderSchedulePlans();
 }
 
 const SCHEDULE_ACTIONS={
@@ -720,7 +719,6 @@ function renderSchedule(){
 }
 function closeScheduleDialog(){
  $('schedule-action-backdrop').hidden=true;
- $('schedule-plans-backdrop').hidden=true;
  scheduleTurn=null;
  document.body.classList.remove('schedule-dialog-open');
 }
@@ -913,38 +911,12 @@ function renderPlanPanel(){
  const root=$('plan-quick-list');
  if(!root)return;
  $('plan-count').textContent=schedulePlans.length+'개 저장';
- if(!schedulePlans.length){
-  root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';
-  return;
- }
- root.innerHTML=schedulePlans.map(plan=>{
-  const used=plan.id===scheduleActivePlanId;
-  const filled=SCHEDULE_YEAR_ORDER.reduce((sum,year)=>sum+plan.schedule.turns[year].filter(Boolean).length,0);
-  return '<div class="plan-library-row"><div><strong>'+escapeHTML(plan.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(plan.schedule.character))+' · '+filled+'/72턴'+(used?' · 육성 초기 계획':'')+'</small></div><button type="button" data-plan-open-id="'+escapeHTML(plan.id)+'">계획 편집</button></div>';
- }).join('');
+ if(!schedulePlans.length){root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';return}
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="plan-library-row"><div class="plan-library-details"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}${p.id===scheduleActivePlanId?' · 선택됨':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}">${p.id===scheduleActivePlanId?'선택 해제':'초기 계획으로 선택'}</button><button type="button" data-plan-edit="${i}">편집</button><button type="button" data-plan-rename="${i}">이름 변경</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
 }
-$('plan-quick-list').addEventListener('click',e=>{
- const btn=e.target.closest('[data-plan-open-id]');
- if(!btn)return;
- const entry=schedulePlans.find(p=>p.id===btn.dataset.planOpenId);
- if(entry)scheduleBeginPlanEdit(entry);
-});
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
-$('plan-library-open').addEventListener('click',()=>$('schedule-plans-open').click());
-function renderSchedulePlans(){
- renderPlanPanel();
- const root=$('schedule-plan-list');
- if(!schedulePlans.length){
-  root.innerHTML='<p class="schedule-plans-empty"></p>';
-  root.querySelector('.schedule-plans-empty').textContent=uiText('plans.empty');
-  return;
- }
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="schedule-plan-row"><div class="schedule-plan-name"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}${p.id===scheduleActivePlanId?' · 육성 초기 상태로 지정됨':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}">${p.id===scheduleActivePlanId?'초기 계획 해제':'초기 상태로 지정'}</button><button type="button" data-plan-edit="${i}">계획 편집</button><button type="button" data-plan-rename="${i}">이름</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
-}
 $('schedule-plan-edit-save').addEventListener('click',()=>scheduleFinishPlanEdit(true));
 $('schedule-plan-edit-cancel').addEventListener('click',()=>scheduleFinishPlanEdit(false));
-$('schedule-plans-open').addEventListener('click',()=>{if(scheduleEditingPlan)return toast('계획 편집을 저장하거나 취소해 주세요');closeSettings();renderSchedulePlans();openScheduleDialog('schedule-plans-backdrop')});
-$('schedule-plan-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
 $('schedule-plan-save').addEventListener('click',()=>{
  const raw=prompt('저장할 계획의 이름을 입력하세요.');
  if(raw===null)return;
@@ -954,9 +926,9 @@ $('schedule-plan-save').addEventListener('click',()=>{
  const next={id:String(Date.now())+'-'+String(Math.random()).slice(2),name,schedule:normalizeSchedule(scheduleCurrent)};
  schedulePlans.push(next);
  if(!saveSchedulePlans()){schedulePlans.pop();return}
- renderSchedulePlans();toast('현재 육성 기록을 별도 계획으로 저장했습니다');
+ renderPlanPanel();toast('현재 육성 기록을 별도 계획으로 저장했습니다');
 });
-$('schedule-plan-list').addEventListener('click',e=>{
+$('plan-quick-list').addEventListener('click',e=>{
  const btn=e.target.closest('button');
  if(!btn)return;
  const match=Object.keys(btn.dataset).find(k=>k.startsWith('plan'));
@@ -965,7 +937,7 @@ $('schedule-plan-list').addEventListener('click',e=>{
  if(!entry)return;
  if(match==='planUse'){
   if(entry.id===scheduleActivePlanId){
-   scheduleSetActivePlan('');renderSchedulePlans();renderSchedule();toast('초기 계획 지정을 해제했습니다. 현재 기록은 유지됩니다.');return;
+   scheduleSetActivePlan('');renderPlanPanel();renderSchedule();toast('초기 계획 지정을 해제했습니다. 현재 기록은 유지됩니다.');return;
   }
   if(scheduleHasRunData(scheduleCurrent)&&!confirm('현재 육성 기록을 이 계획의 초기 상태로 교체할까요?\n\n기존 육성 기록은 사라지지만 저장된 계획은 변경되지 않습니다.'))return;
   scheduleSetActivePlan(entry.id);
@@ -979,21 +951,21 @@ $('schedule-plan-list').addEventListener('click',e=>{
   if(raw===null||!raw.trim())return;
   const previous=entry.name;entry.name=raw.trim().slice(0,80);
   if(!saveSchedulePlans()){entry.name=previous;return}
-  renderSchedulePlans();renderSchedule();
+  renderPlanPanel();renderSchedule();
  }else if(match==='planDelete'){
   if(!confirm(entry.name+' 계획을 삭제할까요?'))return;
   const removed=schedulePlans.splice(index,1);
   if(!saveSchedulePlans()){schedulePlans.splice(index,0,removed[0]);return}
   if(entry.id===scheduleActivePlanId)scheduleSetActivePlan('');
-  renderSchedulePlans();renderSchedule();toast('계획을 삭제했습니다');
+  renderPlanPanel();renderSchedule();toast('계획을 삭제했습니다');
  }
 });
 document.querySelectorAll('[data-schedule-close]').forEach(btn=>btn.addEventListener('click',closeScheduleDialog));
-['schedule-action-backdrop','schedule-plans-backdrop'].forEach(id=>{
+['schedule-action-backdrop'].forEach(id=>{
  $(id).addEventListener('click',e=>{if(e.target===$(id))closeScheduleDialog()});
 });
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'&&(!$('schedule-action-backdrop').hidden||!$('schedule-plans-backdrop').hidden)){
+ if(e.key==='Escape'&&!$('schedule-action-backdrop').hidden){
   e.preventDefault();closeScheduleDialog();
  }
 });
