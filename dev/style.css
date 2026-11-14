@@ -1316,3 +1316,26 @@ header .header-settings-button{order:initial;margin-left:auto}
   justify-content:flex-end;
  }
 }
+
+/* Compact plan list cards without moving the right-bottom action group. */
+#plan-panel .plan-quick-list .plan-library-row{
+ min-height:88px;
+ padding:7px 9px;
+}
+#plan-panel .plan-quick-list .plan-library-row .plan-library-details{
+ gap:3px;
+}
+#plan-panel .plan-quick-list .plan-library-row .schedule-plan-actions{
+ right:9px;
+ bottom:7px;
+}
+#plan-panel .plan-quick-list .plan-library-row .schedule-plan-actions button{
+ min-height:30px;
+ padding:4px 6px;
+}
+@media(max-width:520px){
+ #plan-panel .plan-quick-list .plan-library-row .schedule-plan-actions{
+  right:9px;
+  bottom:7px;
+ }
+}
