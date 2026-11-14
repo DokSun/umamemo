@@ -29,6 +29,10 @@ try{
  if(await page.locator('#schedule-reset').isVisible())throw new Error('Duplicate schedule reset should be hidden during simultaneous use');
  if((await page.locator('#reset').innerText())!=='육성 기록 통합 초기화')throw new Error('Unified reset label missing in simultaneous use');
  if((await page.locator('#reset').getAttribute('data-targets'))!=='counter,schedule')throw new Error('Unified reset must target counter and schedule');
+ const prompt=[];
+ page.once('dialog',async d=>{prompt.push(d.message());await d.dismiss();});
+ await page.locator('#reset').click();
+ if(!prompt[0]?.includes('≡ 기능 > 설정 > 카운팅 설정 > 초기화 팝업'))throw new Error('Counter reset help missing');
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#split-toggle').evaluate(el=>{el.checked=false;el.dispatchEvent(new Event('change',{bubbles:true}));});
  if(!(await page.locator('#schedule-reset').isVisible()))throw new Error('Schedule reset must remain visible in single mode');
@@ -86,6 +90,8 @@ try{
  if(await page.locator('#settings-open, #tool-settings-open').count())throw new Error('Standalone settings buttons must be removed');
  if(await page.locator('#settings-backdrop').count())throw new Error('Settings modal backdrop must not exist');
  await page.locator('#tool-menu-toggle').click();
+ if((await page.locator('#tool-menu-title').innerText())!=='우마 메모')throw new Error('Drawer title must be 우마 메모');
+ if((await page.locator('#tool-menu-list [data-tool-category="record"] + [data-tool]').getAttribute('data-tool'))!=='counter')throw new Error('Counter must come first');
  if(!(await page.locator('[data-tool-category="settings"]').isVisible()))throw new Error('Settings group missing from feature drawer');
  const settingLinks=page.locator('#tool-menu-list [data-settings-open]');
  if((await settingLinks.allTextContents()).join('|')!=='카운팅 설정')throw new Error('Only counter settings should be collapsible');
@@ -250,10 +256,18 @@ try{
  if(!(await page.locator('#plan-panel').isVisible()))throw new Error('Plan workspace not visible after exiting plan editor');
  if(await page.locator('#schedule-panel').isVisible())throw new Error('Record workspace should not be shown while browsing plans');
  if((await page.locator('#plan-quick-list [data-plan-edit]').count())<1)throw new Error('Stored plans not shown inline');
+ await page.evaluate(()=>{layout.mode='split';applyLayout();});
+ if(!(await page.locator('#workspace').evaluate(el=>el.classList.contains('single'))))throw new Error('Plan must be single mode even when preference is split');
+ const savedBefore=await page.evaluate(()=>JSON.parse(localStorage.getItem('uma-tracker-layout-v1')).mode);
  await page.locator('#tool-menu-toggle').click();
+ if(!(await page.locator('#split-toggle').isDisabled()))throw new Error('Plan must disable split toggle');
+ if(!(await page.locator('#split-toggle').isChecked()))throw new Error('Plan must preserve ON preference');
+ const savedAfter=await page.evaluate(()=>JSON.parse(localStorage.getItem('uma-tracker-layout-v1')).mode);
+ if(savedBefore!==savedAfter)throw new Error('Plan must not change split preference');
  if(!(await page.locator('[data-tool-category="plan"]').isVisible()))throw new Error('Plan menu group missing');
  if(!(await page.locator('[data-tool-category="record"]').isVisible()))throw new Error('Record menu group missing');
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
+ if(!(await page.locator('#workspace').evaluate(el=>el.classList.contains('split'))))throw new Error('Returning to records must restore split preference');
  if(!(await page.locator('#schedule-panel').isVisible()))throw new Error('Record scheduler not restored');
  if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Switching tools altered actual record progress');
  await page.locator('#tool-menu-toggle').click();
