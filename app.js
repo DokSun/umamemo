@@ -592,16 +592,16 @@ function scheduleBeginPlanEdit(entry){
  scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:normalizeSchedule(entry?.schedule||emptySchedule())};
  scheduleCurrent=scheduleEditingPlan.schedule;
  scheduleCurrent.year=scheduleRunBeforeEdit.year;
+ $('schedule-plan-name').value=scheduleEditingPlan.name;
  layout.tool='plan';applyLayout();
  closeScheduleDialog();renderSchedule();
 }
 function scheduleFinishPlanEdit(save=false){
  if(!scheduleEditingPlan)return;
  if(save){
-  const raw=prompt('계획 이름',scheduleEditingPlan.name||'새 육성 계획');
-  if(raw===null)return;
-  const name=raw.trim().slice(0,80);
-  if(!name)return toast('계획 이름을 입력해 주세요');
+  const name=$('schedule-plan-name').value.trim().slice(0,80);
+  if(!name){$('schedule-plan-name').focus();return toast('계획 이름을 입력해 주세요')};
+  scheduleEditingPlan.name=name;
   if(scheduleEditingPlan.id){
    const entry=schedulePlans.find(p=>p.id===scheduleEditingPlan.id);
    if(!entry)return toast('저장된 계획을 찾을 수 없습니다');
@@ -912,22 +912,16 @@ function renderPlanPanel(){
  if(!root)return;
  $('plan-count').textContent=schedulePlans.length+'개 저장';
  if(!schedulePlans.length){root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';return}
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="plan-library-row"><div class="plan-library-details"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}${p.id===scheduleActivePlanId?' · 선택됨':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}">${p.id===scheduleActivePlanId?'선택 해제':'초기 계획으로 선택'}</button><button type="button" data-plan-edit="${i}">편집</button><button type="button" data-plan-rename="${i}">이름 변경</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+ root.innerHTML=schedulePlans.map((p,i)=>`<div class="plan-library-row ${p.id===scheduleActivePlanId?'selected-plan':''}"><div class="plan-library-details"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))}${p.id===scheduleActivePlanId?' · 선택됨':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}" aria-pressed="${p.id===scheduleActivePlanId}">선택/선택 해제</button><button type="button" data-plan-edit="${i}">편집</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
 }
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
+$('schedule-plan-name').addEventListener('input',e=>{
+ if(!scheduleEditingPlan)return;
+ scheduleEditingPlan.name=e.target.value;
+ $('schedule-plan-caption').textContent='계획 편집: '+(e.target.value.trim()||'새 계획');
+});
 $('schedule-plan-edit-save').addEventListener('click',()=>scheduleFinishPlanEdit(true));
 $('schedule-plan-edit-cancel').addEventListener('click',()=>scheduleFinishPlanEdit(false));
-$('schedule-plan-save').addEventListener('click',()=>{
- const raw=prompt('저장할 계획의 이름을 입력하세요.');
- if(raw===null)return;
- const name=raw.trim().slice(0,80);
- if(!name)return toast('계획 이름을 입력해 주세요');
- if(schedulePlans.length>=50)return toast('계획은 최대 50개까지 저장할 수 있습니다');
- const next={id:String(Date.now())+'-'+String(Math.random()).slice(2),name,schedule:normalizeSchedule(scheduleCurrent)};
- schedulePlans.push(next);
- if(!saveSchedulePlans()){schedulePlans.pop();return}
- renderPlanPanel();toast('현재 육성 기록을 별도 계획으로 저장했습니다');
-});
 $('plan-quick-list').addEventListener('click',e=>{
  const btn=e.target.closest('button');
  if(!btn)return;
@@ -946,12 +940,6 @@ $('plan-quick-list').addEventListener('click',e=>{
   saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('계획을 육성 초기 상태로 지정했습니다');
  }else if(match==='planEdit'){
   scheduleBeginPlanEdit(entry);
- }else if(match==='planRename'){
-  const raw=prompt('새 이름을 입력하세요.',entry.name);
-  if(raw===null||!raw.trim())return;
-  const previous=entry.name;entry.name=raw.trim().slice(0,80);
-  if(!saveSchedulePlans()){entry.name=previous;return}
-  renderPlanPanel();renderSchedule();
  }else if(match==='planDelete'){
   if(!confirm(entry.name+' 계획을 삭제할까요?'))return;
   const removed=schedulePlans.splice(index,1);

@@ -87,11 +87,11 @@ try{
  await page.locator('#tool-menu-list [data-tool="plan"]').click();
  if(!(await page.locator('#plan-panel').isVisible()))throw new Error('Plan management not visible on plan page');
  if(await page.locator('#schedule-plans-backdrop').count())throw new Error('Plan manager popup should be removed');
- if((await page.locator('#plan-quick-list [data-plan-rename]').count())<1)throw new Error('Inline rename missing');
+ if(await page.locator('#plan-quick-list [data-plan-rename]').count())throw new Error('Standalone rename must be removed');
  if((await page.locator('#plan-quick-list [data-plan-delete]').count())<1)throw new Error('Inline delete missing');
  if((await page.locator('#plan-quick-list [data-plan-use]').count())<1)throw new Error('Inline select missing');
  if((await page.locator('#plan-quick-list [data-plan-edit]').count())<1)throw new Error('Inline edit missing');
- if(!(await page.locator('#schedule-plan-save').isVisible()))throw new Error('Save current run as plan missing');
+ if(await page.locator('#schedule-plan-save').count())throw new Error('Saving actual records as a plan must be removed');
  const firstPlan=page.locator('#plan-quick-list .plan-library-row').first();
  if((await firstPlan.innerText()).includes('/72턴'))throw new Error('Action count must not be shown');
  if(!(await firstPlan.locator('small').innerText()).includes('선택됨')){
@@ -99,9 +99,22 @@ try{
   await firstPlan.locator('[data-plan-use]').click();
  }
  if(!(await firstPlan.locator('small').innerText()).includes('선택됨'))throw new Error('Selected plan should be marked 선택됨');
+ if(!(await firstPlan.evaluate(el=>el.classList.contains('selected-plan'))))throw new Error('Selected plan visual emphasis is missing');
+ const controls=firstPlan.locator('.schedule-plan-actions button');
+ if((await controls.count())!==3)throw new Error('A plan must have exactly three buttons');
+ if((await controls.allTextContents()).join('|')!=='선택/선택 해제|편집|삭제')throw new Error('Plan buttons are not selection, edit and delete');
+ const bounding=await controls.evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
+ if(Math.max(...bounding)-Math.min(...bounding)>4)throw new Error('Plan buttons must align horizontally');
  await firstPlan.locator('[data-plan-edit]').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Inline plan edit did not open');
- await page.locator('#schedule-plan-edit-cancel').click();
+ if(!(await page.locator('#schedule-plan-name').isVisible()))throw new Error('Plan name field missing from editor');
+ const oldName=await page.locator('#schedule-plan-name').inputValue();
+ await page.locator('#schedule-plan-name').fill('수정한 계획명');
+ await page.locator('#schedule-plan-edit-save').click();
+ if(!(await page.locator('#plan-quick-list .plan-library-row').first().innerText()).includes('수정한 계획명'))throw new Error('Plan name was not saved through editor');
+ await page.locator('#plan-quick-list .plan-library-row').first().locator('[data-plan-edit]').click();
+ await page.locator('#schedule-plan-name').fill(oldName);
+ await page.locator('#schedule-plan-edit-save').click();
  // The plan and record tools have distinct navigation and browsing surfaces.
  if(!(await page.locator('#plan-panel').isVisible()))throw new Error('Plan workspace not visible after exiting plan editor');
  if(await page.locator('#schedule-panel').isVisible())throw new Error('Record workspace should not be shown while browsing plans');
