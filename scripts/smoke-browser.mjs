@@ -229,7 +229,7 @@ try{
  await page.locator('#tool-menu-list [data-tool="plan"]').click();
  if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text override did not update actual plan button');
  await page.reload({waitUntil:'domcontentloaded'});
- await page.locator('#slots > *').first().waitFor({timeout:20000});
+ await page.locator('#slots > *').first().waitFor({state:'attached',timeout:20000});
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#tool-menu-list [data-tool="plan"]').click();
  if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text customization did not survive reload');
