@@ -809,3 +809,11 @@ header .header-settings-button{order:initial;margin-left:auto}
 .plan-library-row button{flex:none;font-size:12px;min-height:36px}
 .plan-count{font-size:12px;color:#bed4df}
 @media(max-width:850px){#workspace.split.reversed #plan-panel{grid-column:1;grid-row:auto}}
+
+/* Full plan management lives on the plan page, not in a separate dialog. */
+#plan-panel .plan-library-row{align-items:center;flex-wrap:wrap;gap:10px}
+#plan-panel .plan-library-details{display:flex;flex-direction:column;gap:4px;flex:1;min-width:145px}
+#plan-panel .schedule-plan-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:5px}
+#plan-panel .schedule-plan-actions button{font-size:12px;min-height:35px;padding:6px 9px}
+#plan-panel .plan-library-actions button{font-size:12px}
+@media(max-width:520px){#plan-panel .schedule-plan-actions{justify-content:flex-start;width:100%}}
