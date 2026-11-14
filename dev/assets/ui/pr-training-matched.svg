@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="rim" x1="0" y1="0" x2=".15" y2="1">
+      <stop stop-color="#ffad73"/>
+      <stop offset="1" stop-color="#ef493f"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2=".7" y2="1">
+      <stop stop-color="#ff925d"/>
+      <stop offset="1" stop-color="#f46d4a"/>
+    </linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="1.7"/></filter>
+  </defs>
+  <rect x="3" y="3" width="122" height="122" rx="29" fill="#a9352a" opacity=".35" filter="url(#blur)"/>
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#rim)"/>
+  <rect x="11" y="10" width="106" height="106" rx="23" fill="url(#face)"/>
+  <path d="M25 70 Q21 74 22 80 Q26 88 38 87 L43 95 L49 94 L62 103 Q71 101 69 94 L55 80 L65 77 L81 83 Q87 80 86 73 L76 42 Q71 29 64 33 L55 47 L47 55 L30 61 Z" fill="white"/>
+  <path d="M89 25 L101 31 L89 43 L82 44 Z" fill="white"/>
+  <path d="M100 44 L106 53 L92 59 L88 51 Z" fill="white"/>
+  <path d="M97 60 L110 63 L108 73 L91 67 Z" fill="white"/>
+</svg>
