@@ -139,8 +139,6 @@ function closeSettings(){
  settingsReturnFocus=null;
 }
 function initSettings(){
- $('settings-open').addEventListener('click',()=>openSettings('cultivation'));
- $('tool-settings-open').addEventListener('click',()=>openSettings('cultivation'));
  $('schedule-edit-settings-open').addEventListener('click',()=>{
   if(!scheduleEditingPlan)return;
   const fields=$('plan-info-fields');
@@ -187,11 +185,24 @@ function initWorkspace(){
   const group=document.createElement('div');group.className='tool-menu-heading tool-menu-group-heading';group.dataset.toolCategory=category;group.textContent=heading;nodes.push(group);
   for(const id of ids){const tool=TOOLS[id];const btn=document.createElement('button');btn.type='button';btn.dataset.tool=id;btn.textContent=tool.name;btn.className='tool-menu-item';nodes.push(btn);}
  }
+ const settingsGroup=document.createElement('div');
+ settingsGroup.className='tool-menu-heading tool-menu-group-heading';
+ settingsGroup.dataset.toolCategory='settings';
+ settingsGroup.textContent='설정';
+ nodes.push(settingsGroup);
+ for(const [tab,label] of [['cultivation','육성 설정'],['counter','카운팅 설정'],['general','화면·서버 설정']]){
+  const btn=document.createElement('button');
+  btn.type='button';btn.className='tool-menu-item tool-menu-setting-item';
+  btn.dataset.settingsOpen=tab;btn.textContent=label;
+  nodes.push(btn);
+ }
  $('tool-menu-list').replaceChildren(...nodes);
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
  $('tool-menu-close').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-backdrop').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-list').addEventListener('click',e=>{
+  const settingsButton=e.target.closest('[data-settings-open]');
+  if(settingsButton){openSettings(settingsButton.dataset.settingsOpen);return}
   const btn=e.target.closest('[data-tool]');if(!btn)return;
   if(scheduleEditingPlan&&btn.dataset.tool!=='plan'){
    if(!confirm('저장하지 않은 계획 편집을 취소하고 다른 기능으로 이동할까요?'))return;
