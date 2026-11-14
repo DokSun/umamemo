@@ -1074,3 +1074,26 @@ header .header-settings-button{order:initial;margin-left:auto}
  #workspace .panel-reset-footer button{min-height:32px;padding:4px 8px;line-height:1.25}
  #workspace #schedule-panel{gap:8px}
 }
+
+/* Read-only plan preview uses free workspace beside the plan list. */
+#plan-panel .plan-browser-layout{display:grid;grid-template-columns:minmax(280px,0.85fr) minmax(0,1.6fr);gap:16px;align-items:start;min-width:0}
+#plan-panel .plan-preview{min-width:0;background:#142337;border:1px solid #405873;border-radius:9px;padding:12px}
+#plan-panel .plan-preview-placeholder{margin:0;color:#b5c5d8;font-size:13px}
+#plan-panel .plan-preview-title{display:flex;justify-content:space-between;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+#plan-panel .plan-preview-title strong{font-size:16px}
+#plan-panel .plan-preview-title small{font-size:12px;color:#bdcce0}
+#plan-panel .plan-preview-years{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#plan-panel .plan-preview-year{min-width:0}
+#plan-panel .plan-preview-year h4{margin:0 0 8px;font-size:13px;color:#c6deee}
+#plan-panel .plan-preview-cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px 4px}
+#plan-panel .plan-preview-cell{min-width:0;text-align:center}
+#plan-panel .plan-preview-face{position:relative;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:2/1;background:#283b55;border:1px solid #56718e;border-radius:5px;overflow:hidden;color:#70bf70}
+#plan-panel .plan-preview-face img{display:block;max-height:100%;max-width:100%;object-fit:contain}
+#plan-panel .plan-preview-face .schedule-action-image,#plan-panel .plan-preview-face .schedule-race-banner{width:100%;height:100%;object-fit:contain}
+#plan-panel .plan-preview-cell small{font-size:9px;color:#b2c2d5}
+#plan-panel .plan-preview-empty{font-size:17px}
+#plan-panel .plan-preview-trigger{background:transparent;border:0;padding:2px 0;min-height:0;min-width:0;color:#f0f7ff;font-weight:700;text-align:left;font-size:14px;text-decoration:underline;text-decoration-color:#577792;text-underline-offset:3px;white-space:normal}
+#plan-panel .plan-preview-trigger:hover{color:#a8dcff;background:transparent}
+#plan-panel .plan-library-row.previewed-plan{outline:2px solid #74a7d8;outline-offset:0}
+@media(max-width:1180px){#plan-panel .plan-browser-layout{grid-template-columns:minmax(0,1fr)}#plan-panel .plan-preview-years{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:650px){#plan-panel .plan-preview-years{grid-template-columns:minmax(0,1fr)}#plan-panel .plan-preview-cells{grid-template-columns:repeat(4,minmax(0,1fr))}}
