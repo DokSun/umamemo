@@ -1050,34 +1050,9 @@ header .header-settings-button{order:initial;margin-left:auto}
  #tool-menu-list .tool-setting-panel #split-ratio{flex:1 1 100%}
 }
 
-/* User-editable site wording, grouped by navigation path. */
-#workspace .text-manager-panel{min-width:0;max-width:100%;overflow:hidden}
-.text-manager-panel .panel-title{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap}
-.text-manager-panel #text-manager-count{font-size:12px;color:#aac4dc}
-.text-manager-explain{font-size:12px;color:#b7cadb;line-height:1.6;margin:4px 0 12px}
-.text-manager-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:10px}
-.text-manager-tools label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:12px;font-weight:600}
-.text-manager-tools input,.text-manager-tools select{width:100%;min-width:0;min-height:41px;padding:7px 10px}
-.text-manager-actions{display:flex;gap:7px;flex-wrap:wrap;align-items:center;padding:3px 0 13px;border-bottom:1px solid #425e76}
-.text-manager-actions button,.text-manager-import-button{display:inline-flex;justify-content:center;align-items:center;min-height:37px;padding:7px 11px;border-radius:7px;font-size:12px;font-weight:600}
-.text-manager-import-button{cursor:pointer;border:1px solid #56748f;background:#2a4059;color:#edf3fa}
-.text-manager-import-button input[type="file"]{position:absolute;overflow:hidden;width:1px;height:1px;opacity:0;pointer-events:none}
-#text-manager-reset{margin-left:auto}
-.text-manager-list{display:flex;flex-direction:column;gap:8px;padding:12px 0}
-.text-manager-group-title{font-size:14px;margin:15px 0 3px;padding:8px 3px;color:#a9e4cc;border-bottom:1px solid #426778}
-.text-manager-entry{border:1px solid #42617b;background:#21354c;border-radius:8px;padding:12px;min-width:0}
-.text-manager-entry-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
-.text-manager-kind{font-size:11px;color:#b3c7d8}
-.text-manager-modified{font-size:11px;color:#a8ecc4;font-weight:700}
-.text-manager-original{margin:0 0 8px;font-size:12px;color:#c4cfe1;white-space:pre-wrap;overflow-wrap:anywhere}
-.text-manager-edit{width:100%;box-sizing:border-box;min-width:0;min-height:64px;padding:8px 9px;resize:vertical}
-.text-manager-entry-actions{display:flex;gap:6px;justify-content:flex-end;margin-top:7px}
-.text-manager-entry-actions button{font-size:12px;min-height:34px;padding:5px 12px}
-.text-manager-entry-actions button:first-child{background:#276d58;border-color:#62c39c}
-.text-manager-entry-actions button:disabled{opacity:.4}
-.text-manager-empty{font-size:13px;color:#b7cadb}
-@media(max-width:620px){
- .text-manager-tools{grid-template-columns:minmax(0,1fr)}
- #text-manager-reset{margin-left:0}
- .text-manager-actions button,.text-manager-import-button{flex:1 1 auto}
-}
+
+/* Permanently expanded screen/server controls, last in the drawer. */
+#tool-menu{display:flex;flex-direction:column}
+#tool-menu-list{flex:1;min-height:calc(100% - 84px)}
+#tool-menu-list .general-settings-heading{margin-top:auto}
+#tool-menu-list .permanent-settings-panel{margin-bottom:0}
