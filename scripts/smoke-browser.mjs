@@ -94,26 +94,54 @@ try{
  if(await page.locator('#schedule-plan-save').count())throw new Error('Saving actual records as a plan must be removed');
  const firstPlan=page.locator('#plan-quick-list .plan-library-row').first();
  if((await firstPlan.innerText()).includes('/72턴'))throw new Error('Action count must not be shown');
- if(!(await firstPlan.locator('small').innerText()).includes('선택됨')){
-  page.once('dialog',dialog=>dialog.accept());
+ // A plan selection must never reset or replace the actual recording.
+ const beforeRun=await page.evaluate(()=>({
+  current:localStorage.getItem('uma-schedule-current-v1-ko'),
+  recorded:localStorage.getItem('uma-schedule-recorded-turns-v2-v1-ko')
+ }));
+ const selectDialogs=[];
+ page.on('dialog',dialog=>{selectDialogs.push(dialog.message());dialog.dismiss()});
+ if((await firstPlan.locator('[data-plan-use]').innerText())==='선택 해제'){
   await firstPlan.locator('[data-plan-use]').click();
  }
+ if((await firstPlan.locator('[data-plan-use]').innerText())!=='선택')throw new Error('Unselected plan must show 선택');
+ await firstPlan.locator('[data-plan-use]').click();
+ if(selectDialogs.length)throw new Error('Selecting a plan must not display a reset confirmation');
+ const afterRun=await page.evaluate(()=>({
+  current:localStorage.getItem('uma-schedule-current-v1-ko'),
+  recorded:localStorage.getItem('uma-schedule-recorded-turns-v2-v1-ko')
+ }));
+ if(JSON.stringify(beforeRun)!==JSON.stringify(afterRun))throw new Error('Selecting a plan changed actual recorded cultivation');
+ if((await firstPlan.locator('[data-plan-use]').innerText())!=='선택 해제')throw new Error('Selected plan must show 선택 해제');
  if(!(await firstPlan.locator('small').innerText()).includes('선택됨'))throw new Error('Selected plan should be marked 선택됨');
  if(!(await firstPlan.evaluate(el=>el.classList.contains('selected-plan'))))throw new Error('Selected plan visual emphasis is missing');
  const controls=firstPlan.locator('.schedule-plan-actions button');
  if((await controls.count())!==3)throw new Error('A plan must have exactly three buttons');
- if((await controls.allTextContents()).join('|')!=='선택/선택 해제|편집|삭제')throw new Error('Plan buttons are not selection, edit and delete');
+ if((await controls.allTextContents()).join('|')!=='선택 해제|편집|삭제')throw new Error('Plan buttons are not selection, edit and delete');
  const bounding=await controls.evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().top));
  if(Math.max(...bounding)-Math.min(...bounding)>4)throw new Error('Plan buttons must align horizontally');
+ if(!(await firstPlan.locator('small').innerText()).includes('기본'))throw new Error('Plan scenario missing from summary');
  await firstPlan.locator('[data-plan-edit]').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Inline plan edit did not open');
+ if((await page.locator('#schedule-view-heading').innerText())!=='육성 계획')throw new Error('Plan editor must not be titled 육성 기록');
+ if(!(await page.locator('#schedule-plan-caption').innerText()).includes('Senior planned action'))throw new Error('Plan editor title should show plan name');
  if(!(await page.locator('#schedule-plan-name').isVisible()))throw new Error('Plan name field missing from editor');
  const oldName=await page.locator('#schedule-plan-name').inputValue();
+ await page.locator('#schedule-edit-settings-open').click();
+ if(!(await page.locator('#plan-info-fields').isVisible()))throw new Error('Plan information must open inline');
+ if(await page.locator('#settings-backdrop').isVisible())throw new Error('Plan editor must not open common settings');
+ if(!(await page.locator('#plan-edit-character').isVisible()))throw new Error('Plan character selector missing');
+ await page.locator('#plan-edit-scenario').selectOption('onsen');
+ // The global header must continue to describe the actual recording.
+ if(!(await page.locator('#schedule-header-scenario').innerText()).includes('온천향'))throw new Error('Plan draft changed the recording header');
  await page.locator('#schedule-plan-name').fill('수정한 계획명');
  await page.locator('#schedule-plan-edit-save').click();
  if(!(await page.locator('#plan-quick-list .plan-library-row').first().innerText()).includes('수정한 계획명'))throw new Error('Plan name was not saved through editor');
+ if(!(await page.locator('#plan-quick-list .plan-library-row').first().innerText()).includes('온천향'))throw new Error('Plan scenario was not saved through editor');
  await page.locator('#plan-quick-list .plan-library-row').first().locator('[data-plan-edit]').click();
  await page.locator('#schedule-plan-name').fill(oldName);
+ await page.locator('#schedule-edit-settings-open').click();
+ await page.locator('#plan-edit-scenario').selectOption('basic');
  await page.locator('#schedule-plan-edit-save').click();
  // The plan and record tools have distinct navigation and browsing surfaces.
  if(!(await page.locator('#plan-panel').isVisible()))throw new Error('Plan workspace not visible after exiting plan editor');

@@ -845,3 +845,15 @@ header .header-settings-button{order:initial;margin-left:auto}
  #plan-panel .plan-library-row .schedule-plan-actions{width:100%;justify-content:flex-start;gap:4px}
  #plan-panel .plan-library-row .schedule-plan-actions button{flex:1;padding:6px 4px;font-size:11px}
 }
+
+/* Standalone cultivation-plan editor: no route through recording settings. */
+#schedule-plan-edit-bar .plan-info-fields[hidden]{display:none!important}
+#schedule-plan-edit-bar .plan-info-fields{
+ flex-basis:100%;width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:10px;border-top:1px solid #766594;padding-top:12px;
+}
+#schedule-plan-edit-bar .plan-info-fields>strong{grid-column:1/-1;font-size:13px;color:#e9ddff}
+#schedule-plan-edit-bar .plan-info-fields label{display:flex;flex-direction:column;gap:5px;font-size:12px;min-width:0}
+#schedule-plan-edit-bar .plan-info-fields select{width:100%;min-height:37px;padding:6px 8px;min-width:0}
+#schedule-plan-edit-bar .plan-edit-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+@media(max-width:540px){#schedule-plan-edit-bar .plan-info-fields{grid-template-columns:minmax(0,1fr)}}
