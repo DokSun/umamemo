@@ -793,3 +793,19 @@ header .header-settings-button{order:initial;margin-left:auto}
  header .header-cultivation{order:4;flex-basis:100%}
  #schedule-panel .schedule-title-row #schedule-plan-caption{max-width:72%}
 }
+
+/* Dedicated plan workspace and grouped function navigation. */
+.tool-menu-group-heading{padding:8px 7px 4px;margin:3px 0 0;font-size:12px;color:#a6e3cc;border-bottom:1px solid #45617c}
+#workspace.split.reversed #plan-panel{grid-column:1;grid-row:1}
+.plan-library-hint{margin:0;color:#bdcde1;font-size:12px;line-height:1.5}
+.plan-library-actions{display:flex;gap:8px;flex-wrap:wrap}
+.plan-library-actions button{min-height:40px}
+#plan-create-new{background:#26785e;border-color:#58ba96}
+.plan-quick-list{display:flex;flex-direction:column;gap:8px}
+.plan-library-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #405873;background:#23354c;padding:10px;border-radius:8px}
+.plan-library-row>div{display:flex;flex-direction:column;gap:3px;min-width:0}
+.plan-library-row strong{font-size:14px;overflow:hidden;text-overflow:ellipsis}
+.plan-library-row small{font-size:11px;color:#bdcce0}
+.plan-library-row button{flex:none;font-size:12px;min-height:36px}
+.plan-count{font-size:12px;color:#bed4df}
+@media(max-width:850px){#workspace.split.reversed #plan-panel{grid-column:1;grid-row:auto}}
