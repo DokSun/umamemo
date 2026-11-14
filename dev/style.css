@@ -1015,3 +1015,37 @@ header .header-settings-button{order:initial;margin-left:auto}
  display:inline-block;align-self:flex-start;width:auto;min-height:33px;
  padding:5px 7px;font-size:12px;white-space:nowrap;text-align:center;
 }
+
+/* Restore the former single-row screen controls: ratio group + swap button. */
+#tool-menu-list .tool-setting-panel #split-options{
+ display:flex;flex-direction:row;flex-wrap:nowrap;
+ align-items:center;justify-content:flex-start;gap:6px;
+ width:100%;min-width:0;
+}
+#tool-menu-list .tool-setting-panel #split-ratio{
+ display:flex;flex-direction:row;flex-wrap:nowrap;
+ align-items:center;justify-content:flex-start;
+ flex:1 1 auto;min-width:0;width:auto;gap:5px;
+}
+#tool-menu-list .tool-setting-panel #split-ratio legend{
+ float:left;flex:none;width:auto;white-space:nowrap;
+ margin:0 3px 0 0;line-height:33px;font-size:11px;
+}
+#tool-menu-list .tool-setting-panel #split-ratio .ratio-segments{
+ flex:none;min-width:0;width:auto;
+}
+#tool-menu-list .tool-setting-panel #split-ratio .ratio-segments label{
+ flex:none;width:auto;min-width:44px;
+}
+#tool-menu-list .tool-setting-panel #split-ratio .ratio-segments span{
+ min-width:44px;padding:5px 6px;font-size:12px;
+}
+#tool-menu-list .tool-setting-panel #swap-panels{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 auto;width:auto;min-height:33px;
+ padding:5px 7px;margin:0;white-space:nowrap;font-size:12px;
+}
+@media(max-width:350px){
+ #tool-menu-list .tool-setting-panel #split-options{flex-wrap:wrap}
+ #tool-menu-list .tool-setting-panel #split-ratio{flex:1 1 100%}
+}
