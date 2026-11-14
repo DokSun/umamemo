@@ -76,8 +76,9 @@ try{
  if(!(await page.locator('[data-tool-category="settings"]').isVisible()))throw new Error('Settings group missing from feature drawer');
  const settingLinks=page.locator('#tool-menu-list [data-settings-open]');
  if((await settingLinks.allTextContents()).join('|')!=='카운팅 설정')throw new Error('Only counter settings should be collapsible');
- if((await page.locator('#tool-menu-list .general-settings-heading').innerText())!=='화면·서버 설정')throw new Error('Screen/server settings heading missing');
- if((await page.locator('#tool-menu-list .general-settings-heading').evaluate(el=>el.nextElementSibling?.id))!=='settings-inline-general')throw new Error('Screen/server settings must be last');
+ if((await page.locator('#tool-menu-list').evaluate(el=>el.lastElementChild?.id))!=='settings-inline-general')throw new Error('Screen/server settings must be last');
+ if(await page.locator('#tool-menu-list .general-settings-heading, #settings-inline-general h3').count())throw new Error('Redundant screen/server titles should be removed');
+ if(await page.getByText('메모장은 별도의 설정 없이 기록 내용만 자동 저장됩니다.').count())throw new Error('Memo help should be removed');
  if(await page.locator('[data-settings-open="general"]').count())throw new Error('Screen/server settings must not be collapsible');
  if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Screen/server settings must always be expanded');
  if(await page.locator('[data-tool="texts"], #text-panel, script[src*="text-manager"]').count())throw new Error('Text manager must be removed');
@@ -94,6 +95,17 @@ try{
  if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Screen/server settings should remain expanded');
  if(!(await page.locator('#server-mode').isVisible()))throw new Error('Inline server selector missing');
  if(!(await page.locator('#split-toggle').isVisible()))throw new Error('Inline display mode selector missing');
+ const fixedSettings=page.locator('#settings-inline-general');
+ const beforeMode=await fixedSettings.boundingBox();
+ const ratioBefore=await page.locator('#split-ratio').boundingBox();
+ await page.locator('#split-toggle').check({force:true});
+ if(!(await page.locator('#split-ratio').isVisible()))throw new Error('Ratio controls should remain in place');
+ const afterMode=await fixedSettings.boundingBox();
+ const ratioAfter=await page.locator('#split-ratio').boundingBox();
+ if(Math.abs(beforeMode.y-afterMode.y)>2 || Math.abs(ratioBefore.y-ratioAfter.y)>2)throw new Error('Settings shift when toggling simultaneous use');
+ await page.locator('#split-toggle').uncheck({force:true});
+ if(!(await page.locator('#split-ratio').isVisible()))throw new Error('Mode OFF must reserve space for ratio controls');
+ if(!(await page.locator('#split-ratio').isDisabled()))throw new Error('Ratio controls must be disabled in single mode');
  if(await page.locator('#schedule-plans-open').count())throw new Error('Plan management shortcut must stay removed');
  // Use the retained nonvisual record field for legacy onsen regression tests.
  await page.evaluate(()=>{
