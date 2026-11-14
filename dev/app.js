@@ -1243,7 +1243,6 @@ $('scenario').value=state.scenario||'';$('scenario').addEventListener('input',e=
 initSettings();
 initWorkspace();
 applyUiTexts();
-initTextManager();
 renderSchedule();
 loadScheduleDatabase();
 fetch('./data/support_cards.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('DB HTTP '+r.status);return r.json()}).then(d=>{cards=d;render()}).catch(err=>{toast('DB를 읽지 못했습니다. 웹 서버에서 실행하세요.');console.error(err)});
