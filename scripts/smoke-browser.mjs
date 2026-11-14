@@ -211,9 +211,10 @@ try{
    return {cardRight:rect.right,cardBottom:rect.bottom,detailsRight:details.right,
     detailsTop:details.top,detailsBottom:details.bottom,
     actionsLeft:actions.left,actionsRight:actions.right,actionsTop:actions.top,actionsBottom:actions.bottom,
-    buttonsOneRow:buttons.every(b=>Math.abs(b.top-buttons[0].top)<2)};
+    buttonsOneRow:buttons.every(b=>Math.abs(b.top-buttons[0].top)<2),
+    cardPosition:getComputedStyle(card).position,actionPosition:getComputedStyle(card.querySelector('.schedule-plan-actions')).position};
   });
-  if(!result.buttonsOneRow||result.actionsLeft<result.detailsRight-2||
+  if(result.cardPosition!=='relative'||result.actionPosition!=='absolute'||!result.buttonsOneRow||result.actionsLeft<result.detailsRight-2||
      result.actionsTop>result.detailsBottom+1||result.cardRight-result.actionsRight>18||
      result.cardBottom-result.actionsBottom>18)
    throw new Error('Plan actions not right-aligned beside text at '+width+'px: '+JSON.stringify(result));
