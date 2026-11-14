@@ -468,7 +468,8 @@ function scheduleResetRecordedTurns(){
  scheduleSaveRecordedTurns();
 }
 function scheduleTurnEditable(year,i){
- return scheduleEditingPlan||scheduleGlobalTurn(year,i)<=scheduleCurrentTurn();
+ // Recorded actions can always be revised. Plan-filled future turns are not recorded.
+ return Boolean(scheduleEditingPlan)||scheduleIsRecorded(year,i)||scheduleGlobalTurn(year,i)===scheduleCurrentTurn();
 }
 function scheduleCompleteTurn(year,i){
  if(scheduleEditingPlan)return;
@@ -635,7 +636,7 @@ function renderSchedule(){
    const currentTurn=scheduleCurrentTurn();
    const recorded=!scheduleEditingPlan&&scheduleIsRecorded(year,i);
    const current=!scheduleEditingPlan&&globalTurn===currentTurn;
-   const future=!scheduleEditingPlan&&globalTurn>currentTurn;
+   const future=!scheduleEditingPlan&&!recorded&&globalTurn!==currentTurn;
    const goal=scheduleGoalAt(year,i,source);
    const selection=source.selectedRaces[year+'-'+i];
    const selectedRace=!(year==='junior'&&i<=12)&&action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
@@ -821,7 +822,8 @@ $('schedule-action-clear').addEventListener('click',()=>{
  const turn=scheduleGlobalTurn(year,scheduleTurn);
  if(!scheduleTurnEditable(year,scheduleTurn))return;
  if(!scheduleEditingPlan){
-  if(turn!==scheduleCompletedPrefix())return toast('기록 취소는 마지막으로 완료한 턴부터 가능합니다');
+  if(!scheduleRecordedTurns[turn-1])return;
+  // Keep later completed actions intact when undoing an earlier turn.
   scheduleRecordedTurns[turn-1]=false;
   scheduleSaveRecordedTurns();
  }
