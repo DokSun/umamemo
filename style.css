@@ -827,7 +827,7 @@ header .header-settings-button{order:initial;margin-left:auto}
 #plan-panel .plan-library-row.selected-plan .plan-library-details strong{color:#e3fff1}
 #plan-panel .plan-library-row.selected-plan .plan-library-details small{color:#b9f4d9;font-weight:700}
 #plan-panel .plan-library-row .schedule-plan-actions{
- display:flex;flex-wrap:nowrap;flex:none;align-items:center;justify-content:flex-end;gap:5px;min-width:0
+ display:flex;flex-direction:row;flex-wrap:nowrap;flex:none;align-items:center;justify-content:flex-end;gap:5px;min-width:0
 }
 #plan-panel .plan-library-row .schedule-plan-actions button{
  flex:none;min-height:36px;white-space:nowrap;padding:6px 9px;font-size:12px
