@@ -125,8 +125,7 @@ function toggleInlineSettings(tab){
 function setupInlineSettings(){
  for(const tab of ['counter','general']){
   const source=$('settings-source').querySelector('[data-settings-pane="'+tab+'"]');
-  const button=$('tool-menu-list').querySelector('[data-settings-open="'+tab+'"]');
-  const target=$(button.getAttribute('aria-controls'));
+  const target=$('settings-inline-'+tab);
   source.hidden=false;
   target.appendChild(source);
  }
