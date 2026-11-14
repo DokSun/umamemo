@@ -24,6 +24,9 @@ try{
  await page.locator('#schedule-grid .schedule-cell').first().waitFor({timeout:20000});
  if((await page.locator('#schedule-grid .schedule-cell').count())!==72)throw new Error('Expected 72 turns');
  if(!(await page.locator('#schedule-reset').isVisible()))throw new Error('Schedule reset is hidden');
+ if((await page.locator('#schedule-training-grid .schedule-level-item').count())!==5)throw new Error('Expected five training levels');
+ await page.locator('#schedule-completed-turn').selectOption('24');
+ if(!(await page.locator('#schedule-training-grid').innerText()).includes('Lv.2'))throw new Error('Classic new-year level bonus missing');
  await page.locator('#schedule-plans-open').click();
  await page.locator('#schedule-plan-new').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Plan editing did not open');

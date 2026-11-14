@@ -5,7 +5,7 @@ if(source===destination)throw new Error('Preview destination must differ from so
 rmSync(destination,{recursive:true,force:true});
 mkdirSync(destination,{recursive:true});
 for(const dir of ['assets','data'])cpSync(join(source,dir),join(destination,dir),{recursive:true});
-for(const name of ['index.html','style.css','ui-text.js'])cpSync(join(source,name),join(destination,name));
+for(const name of ['index.html','style.css','ui-text.js','training-levels.js'])cpSync(join(source,name),join(destination,name));
 const app=readFileSync(join(source,'app.js'),'utf8');
 if(!/\blocalStorage\b/.test(app))throw new Error('Storage API changed; check dev isolation');
 const scoped=app.replace(/\blocalStorage\b/g,'devStorage').replace(/^'use strict';\s*/,'');
