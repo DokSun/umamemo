@@ -37,6 +37,8 @@ try{
  await page.locator('#tool-menu-close').click();
  if((await page.locator('#schedule-training-grid .schedule-level-item').count())!==5)throw new Error('Expected five training levels');
  const current=page.locator('#schedule-current-turn');
+ if((await current.innerText()).startsWith('현재 '))throw new Error('Current turn label must not have 현재 prefix');
+ if(await page.getByText('실제 육성 기록과 별도로 편집됩니다.').count())throw new Error('Redundant plan editing help remains');
  if(!(await current.innerText()).includes('1/72턴'))throw new Error('First current turn must be 1');
  if(!(await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="1"]').isDisabled()))throw new Error('Future turns must be disabled');
  await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="0"]').click();
