@@ -5,7 +5,7 @@ import {Script} from 'node:vm';
 const root=resolve(process.argv[2]||'.');
 const read=p=>readFileSync(join(root,p),'utf8');
 const html=read('index.html'),app=read('app.js'),copy=read('ui-text.js'),css=read('style.css');
-for(const [filename,source] of [['app.js',app],['ui-text.js',copy],['training-levels.js',read('training-levels.js')]])new Script(source,{filename});
+for(const [filename,source] of [['app.js',app],['ui-text.js',copy],['text-manager.js',read('text-manager.js')],['training-levels.js',read('training-levels.js')]])new Script(source,{filename});
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);
 assert.equal(ids.length,new Set(ids).size,'Duplicate HTML ids');
 const idset=new Set(ids);

@@ -19,6 +19,17 @@ const shim=[
  "};"
 ].join('\n');
 writeFileSync(join(destination,'app.js'),shim+'\n'+scoped,'utf8');
+const manager=readFileSync(join(source,'text-manager.js'),'utf8');
+const managerScoped=manager.replace(/\blocalStorage\b/g,'textDevStorage');
+const textManagerShim=[
+ '// Development text overrides must not overlap production text overrides.',
+ 'const textDevStorage={',
+ " getItem(key){return window.localStorage.getItem('umamemo-dev-v1:'+key)},",
+ " setItem(key,value){return window.localStorage.setItem('umamemo-dev-v1:'+key,value)},",
+ " removeItem(key){return window.localStorage.removeItem('umamemo-dev-v1:'+key)}",
+ '};'
+].join('\n');
+writeFileSync(join(destination,'text-manager.js'),textManagerShim+'\n'+managerScoped,'utf8');
 const html=readFileSync(join(destination,'index.html'),'utf8');
 writeFileSync(join(destination,'index.html'),html
  .replace('<title>우마 메모</title>','<title>우마 메모 · 개발판</title>')
