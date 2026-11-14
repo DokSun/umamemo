@@ -215,7 +215,8 @@ try{
  }));
  if(JSON.stringify(beforeRun)!==JSON.stringify(afterRun))throw new Error('Selecting a plan changed actual recorded cultivation');
  if((await firstPlan.locator('[data-plan-use]').innerText())!=='선택 해제')throw new Error('Selected plan must show 선택 해제');
- if(!(await firstPlan.locator('small').innerText()).includes('선택됨'))throw new Error('Selected plan should be marked 선택됨');
+ if((await firstPlan.locator('.plan-library-details small').count())!==2)throw new Error('Character and scenario must appear on separate lines');
+ if((await firstPlan.locator('.plan-library-details').innerText()).includes('선택됨'))throw new Error('Selected label must not appear in plan details');
  if(!(await firstPlan.evaluate(el=>el.classList.contains('selected-plan'))))throw new Error('Selected plan visual emphasis is missing');
  const controls=firstPlan.locator('.schedule-plan-actions button');
  if((await controls.count())!==3)throw new Error('A plan must have exactly three buttons');
