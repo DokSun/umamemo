@@ -145,6 +145,12 @@ try{
   return Math.abs((ratio.top+ratio.bottom)/2-(swap.top+swap.bottom)/2)<5;
  });
  if(!sameRow)throw new Error('Screen ratio and swap must share the original horizontal row');
+ await page.setViewportSize({width:1366,height:995});
+ const footerLayout=await page.locator('#schedule-reset-footer').evaluate(el=>{
+  const rect=el.getBoundingClientRect(), btn=el.querySelector('button').getBoundingClientRect();
+  return {footerTop:rect.top,buttonBottom:btn.bottom,panelBottom:el.closest('.tool-panel').getBoundingClientRect().bottom};
+ });
+ if(footerLayout.buttonBottom>footerLayout.panelBottom)throw new Error('Reset button overflows schedule panel');
  await page.setViewportSize({width:1366,height:900});
  await page.locator('#tool-menu-close').click();
  if(await page.locator('#tool-menu').isVisible())throw new Error('Function drawer did not close normally');
