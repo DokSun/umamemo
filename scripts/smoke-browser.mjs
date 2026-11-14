@@ -22,6 +22,9 @@ try{
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  await page.locator('#schedule-grid .schedule-cell').first().waitFor({timeout:20000});
+ // renderSchedule runs asynchronously during DB load and must not resurrect the footer.
+ await page.waitForTimeout(300);
+ if(await page.locator('#schedule-reset-footer').isVisible())throw new Error('Schedule render resurrected duplicate reset footer');
  if((await page.locator('#schedule-grid .schedule-cell').count())!==72)throw new Error('Expected 72 turns');
  if(await page.locator('#schedule-reset').isVisible())throw new Error('Duplicate schedule reset should be hidden during simultaneous use');
  if((await page.locator('#reset').innerText())!=='육성 기록 통합 초기화')throw new Error('Unified reset label missing in simultaneous use');
