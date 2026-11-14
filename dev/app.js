@@ -965,12 +965,43 @@ $('schedule-action-clear').addEventListener('click',()=>{
  else delete scheduleCurrent.scenarioEvents[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
+let planPreviewId='';
+function renderPlanPreview(){
+ const root=$('plan-preview');
+ if(!root)return;
+ const plan=schedulePlans.find(p=>p.id===planPreviewId);
+ if(!plan){
+  root.innerHTML='<p class="plan-preview-placeholder">계획 이름을 클릭하면 여기에 일정이 표시됩니다.</p>';
+  return;
+ }
+ const source=plan.schedule;
+ const sections=SCHEDULE_YEAR_ORDER.map(year=>{
+  const cells=source.turns[year].map((action,i)=>{
+   const goal=scheduleGoalAt(year,i,source);
+   const raceName=source.selectedRaces?.[year+'-'+i];
+   const race=action==='race'&&raceName?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===raceName||r.ko===raceName)):null;
+   const info=scheduleAvailableActions(source.scenario)[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
+   const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
+   const icon=goal?scheduleBannerHtml(selectedGoal):race?scheduleBannerHtml(race):info?scheduleActionIcon(info):'<span class="plan-preview-empty">+</span>';
+   const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
+   const title=goal?'목표: '+goal.o.map(scheduleGoalName).join(' / '):race?'레이스: '+scheduleRaceName(race):info?.label||'미지정';
+   return '<div class="plan-preview-cell" title="'+escapeHTML(SCHEDULE_YEAR_KO[year]+' '+month+'월 '+half+' · '+title)+'"><div class="plan-preview-face">'+icon+'</div><small>'+month+'월 '+half+'</small></div>';
+  }).join('');
+  return '<section class="plan-preview-year"><h4>'+SCHEDULE_YEAR_KO[year]+'</h4><div class="plan-preview-cells">'+cells+'</div></section>';
+ }).join('');
+ root.innerHTML='<div class="plan-preview-title"><strong>'+escapeHTML(plan.name)+'</strong><small>'+escapeHTML(scheduleCharacterLabel(source.character))+' · '+escapeHTML(scheduleScenarioLabel(source.scenario))+'</small></div><div class="plan-preview-years">'+sections+'</div>';
+}
 function renderPlanPanel(){
  const root=$('plan-quick-list');
  if(!root)return;
  $('plan-count').textContent=schedulePlans.length+'개 저장';
- if(!schedulePlans.length){root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';return}
- root.innerHTML=schedulePlans.map((p,i)=>`<div class="plan-library-row ${p.id===scheduleActivePlanId?'selected-plan':''}"><div class="plan-library-details"><strong>${escapeHTML(p.name)}</strong><small>${escapeHTML(scheduleCharacterLabel(p.schedule.character))} · ${escapeHTML(scheduleScenarioLabel(p.schedule.scenario))}${p.id===scheduleActivePlanId?' · 선택됨':''}</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="${i}" aria-pressed="${p.id===scheduleActivePlanId}">${p.id===scheduleActivePlanId?'선택 해제':'선택'}</button><button type="button" data-plan-edit="${i}">편집</button><button type="button" data-plan-delete="${i}">삭제</button></div></div>`).join('');
+ if(!schedulePlans.some(p=>p.id===planPreviewId))planPreviewId='';
+ if(!schedulePlans.length){
+  root.innerHTML='<p class="schedule-plans-empty">저장된 계획이 없습니다. 새 계획을 작성해 주세요.</p>';
+  renderPlanPreview();return;
+ }
+ root.innerHTML=schedulePlans.map((p,i)=>'<div class="plan-library-row '+(p.id===scheduleActivePlanId?'selected-plan ':'')+(p.id===planPreviewId?'previewed-plan':'')+'"><div class="plan-library-details"><button type="button" class="plan-preview-trigger" data-plan-preview="'+i+'" aria-pressed="'+(p.id===planPreviewId)+'">'+escapeHTML(p.name)+'</button><small>'+escapeHTML(scheduleCharacterLabel(p.schedule.character))+' · '+escapeHTML(scheduleScenarioLabel(p.schedule.scenario))+(p.id===scheduleActivePlanId?' · 선택됨':'')+'</small></div><div class="schedule-plan-actions"><button type="button" data-plan-use="'+i+'" aria-pressed="'+(p.id===scheduleActivePlanId)+'">'+(p.id===scheduleActivePlanId?'선택 해제':'선택')+'</button><button type="button" data-plan-edit="'+i+'">편집</button><button type="button" data-plan-delete="'+i+'">삭제</button></div></div>').join('');
+ renderPlanPreview();
 }
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
 $('schedule-plan-name').addEventListener('input',e=>{
@@ -987,6 +1018,9 @@ $('plan-quick-list').addEventListener('click',e=>{
  if(!match)return;
  const index=Number(btn.dataset[match]),entry=schedulePlans[index];
  if(!entry)return;
+ if(match==='planPreview'){
+  planPreviewId=entry.id;renderPlanPanel();return;
+ }
  if(match==='planUse'){
   if(entry.id===scheduleActivePlanId){
    scheduleSetActivePlan('');renderPlanPanel();renderSchedule();toast('계획 선택을 해제했습니다. 현재 기록은 유지됩니다.');return;
