@@ -58,7 +58,7 @@ try{
   localStorage.setItem('uma-schedule-recorded-turns-v2-v1-ko',JSON.stringify(Array(72).fill(false)));
  });
  await page.reload({waitUntil:'domcontentloaded'});
- await page.locator('#slots > *').first().waitFor({timeout:20000});
+ await page.locator('#slots > *').first().waitFor({state:'attached',timeout:20000});
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Senior plan action must not change current junior turn');
