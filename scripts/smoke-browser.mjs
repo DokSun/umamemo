@@ -173,10 +173,12 @@ try{
  if(await page.locator('#schedule-plans-backdrop').count())throw new Error('Plan manager popup should be removed');
  if(await page.locator('#plan-quick-list [data-plan-rename]').count())throw new Error('Standalone rename must be removed');
  if((await page.locator('#plan-quick-list [data-plan-delete]').count())<1)throw new Error('Inline delete missing');
- const previewButton=page.locator('#plan-quick-list [data-plan-preview]').first();
- await previewButton.click();
+ const previewRow=page.locator('#plan-quick-list .plan-library-row[data-plan-preview]').first();
+ await previewRow.locator('.plan-library-details').click();
+ if((await previewRow.locator('button').count())!==3)throw new Error('A plan should keep only three action buttons');
  if(!(await page.locator('#plan-preview .plan-preview-years').isVisible()))throw new Error('Plan preview not shown');
  if((await page.locator('#plan-preview .plan-preview-cell').count())!==72)throw new Error('Plan preview must show 72 turns');
+ if((await page.locator('#plan-preview .plan-preview-face.schedule-cell-face').count())!==72)throw new Error('Plan preview must share native schedule icon layout');
  if((await page.locator('#plan-quick-list [data-plan-use]').count())<1)throw new Error('Inline select missing');
  if((await page.locator('#plan-quick-list [data-plan-edit]').count())<1)throw new Error('Inline edit missing');
  if(await page.locator('#schedule-plan-save').count())throw new Error('Saving actual records as a plan must be removed');
