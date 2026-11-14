@@ -1065,3 +1065,12 @@ header .header-settings-button{order:initial;margin-left:auto}
  border:0;border-left:0;border-radius:0;box-shadow:none;background:transparent;
  margin-left:0;width:100%;padding:12px 0 0;margin-top:auto;overflow:visible;
 }
+
+/* Desktop reset footers: fit their buttons inside the available panel height
+   without hiding the page or changing the card/calendar controls. */
+@media (min-width:851px){
+ #workspace{padding-bottom:5px}
+ #workspace .panel-reset-footer{padding-top:6px;min-height:37px;align-items:flex-end}
+ #workspace .panel-reset-footer button{min-height:32px;padding:4px 8px;line-height:1.25}
+ #workspace #schedule-panel{gap:8px}
+}
