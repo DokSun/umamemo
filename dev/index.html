@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261114-settings-sizing"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261114-text-management"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">계획 · 기록 · 설정</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 </nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
@@ -34,6 +34,20 @@
  <div class="plan-library-actions"><button type="button" id="plan-create-new">새 계획 작성</button></div>
  <div id="plan-quick-list" class="plan-quick-list" aria-label="저장한 육성 계획"></div>
 </section>
+<section id="text-panel" class="panel tool-panel text-manager-panel" hidden>
+ <div class="panel-title"><h2>텍스트 관리</h2><span id="text-manager-count"></span></div>
+ <p class="text-manager-explain">내비게이션 경로별로 사이트 문구를 찾아 수정합니다. 수정 내용은 이 브라우저에 저장되며 다른 기기나 방문자에게 자동으로 적용되지 않습니다. 동적 문구는 해당 화면을 열면 목록에 추가될 수 있습니다.</p>
+ <div class="text-manager-tools">
+  <label>메뉴 경로<select id="text-manager-path" aria-label="텍스트 메뉴 경로"></select></label>
+  <label>문구 검색<input id="text-manager-search" type="search" placeholder="문구 또는 경로 검색"></label>
+ </div>
+ <div class="text-manager-actions">
+  <button type="button" id="text-manager-export">JSON 내보내기</button>
+  <label class="text-manager-import-button">JSON 가져오기<input type="file" id="text-manager-import" accept=".json,application/json"></label>
+  <button type="button" id="text-manager-reset">전체 초기화</button>
+ </div>
+ <div id="text-manager-list" class="text-manager-list" aria-label="경로별 수정 가능한 텍스트"></div>
+</section>
 </main><div id="settings-source" hidden>
    <div class="settings-pane" data-settings-pane="counter" hidden>
     <h3>서포트 이벤트 카운팅</h3><label class="reset-popup-option" for="reset-popup-toggle"><span>초기화 팝업</span><input id="reset-popup-toggle" type="checkbox" role="switch" aria-label="이벤트 초기화 확인 팝업" checked><span class="reset-popup-track" aria-hidden="true"></span></label>
@@ -55,4 +69,4 @@
   <button type="button" id="schedule-action-clear" class="schedule-secondary-action">턴 초기화</button>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261114-settings-sizing" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="text-manager.js?v=20261114-text-management" defer></script><script src="app.js?v=20261114-text-management" defer></script></body></html>
