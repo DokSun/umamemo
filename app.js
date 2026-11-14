@@ -74,7 +74,10 @@ function applyLayout(){
  if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
  $('split-toggle').checked=!solo;
  $('split-ratio').querySelectorAll('input[type="radio"]').forEach(r=>{r.checked=Number(r.value)===layout.ratio});
- $('split-options').hidden=solo;
+ $('split-options').hidden=false;
+ $('split-options').classList.toggle('inactive',solo);
+ $('split-ratio').disabled=solo;
+ $('swap-panels').disabled=solo;
  $('swap-panels').setAttribute('aria-pressed',String(layout.reversed));
  $('tool-menu-list').querySelectorAll('[data-tool]').forEach(btn=>{
   const active=btn.dataset.tool===layout.tool;
@@ -182,13 +185,10 @@ function initWorkspace(){
  counterPanel.className='tool-setting-panel';
  counterPanel.hidden=true;
  nodes.push(counterButton,counterPanel);
- const generalHeading=document.createElement('div');
- generalHeading.className='tool-menu-group-heading tool-menu-heading general-settings-heading';
- generalHeading.textContent='화면·서버 설정';
  const generalPanel=document.createElement('div');
  generalPanel.id='settings-inline-general';
  generalPanel.className='tool-setting-panel permanent-settings-panel';
- nodes.push(generalHeading,generalPanel);
+ nodes.push(generalPanel);
  $('tool-menu-list').replaceChildren(...nodes);
  setupInlineSettings();
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
