@@ -724,3 +724,13 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-level-item strong{font-size:16px;color:#faf6de}
 .schedule-level-item small{font-size:10px;color:#bed0e5}
 .schedule-training-note{margin:0;font-size:11px;color:#c0cee0;line-height:1.35}
+
+/* Sequential run recording; editing a saved plan is unrestricted. */
+.schedule-current-turn{font-size:12px;font-weight:700;color:#bcefd6;border:1px solid #488368;border-radius:6px;padding:5px 8px;background:#1a3a35}
+.schedule-cell.current-turn .schedule-cell-face{outline:3px solid #67ddb3;outline-offset:2px;box-shadow:0 0 12px #4ed6a658}
+.schedule-cell.recorded-turn .schedule-cell-face{border-color:#4a8b79}
+.schedule-cell.future-turn{opacity:.73;cursor:not-allowed}
+.schedule-cell.future-turn .schedule-cell-face{border-style:dashed}
+.schedule-cell.future-turn:hover .schedule-cell-face{background:#293c55}
+.schedule-goal-complete{width:100%;min-height:40px;margin-bottom:8px;background:#287e61;color:white;border:1px solid #60c49e;border-radius:7px;font-weight:700}
+.schedule-goal-complete[hidden]{display:none!important}

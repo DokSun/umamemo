@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261114-training-levels"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261114-sequential-turns"></head><body><header><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">기능 선택</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 <div class="tool-menu-divider"></div>
 <div class="tool-server-row"><label class="server-label" for="server-mode">서버</label><select id="server-mode" aria-label="서버 선택"><option value="ko">한국</option><option value="jp">일본</option></select></div>
@@ -21,7 +21,7 @@
  </div>
  <div class="schedule-character-row"><label for="schedule-scenario">육성 시나리오</label><select id="schedule-scenario" aria-label="육성 시나리오"><option value="basic">기본</option><option value="onsen">극락♪ 유코마 온천향</option></select></div>
  <div id="schedule-training-levels" class="schedule-training-levels" aria-label="현재 훈련 레벨">
-  <div class="schedule-level-head"><strong>훈련 레벨 현황</strong><label for="schedule-completed-turn">진행 완료 턴 <select id="schedule-completed-turn" aria-label="훈련 레벨 계산에 반영할 마지막 완료 턴"></select></label></div>
+  <div class="schedule-level-head"><strong>훈련 레벨 현황</strong><span id="schedule-current-turn" class="schedule-current-turn" aria-live="polite">현재 주니어 1월 전반 · 1/72턴</span></div>
   <div id="schedule-training-grid" class="schedule-training-grid"></div>
   <p id="schedule-training-note" class="schedule-training-note"></p>
  </div>
@@ -38,6 +38,7 @@
  <section class="schedule-modal schedule-action-modal" role="dialog" aria-modal="true" aria-labelledby="schedule-action-title">
   <div class="schedule-modal-head"><h3 id="schedule-action-title">행동 선택</h3><button type="button" data-schedule-close aria-label="닫기">✕</button></div>
   <div id="schedule-goal-detail" class="schedule-goal-detail" hidden></div><div class="schedule-action-layout"><div class="schedule-action-main"><div id="schedule-action-choices" class="schedule-action-choices"></div><div id="schedule-race-picker" class="schedule-race-picker" hidden><label for="schedule-race-select">이번 턴 레이스 선택</label><select id="schedule-race-select"></select><div id="schedule-race-description" class="schedule-race-description"></div><button type="button" id="schedule-race-apply">레이스 선택</button></div></div><div class="schedule-action-scenario"><div id="schedule-onsen-panel" class="schedule-onsen-panel" hidden><h4>온천 시나리오</h4><div class="schedule-onsen-sides"><div class="schedule-onsen-ticket-area"><div id="schedule-onsen-ticket-label" class="schedule-onsen-subheading">온천권 사용</div><div class="schedule-onsen-ticket-options"><button type="button" id="schedule-onsen-ticket" class="schedule-onsen-option schedule-onsen-ticket-choice" data-onsen-event="ticket" aria-pressed="false">회복</button><button type="button" id="schedule-onsen-ticket-super" class="schedule-onsen-option schedule-onsen-ticket-choice" data-onsen-event="ticketSuper" aria-pressed="false">초회복</button></div></div><div class="schedule-onsen-dig-area"><div class="schedule-onsen-subheading">굴착할 온천 선택 (하나만 선택)</div><div id="schedule-onsen-options" class="schedule-onsen-options"></div></div></div></div></div></div>
+  <button type="button" id="schedule-goal-complete" class="schedule-goal-complete" hidden>목표 턴 완료 · 다음 턴</button>
   <button type="button" id="schedule-action-clear" class="schedule-secondary-action">턴 초기화</button>
  </section>
 </div>
@@ -49,4 +50,4 @@
   <div id="schedule-plan-list" class="schedule-plan-list"></div>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261114-training-levels" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261114-sequential-turns" defer></script></body></html>
