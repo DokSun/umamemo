@@ -106,9 +106,11 @@ try{
   const parent=panel.getBoundingClientRect();
   const select=panel.querySelector('#server-mode').getBoundingClientRect();
   const segmented=panel.querySelector('.ratio-segments').getBoundingClientRect();
+  const fieldset=panel.querySelector('#split-ratio').getBoundingClientRect();
   return {drawerRight:drawer.right, parentRight:parent.right, parentLeft:parent.left,
    labels:switches.map(r=>({left:r.left,right:r.right,top:r.top,width:r.width})),
    segmented:{left:segmented.left,right:segmented.right,width:segmented.width},
+   fieldset:{left:fieldset.left,right:fieldset.right,top:fieldset.top,bottom:fieldset.bottom},
    swap:{left:swap.left,right:swap.right,width:swap.width},
    select:{left:select.left,right:select.right}};
  });
@@ -118,6 +120,13 @@ try{
  if(Math.max(...geometry.labels.map(r=>r.width))-Math.min(...geometry.labels.map(r=>r.width))>4)throw new Error('Ratio button widths must match');
  if(geometry.labels.some(r=>r.right>geometry.parentRight+2)||geometry.swap.right>geometry.parentRight+2||geometry.select.right>geometry.parentRight+2)throw new Error('Settings controls overflow drawer panel');
  if(geometry.swap.width>180||geometry.swap.width<65)throw new Error('Swap button should use the original compact width');
+ if(Math.abs(geometry.swap.left-geometry.fieldset.right)>16)throw new Error('Swap and screen ratio must be adjacent');
+ const sameRow=await page.locator('#settings-inline-general').evaluate(panel=>{
+  const ratio=panel.querySelector('#split-ratio').getBoundingClientRect();
+  const swap=panel.querySelector('#swap-panels').getBoundingClientRect();
+  return Math.abs((ratio.top+ratio.bottom)/2-(swap.top+swap.bottom)/2)<5;
+ });
+ if(!sameRow)throw new Error('Screen ratio and swap must share the original horizontal row');
  await page.setViewportSize({width:1366,height:900});
  await page.locator('#tool-menu-close').click();
  if(await page.locator('#tool-menu').isVisible())throw new Error('Function drawer did not close normally');
