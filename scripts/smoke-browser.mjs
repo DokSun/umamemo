@@ -178,6 +178,18 @@ try{
  if((await previewRow.locator('button').count())!==3)throw new Error('A plan should keep only three action buttons');
  if(!(await page.locator('#plan-preview .plan-preview-years').isVisible()))throw new Error('Plan preview not shown');
  if((await page.locator('#plan-preview .plan-preview-cell').count())!==72)throw new Error('Plan preview must show 72 turns');
+ const planOrder=await page.locator('#plan-panel .plan-browser-layout').evaluate(el=>{
+  const list=el.querySelector('#plan-quick-list').getBoundingClientRect(),preview=el.querySelector('#plan-preview').getBoundingClientRect();
+  return {listBottom:list.bottom,previewTop:preview.top};
+ });
+ if(planOrder.previewTop<planOrder.listBottom)throw new Error('Plan preview must be below the plan list');
+ await page.setViewportSize({width:720,height:900});
+ const yearTabs=page.locator('#plan-preview .plan-preview-year-tabs');
+ if(!(await yearTabs.isVisible()))throw new Error('Year tabs must appear when preview has insufficient width');
+ await yearTabs.locator('[data-plan-preview-year="classic"]').click();
+ if((await page.locator('#plan-preview .plan-preview-year:visible').count())!==1)throw new Error('Only one preview year should appear in narrow mode');
+ if(!(await page.locator('#plan-preview .plan-preview-year:nth-child(2)').isVisible()))throw new Error('Classic tab should show classic preview');
+ await page.setViewportSize({width:1366,height:900});
  if((await page.locator('#plan-preview .plan-preview-face.schedule-cell-face').count())!==72)throw new Error('Plan preview must share native schedule icon layout');
  if((await page.locator('#plan-quick-list [data-plan-use]').count())<1)throw new Error('Inline select missing');
  if((await page.locator('#plan-quick-list [data-plan-edit]').count())<1)throw new Error('Inline edit missing');
