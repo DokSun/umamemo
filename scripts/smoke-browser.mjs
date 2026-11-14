@@ -117,7 +117,7 @@ try{
  if(Math.max(...geometry.labels.map(r=>r.top))-Math.min(...geometry.labels.map(r=>r.top))>3)throw new Error('Ratio buttons must occupy one row');
  if(Math.max(...geometry.labels.map(r=>r.width))-Math.min(...geometry.labels.map(r=>r.width))>4)throw new Error('Ratio button widths must match');
  if(geometry.labels.some(r=>r.right>geometry.parentRight+2)||geometry.swap.right>geometry.parentRight+2||geometry.select.right>geometry.parentRight+2)throw new Error('Settings controls overflow drawer panel');
- if(geometry.swap.width<geometry.parentRight-geometry.parentLeft-24)throw new Error('Swap button should use available panel width');
+ if(geometry.swap.width>180||geometry.swap.width<65)throw new Error('Swap button should use the original compact width');
  await page.setViewportSize({width:1366,height:900});
  await page.locator('#tool-menu-close').click();
  if(await page.locator('#tool-menu').isVisible())throw new Error('Function drawer did not close normally');
