@@ -580,7 +580,7 @@ function scheduleProgressLabel(turn){
  if(turn>72)return '육성 완료 · 72/72턴';
  const year=SCHEDULE_YEAR_ORDER[Math.floor((turn-1)/24)];
  const i=(turn-1)%24;
- return '현재 '+SCHEDULE_YEAR_KO[year]+' '+(Math.floor(i/2)+1)+'월 '+(i%2===0?'전반':'후반')+' · '+turn+'/72턴';
+ return SCHEDULE_YEAR_KO[year]+' '+(Math.floor(i/2)+1)+'월 '+(i%2===0?'전반':'후반')+' · '+turn+'/72턴';
 }
 function renderScheduleTrainingLevels(){
  const panel=$('schedule-training-levels');
