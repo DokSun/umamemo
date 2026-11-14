@@ -113,36 +113,30 @@ function toggleToolMenu(open){
   $('tool-menu-close').focus();
  }
 }
-// Common settings are independent of the displayed work panel.
-let settingsReturnFocus=null;
-function showSettingsTab(tab){
- const valid=['cultivation','counter','general'];
- const active=valid.includes(tab)?tab:'cultivation';
- $('settings-backdrop').querySelectorAll('[data-settings-tab]').forEach(button=>{
-  const selected=button.dataset.settingsTab===active;
-  button.classList.toggle('active',selected);
-  button.setAttribute('aria-selected',String(selected));
+// Settings are inline accordion sections within the feature drawer.
+// The original form elements are moved into the drawer once so saved settings
+// and all existing change handlers keep their identity.
+function toggleInlineSettings(tab){
+ const button=$('tool-menu-list').querySelector('[data-settings-open="'+tab+'"]');
+ if(!button)return;
+ const open=button.getAttribute('aria-expanded')!=='true';
+ $('tool-menu-list').querySelectorAll('[data-settings-open]').forEach(item=>{
+  const selected=open&&item===button;
+  item.setAttribute('aria-expanded',String(selected));
+  const pane=$(item.getAttribute('aria-controls'));
+  pane.hidden=!selected;
  });
- $('settings-backdrop').querySelectorAll('[data-settings-pane]').forEach(pane=>{
-  pane.hidden=pane.dataset.settingsPane!==active;
- });
- $('settings-cultivation-hint').textContent=scheduleEditingPlan?
-  '계획 편집 중입니다. 여기서 변경한 캐릭터·시나리오는 계획에만 반영됩니다.':
-  '육성 중에는 고정되는 정보입니다. 캐릭터를 바꾸면 현재 육성 스케줄과 진행 기록이 초기화됩니다.';
+ if(open)button.scrollIntoView({block:'nearest'});
 }
-function openSettings(tab='cultivation'){
- if(!$('tool-menu').hidden)toggleToolMenu(false);
- settingsReturnFocus=document.activeElement;
- showSettingsTab(tab);
- $('settings-backdrop').hidden=false;
- document.body.classList.add('settings-open');
- $('settings-backdrop').querySelector('[data-settings-tab="'+tab+'"]')?.focus();
-}
-function closeSettings(){
- $('settings-backdrop').hidden=true;
- document.body.classList.remove('settings-open');
- if(settingsReturnFocus?.isConnected)settingsReturnFocus.focus();
- settingsReturnFocus=null;
+function setupInlineSettings(){
+ for(const tab of ['cultivation','counter','general']){
+  const source=$('settings-source').querySelector('[data-settings-pane="'+tab+'"]');
+  const button=$('tool-menu-list').querySelector('[data-settings-open="'+tab+'"]');
+  const target=$(button.getAttribute('aria-controls'));
+  source.hidden=false;
+  target.appendChild(source);
+ }
+ $('settings-source').remove();
 }
 function initSettings(){
  $('schedule-edit-settings-open').addEventListener('click',()=>{
@@ -170,20 +164,7 @@ function initSettings(){
   scheduleCurrent.scenarioEvents=normalized.scenarioEvents;
   renderSchedule();
  });
- $('settings-close').addEventListener('click',closeSettings);
- $('settings-backdrop').addEventListener('click',e=>{if(e.target===$('settings-backdrop'))closeSettings()});
- $('settings-backdrop').querySelectorAll('[data-settings-tab]').forEach(btn=>btn.addEventListener('click',()=>showSettingsTab(btn.dataset.settingsTab)));
- document.addEventListener('keydown',e=>{
-  if($('settings-backdrop').hidden)return;
-  if(e.key==='Escape'){e.preventDefault();closeSettings();return}
-  if(e.key==='Tab'){
-   const controls=[...$('settings-backdrop').querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled])')]
-    .filter(node=>node.getClientRects().length);
-   const first=controls[0],last=controls[controls.length-1];
-   if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
-   else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
-  }
- });
+
 }
 function initWorkspace(){
  const nodes=[];
@@ -200,15 +181,21 @@ function initWorkspace(){
   const btn=document.createElement('button');
   btn.type='button';btn.className='tool-menu-item tool-menu-setting-item';
   btn.dataset.settingsOpen=tab;btn.textContent=label;
-  nodes.push(btn);
+  btn.setAttribute('aria-expanded','false');
+  btn.setAttribute('aria-controls','settings-inline-'+tab);
+  const panel=document.createElement('div');
+  panel.id='settings-inline-'+tab;
+  panel.className='tool-setting-panel';panel.hidden=true;
+  nodes.push(btn,panel);
  }
  $('tool-menu-list').replaceChildren(...nodes);
+ setupInlineSettings();
  $('tool-menu-toggle').addEventListener('click',()=>toggleToolMenu($('tool-menu').hidden));
  $('tool-menu-close').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-backdrop').addEventListener('click',()=>{toggleToolMenu(false);$('tool-menu-toggle').focus()});
  $('tool-menu-list').addEventListener('click',e=>{
   const settingsButton=e.target.closest('[data-settings-open]');
-  if(settingsButton){openSettings(settingsButton.dataset.settingsOpen);return}
+  if(settingsButton){toggleInlineSettings(settingsButton.dataset.settingsOpen);return}
   const btn=e.target.closest('[data-tool]');if(!btn)return;
   if(scheduleEditingPlan&&btn.dataset.tool!=='plan'){
    if(!confirm('저장하지 않은 계획 편집을 취소하고 다른 기능으로 이동할까요?'))return;
