@@ -105,12 +105,15 @@ try{
   const swap=panel.querySelector('#swap-panels').getBoundingClientRect();
   const parent=panel.getBoundingClientRect();
   const select=panel.querySelector('#server-mode').getBoundingClientRect();
+  const segmented=panel.querySelector('.ratio-segments').getBoundingClientRect();
   return {drawerRight:drawer.right, parentRight:parent.right, parentLeft:parent.left,
    labels:switches.map(r=>({left:r.left,right:r.right,top:r.top,width:r.width})),
+   segmented:{left:segmented.left,right:segmented.right,width:segmented.width},
    swap:{left:swap.left,right:swap.right,width:swap.width},
    select:{left:select.left,right:select.right}};
  });
- if(geometry.labels.length!==3||geometry.labels.some(r=>r.width<60))throw new Error('Ratio buttons are too narrow');
+ if(geometry.labels.length!==3||geometry.labels.some(r=>r.width<44))throw new Error('Compact ratio buttons are too narrow');
+ if(geometry.segmented.width>230)throw new Error('Screen ratio control should use its previous compact width');
  if(Math.max(...geometry.labels.map(r=>r.top))-Math.min(...geometry.labels.map(r=>r.top))>3)throw new Error('Ratio buttons must occupy one row');
  if(Math.max(...geometry.labels.map(r=>r.width))-Math.min(...geometry.labels.map(r=>r.width))>4)throw new Error('Ratio button widths must match');
  if(geometry.labels.some(r=>r.right>geometry.parentRight+2)||geometry.swap.right>geometry.parentRight+2||geometry.select.right>geometry.parentRight+2)throw new Error('Settings controls overflow drawer panel');
