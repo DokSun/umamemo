@@ -200,20 +200,23 @@ try{
  if((await page.locator('#plan-quick-list [data-plan-use]').count())<1)throw new Error('Inline select missing');
  if((await page.locator('#plan-quick-list [data-plan-edit]').count())<1)throw new Error('Inline edit missing');
  if(await page.locator('#schedule-plan-save').count())throw new Error('Saving actual records as a plan must be removed');
- // All responsive widths must keep the action group bottom-right, not beside or below the card.
+ // Actions stay to the right of the text, bottom-aligned in every card width.
  for(const width of [1366,980,760,520,390]){
   await page.setViewportSize({width,height:900});
   const result=await page.locator('#plan-quick-list .plan-library-row').first().evaluate(card=>{
-   const cardRect=card.getBoundingClientRect(),details=card.querySelector('.plan-library-details').getBoundingClientRect();
+   const rect=card.getBoundingClientRect();
+   const details=card.querySelector('.plan-library-details').getBoundingClientRect();
    const actions=card.querySelector('.schedule-plan-actions').getBoundingClientRect();
-   const buttonRects=[...card.querySelectorAll('.schedule-plan-actions button')].map(b=>b.getBoundingClientRect());
-   return {cardRight:cardRect.right,cardBottom:cardRect.bottom,detailBottom:details.bottom,
+   const buttons=[...card.querySelectorAll('.schedule-plan-actions button')].map(b=>b.getBoundingClientRect());
+   return {cardRight:rect.right,cardBottom:rect.bottom,detailsRight:details.right,
+    detailsTop:details.top,detailsBottom:details.bottom,
     actionsLeft:actions.left,actionsRight:actions.right,actionsTop:actions.top,actionsBottom:actions.bottom,
-    buttonsOneRow:buttonRects.every(b=>Math.abs(b.top-buttonRects[0].top)<2),
-    hasOverflow:actions.right>cardRect.right-2};
+    buttonsOneRow:buttons.every(b=>Math.abs(b.top-buttons[0].top)<2)};
   });
-  if(result.hasOverflow||!result.buttonsOneRow||result.actionsTop<result.detailBottom-2||result.cardRight-result.actionsRight>18||result.cardBottom-result.actionsBottom>18)
-   throw new Error('Plan-card footer misaligned at '+width+'px: '+JSON.stringify(result));
+  if(!result.buttonsOneRow||result.actionsLeft<result.detailsRight-2||
+     result.actionsTop>result.detailsBottom+1||result.cardRight-result.actionsRight>18||
+     result.cardBottom-result.actionsBottom>18)
+   throw new Error('Plan actions not right-aligned beside text at '+width+'px: '+JSON.stringify(result));
  }
  await page.setViewportSize({width:1366,height:900});
  const firstPlan=page.locator('#plan-quick-list .plan-library-row').first();
