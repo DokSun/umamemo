@@ -75,7 +75,12 @@ try{
  await page.locator('#tool-menu-toggle').click();
  if(!(await page.locator('[data-tool-category="settings"]').isVisible()))throw new Error('Settings group missing from feature drawer');
  const settingLinks=page.locator('#tool-menu-list [data-settings-open]');
- if((await settingLinks.allTextContents()).join('|')!=='카운팅 설정|화면·서버 설정')throw new Error('Only counter and display settings should appear');
+ if((await settingLinks.allTextContents()).join('|')!=='카운팅 설정')throw new Error('Only counter settings should be collapsible');
+ if((await page.locator('#tool-menu-list .general-settings-heading').innerText())!=='화면·서버 설정')throw new Error('Screen/server settings heading missing');
+ if((await page.locator('#tool-menu-list .general-settings-heading').evaluate(el=>el.nextElementSibling?.id))!=='settings-inline-general')throw new Error('Screen/server settings must be last');
+ if(await page.locator('[data-settings-open="general"]').count())throw new Error('Screen/server settings must not be collapsible');
+ if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Screen/server settings must always be expanded');
+ if(await page.locator('[data-tool="texts"], #text-panel, script[src*="text-manager"]').count())throw new Error('Text manager must be removed');
  if(await page.locator('[data-settings-open="cultivation"], #settings-inline-cultivation').count())throw new Error('Cultivation settings must be removed from the function drawer');
  if(await page.locator('#schedule-character').isVisible())throw new Error('Internal record fields must not appear as user settings');
  if(await page.locator('#settings-inline-counter').isVisible())throw new Error('Counter settings should start collapsed');
@@ -86,8 +91,7 @@ try{
  if((await page.locator('[data-settings-open="counter"]').getAttribute('aria-expanded'))!=='true')throw new Error('Counter accordion accessible state missing');
  await page.locator('[data-settings-open="counter"]').click();
  if(await page.locator('#settings-inline-counter').isVisible())throw new Error('Counter settings did not collapse on second click');
- await page.locator('[data-settings-open="general"]').click();
- if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('General settings did not expand inline');
+ if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Screen/server settings should remain expanded');
  if(!(await page.locator('#server-mode').isVisible()))throw new Error('Inline server selector missing');
  if(!(await page.locator('#split-toggle').isVisible()))throw new Error('Inline display mode selector missing');
  if(await page.locator('#schedule-plans-open').count())throw new Error('Plan management shortcut must stay removed');
@@ -211,37 +215,10 @@ try{
  await page.locator('#tool-menu-toggle').click();
  await page.locator('#tool-menu-list [data-tool="schedule"]').click();
  if(!(await page.locator('#schedule-current-turn').innerText()).includes('1/72턴'))throw new Error('Editing plan mutated current record progress');
- // End-to-end copy manager: catalog, navigation filter, persisted UI rewrite and reset.
+ // Text management must not be exposed in the developer or published preview.
  await page.locator('#tool-menu-toggle').click();
- if(!(await page.locator('#tool-menu-list [data-tool="texts"]').isVisible()))throw new Error('Text manager missing under Settings');
- await page.locator('#tool-menu-list [data-tool="texts"]').click();
- if(!(await page.locator('#text-panel').isVisible()))throw new Error('Text manager page not visible');
- if(!(await page.locator('#text-manager-count').innerText()).includes('문구'))throw new Error('Text inventory did not load');
- if((await page.locator('#text-manager-entry').count())!==0)throw new Error('Text management element id collision');
- await page.locator('#text-manager-path').selectOption('계획 > 육성 계획');
- await page.locator('#text-manager-search').fill('새 계획 작성');
- const targetEntry=page.locator('.text-manager-entry').filter({has:page.locator('.text-manager-original', {hasText:'새 계획 작성'})}).first();
- if(!(await targetEntry.isVisible()))throw new Error('Plan create wording missing from editable catalog');
- await targetEntry.locator('textarea').fill('새 계획 만들기');
- await targetEntry.getByRole('button',{name:'저장'}).click();
- if(!(await page.locator('#text-manager-count').innerText()).includes('변경 1개'))throw new Error('Text edit did not persist');
- await page.locator('#tool-menu-toggle').click();
- await page.locator('#tool-menu-list [data-tool="plan"]').click();
- if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text override did not update actual plan button');
- await page.reload({waitUntil:'domcontentloaded'});
- await page.locator('#slots > *').first().waitFor({state:'attached',timeout:20000});
- await page.locator('#tool-menu-toggle').click();
- await page.locator('#tool-menu-list [data-tool="plan"]').click();
- if((await page.locator('#plan-create-new').innerText())!=='새 계획 만들기')throw new Error('Text customization did not survive reload');
- await page.locator('#tool-menu-toggle').click();
- await page.locator('#tool-menu-list [data-tool="texts"]').click();
- await page.locator('#text-manager-path').selectOption('계획 > 육성 계획');
- await page.locator('#text-manager-search').fill('새 계획 작성');
- const restoreEntry=page.locator('.text-manager-entry').filter({has:page.locator('.text-manager-original',{hasText:'새 계획 작성'})}).first();
- await restoreEntry.getByRole('button',{name:'원래대로'}).click();
- await page.locator('#tool-menu-toggle').click();
- await page.locator('#tool-menu-list [data-tool="plan"]').click();
- if((await page.locator('#plan-create-new').innerText())!=='새 계획 작성')throw new Error('Restoring text did not update plan button');
+ if(await page.locator('[data-tool="texts"], #text-panel').count())throw new Error('Text management UI remains');
+ if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('Permanent settings disappeared');
  if(errors.length)throw new Error('Browser JavaScript errors: '+errors.join('; '));
  console.log('PASS: browser startup, counters, schedule and plans');
 }finally{if(browser)await browser.close();server.kill()}
