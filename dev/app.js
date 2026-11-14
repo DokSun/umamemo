@@ -767,11 +767,11 @@ function renderSchedule(){
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const icon=goal?scheduleBannerHtml(selectedGoal):(selectedRace?scheduleBannerHtml(selectedRace):(display?scheduleActionIcon(display):scheduleActionIcon(null)));
+   const icon=goal?scheduleBannerHtml(selectedGoal):(!scheduleEditingPlan&&action==='race'?scheduleActionIcon(display):selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
    const extras=scheduleOnsenBadges(year,i,source);
    const extraTitle=source.scenario==='onsen'?[...scheduleOnsenEvents(year,i,source).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i,source)===2?['온천 효과 2턴째']:[])].join(' · '):'';
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
-   const raceTitle=selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
+   const raceTitle=scheduleEditingPlan&&selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
    const title=goal?'고정 목표 레이스':label;
     
    return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
@@ -845,7 +845,7 @@ $('schedule-grid').addEventListener('click',e=>{
   return;
  }
  const r= scheduleRacesAt(year,scheduleTurn);
- $('schedule-race-picker').hidden=!r.length;
+ $('schedule-race-picker').hidden=!scheduleEditingPlan||!r.length;
  const select=$('schedule-race-select');
  select.replaceChildren(new Option('출전할 레이스 선택',''));
  for(let i=0;i<r.length;i++)select.add(new Option(scheduleRaceName(r[i])+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
@@ -933,7 +933,7 @@ $('schedule-race-apply').addEventListener('click',()=>{
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
  if(!btn||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction)||!scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario)[btn.dataset.scheduleAction],scheduleCurrent.year,scheduleTurn))return;
- if(btn.dataset.scheduleAction==='race')return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
+ if(btn.dataset.scheduleAction==='race'&&scheduleEditingPlan)return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  scheduleCompleteTurn(scheduleCurrent.year,scheduleTurn);
