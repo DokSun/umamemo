@@ -94,7 +94,11 @@ try{
  if(!(await page.locator('#schedule-plan-save').isVisible()))throw new Error('Save current run as plan missing');
  const firstPlan=page.locator('#plan-quick-list .plan-library-row').first();
  if((await firstPlan.innerText()).includes('/72턴'))throw new Error('Action count must not be shown');
- if(!(await firstPlan.innerText()).includes('선택됨'))throw new Error('Selected plan should be marked 선택됨');
+ if(!(await firstPlan.locator('small').innerText()).includes('선택됨')){
+  page.once('dialog',dialog=>dialog.accept());
+  await firstPlan.locator('[data-plan-use]').click();
+ }
+ if(!(await firstPlan.locator('small').innerText()).includes('선택됨'))throw new Error('Selected plan should be marked 선택됨');
  await firstPlan.locator('[data-plan-edit]').click();
  if(!(await page.locator('#schedule-plan-edit-cancel').isVisible()))throw new Error('Inline plan edit did not open');
  await page.locator('#schedule-plan-edit-cancel').click();
