@@ -65,6 +65,26 @@ try{
  await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="0"]').click();
  await page.locator('#schedule-action-choices [data-schedule-action="speed"]').click();
  if(!(await current.innerText()).includes('3/72턴'))throw new Error('Filling the first missing record must advance to next gap');
+ // The record-mode race button must complete a turn without named-race selection.
+ await page.evaluate(()=>{
+  for(let i=0;i<13;i++){scheduleCurrent.turns.junior[i]='speed';scheduleRecordedTurns[i]=true;}
+  scheduleCurrent.turns.junior[13]=null;
+  scheduleRecordedTurns[13]=false;
+  scheduleCurrent.year='junior';
+  renderSchedule();
+ });
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="13"]').click();
+ if(!(await page.locator('#schedule-race-picker').isHidden()))throw new Error('Record mode must hide the named race picker');
+ if((await page.locator('#schedule-action-choices [data-schedule-action="race"]').count())!==1)throw new Error('Record mode must show one race button');
+ await page.locator('#schedule-action-choices [data-schedule-action="race"]').click();
+ if(!(await page.locator('#schedule-action-backdrop').isHidden()))throw new Error('Race button should complete directly');
+ const raceRecord=await page.evaluate(()=>({
+  action:scheduleCurrent.turns.junior[13],race:scheduleCurrent.selectedRaces['junior-13'],recorded:scheduleRecordedTurns[13]
+ }));
+ if(raceRecord.action!=='race'||raceRecord.race||!raceRecord.recorded)throw new Error('Generic race should save without specific race information');
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="13"]').click();
+ if(!(await page.locator('#schedule-race-picker').isHidden()))throw new Error('Existing race in record must remain generic');
+ await page.locator('#schedule-action-clear').click();
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
