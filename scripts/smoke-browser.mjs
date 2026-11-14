@@ -100,6 +100,7 @@ try{
  await page.locator('#tool-menu-list [data-tool="plan"]').click();
  await page.locator('#plan-create-new').click();
  if(!(await page.locator('#schedule-plan-edit-save').isVisible()))throw new Error('New plan editor did not open');
+ await page.locator('#schedule-panel [data-schedule-year="senior"]').click();
  await page.locator('#schedule-grid [data-schedule-year-cell="senior"][data-schedule-turn="17"]').click();
  await page.locator('#schedule-action-choices [data-schedule-action="power"]').click();
  await page.locator('#schedule-plan-edit-cancel').click();
