@@ -1114,3 +1114,31 @@ header .header-settings-button{order:initial;margin-left:auto}
 #plan-panel .plan-preview-face.schedule-cell-face>.schedule-type-icon{transform:scale(.9);transform-origin:center}
 #plan-panel .plan-preview-face.schedule-cell-face .schedule-ko-banner-name{font-size:clamp(8px,.85vw,11px)}
 #plan-panel .plan-preview-cell .schedule-cell-label{font-size:10px;line-height:1.2;margin-top:3px}
+
+
+/* Plans are scanned in three columns above the full-width preview. */
+#plan-panel .plan-browser-layout{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+#plan-panel .plan-quick-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;align-items:stretch}
+#plan-panel .plan-library-row{min-width:0;align-content:center}
+#plan-panel .plan-preview{width:100%;min-width:0;container-type:inline-size;container-name:plan-preview}
+#plan-panel .plan-preview-years{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#plan-panel .plan-preview-year-tabs{display:none}
+@media(max-width:900px){
+ #plan-panel .plan-quick-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+ #plan-panel .plan-quick-list{grid-template-columns:minmax(0,1fr)}
+}
+/* Switch to year tabs based on preview width, not device width; split mode works too. */
+@container plan-preview (max-width:980px){
+ #plan-panel .plan-preview-year-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:0 0 12px;overflow:hidden;border-radius:7px;border:1px solid #526783}
+ #plan-panel .plan-preview-year-tabs button{border:0;border-radius:0;min-width:0;padding:9px 4px;background:#29384c;font-size:13px}
+ #plan-panel .plan-preview-year-tabs button+button{border-left:1px solid #526783}
+ #plan-panel .plan-preview-year-tabs button.active{background:#287e61;color:#fff;font-weight:700}
+ #plan-panel .plan-preview-years{grid-template-columns:minmax(0,1fr)}
+ #plan-panel .plan-preview-year{display:none}
+ #plan-panel .plan-preview-years[data-active-preview-year="junior"] .plan-preview-year:nth-child(1),
+ #plan-panel .plan-preview-years[data-active-preview-year="classic"] .plan-preview-year:nth-child(2),
+ #plan-panel .plan-preview-years[data-active-preview-year="senior"] .plan-preview-year:nth-child(3){display:block}
+ #plan-panel .plan-preview-cells{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
