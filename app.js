@@ -100,9 +100,9 @@ function resetTargets(button){
  const includesSchedule=ids.includes('schedule');
  const desc=ids.length===1?(includesSchedule?'현재 육성 스케줄을':TOOLS[ids[0]].name+'의 기록을'):'현재 표시된 육성 기록을 모두';
  const sessionReset=ids.every(id=>TOOLS[id].scope==='session');
- const planNotice=includesSchedule?'\n\n저장된 계획은 유지되고 지정한 초기 계획이 육성 기록에 다시 적용됩니다.':'';
+
  const popupHint=ids.includes('counter')?'\n\n≡ 기능 > 설정 > 카운팅 설정 > 초기화 팝업에서 이 확인창을 표시하지 않도록 설정할 수 있습니다.':'';
- if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'+planNotice+popupHint))return;
+ if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'+popupHint))return;
  ids.forEach(id=>TOOLS[id].reset());
  toast(includesSchedule?(ids.length>1?'이벤트 카운팅을 초기화하고 육성 기록을 초기 계획으로 복원했습니다.':'육성 기록을 초기 계획으로 복원했습니다.'):ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
