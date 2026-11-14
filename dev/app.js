@@ -449,6 +449,38 @@ let scheduleTurn=null;
 let scheduleActivePlanId='';
 try{scheduleActivePlanId=devStorage.getItem(scheduleKey('active-plan'))||''}catch(e){}
 let scheduleEditingPlan=null, scheduleRunBeforeEdit=null;
+// Tracks the final *completed* turn independently from the plan-seeded schedule.
+function readScheduleCompletedTurns(){
+ try{return Math.max(0,Math.min(72,Math.trunc(Number(devStorage.getItem(scheduleKey('completed-turns')))||0)))}catch(e){return 0}
+}
+let scheduleCompletedTurns=readScheduleCompletedTurns();
+function setScheduleCompletedTurns(value){
+ scheduleCompletedTurns=Math.max(0,Math.min(72,Math.trunc(Number(value)||0)));
+ try{devStorage.setItem(scheduleKey('completed-turns'),String(scheduleCompletedTurns))}catch(e){console.warn('진행 턴 저장 실패',e)}
+ renderScheduleTrainingLevels();
+}
+function scheduleProgressLabel(turn){
+ if(turn===0)return '육성 시작 전';
+ const year=SCHEDULE_YEAR_ORDER[Math.floor((turn-1)/24)];
+ const index=(turn-1)%24;
+ return SCHEDULE_YEAR_KO[year]+' '+(Math.floor(index/2)+1)+'월 '+(index%2===0?'전반':'후반')+' 완료';
+}
+function initScheduleTrainingLevels(){
+ const select=$('schedule-completed-turn');
+ select.replaceChildren(...Array.from({length:73},(_,i)=>new Option(scheduleProgressLabel(i),String(i))));
+ select.addEventListener('change',e=>setScheduleCompletedTurns(e.target.value));
+}
+function renderScheduleTrainingLevels(){
+ const panel=$('schedule-training-levels');
+ if(!panel)return;
+ panel.hidden=Boolean(scheduleEditingPlan);
+ if(scheduleEditingPlan)return;
+ $('schedule-completed-turn').value=String(scheduleCompletedTurns);
+ const status=TrainingLevels.calculate(scheduleCurrent,scheduleCompletedTurns);
+ $('schedule-training-note').textContent=status.summerCamp?'여름합숙 · 모든 훈련 Lv.5 (레벨 상승 횟수에 미포함)':status.completed===72?'72턴 종료 · 최종 일반 훈련 레벨':'일반 훈련 4회당 +1 · 새해마다 모든 훈련 +1';
+ $('schedule-training-grid').innerHTML=status.levels.map(e=>`<div class="schedule-level-item" aria-label="${e.label} Lv.${e.level}, 일반 훈련 ${e.count}회"><span class="type-icon type-icon-${e.type} schedule-level-type-icon" aria-hidden="true"></span><span class="schedule-level-name">${e.label}</span><strong>Lv.${e.level}</strong><small>${status.summerCamp?'합숙':e.baseLevel===5?'MAX':e.count%4+'/4회'}</small></div>`).join('');
+}
+initScheduleTrainingLevels();
 // The selected plan is an editable starting snapshot, not a display overlay.
 function scheduleInitialRun(){
  const run=normalizeSchedule(scheduleActivePlan()?.schedule||emptySchedule());
@@ -523,6 +555,7 @@ function scheduleFinishPlanEdit(save=false){
 function resetCurrentScheduleOnly(){
  if(scheduleEditingPlan)return;
  scheduleCurrent=scheduleInitialRun();
+ setScheduleCompletedTurns(0);
  scheduleTurn=null;
  saveScheduleCurrent();
  if($('schedule-action-backdrop')&&!$('schedule-action-backdrop').hidden)closeScheduleDialog();
@@ -578,6 +611,7 @@ function renderSchedule(){
   btn.classList.toggle('active',active);
   btn.setAttribute('aria-selected',String(active));
  });
+ renderScheduleTrainingLevels();
  $('schedule-grid').innerHTML=SCHEDULE_YEAR_ORDER.map(year=>{
   const cells=scheduleCurrent.turns[year].map((action,i)=>{
     const source=scheduleCurrent;
@@ -621,6 +655,7 @@ $('schedule-character').addEventListener('change',e=>{
  if(!scheduleEditingPlan&&scheduleActivePlanId&&next!==scheduleActivePlan()?.schedule.character)scheduleSetActivePlan('');
  // Clear only the working schedule. Saved plans and support-event progress remain intact.
  scheduleCurrent.character=next;
+ if(!scheduleEditingPlan)setScheduleCompletedTurns(0);
  for(const year of Object.keys(SCHEDULE_YEARS))scheduleCurrent.turns[year]=Array(scheduleSlots(year)).fill(null);
  scheduleCurrent.selectedRaces={};
  scheduleCurrent.scenarioEvents={};
@@ -803,6 +838,7 @@ $('schedule-plan-list').addEventListener('click',e=>{
   if(scheduleHasRunData(scheduleCurrent)&&!confirm('현재 육성 기록을 이 계획의 초기 상태로 교체할까요?\n\n기존 육성 기록은 사라지지만 저장된 계획은 변경되지 않습니다.'))return;
   scheduleSetActivePlan(entry.id);
   scheduleCurrent=scheduleInitialRun();
+  setScheduleCompletedTurns(0);
   saveScheduleCurrent();renderSchedule();closeScheduleDialog();toast('계획을 육성 초기 상태로 지정했습니다');
  }else if(match==='planEdit'){
   scheduleBeginPlanEdit(entry);
@@ -846,6 +882,7 @@ function switchServer(next){
  try{devStorage.setItem(SERVER_KEY,next)}catch(err){console.warn('서버 선택 저장 실패',err)}
  state=readState();
  scheduleCurrent=readScheduleCurrent();
+ scheduleCompletedTurns=readScheduleCompletedTurns();
  schedulePlans=readSchedulePlans();
  scheduleEditingPlan=null;scheduleRunBeforeEdit=null;
  try{scheduleActivePlanId=devStorage.getItem(scheduleKey('active-plan'))||''}catch(e){scheduleActivePlanId=''}

@@ -709,3 +709,18 @@ body.schedule-dialog-open{overflow:hidden}
 #schedule-grid .schedule-cell.planned .schedule-cell-label{color:#aec0d9}
 #schedule-plan-new{width:100%;min-height:40px;margin:8px 0 4px}
 #schedule-plan-save{margin:4px 0 12px}
+
+/* Training levels calculated from actions through a designated completed turn. */
+.schedule-training-levels{border:1px solid #435b79;border-radius:9px;padding:9px 10px;background:#1b3047;display:flex;flex-direction:column;gap:8px}
+.schedule-training-levels[hidden]{display:none!important}
+.schedule-level-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.schedule-level-head>strong{font-size:13px}
+.schedule-level-head label{font-size:11px;display:flex;align-items:center;gap:6px;color:#c1d3e7}
+#schedule-completed-turn{min-width:130px;max-width:190px;font-size:11px;min-height:32px;padding:5px 7px;background:#0f2238;color:#eef6ff;border:1px solid #627a98;border-radius:6px}
+.schedule-training-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.schedule-level-item{min-width:0;display:flex;align-items:center;flex-direction:column;gap:3px;border:1px solid #3f5672;border-radius:7px;padding:7px 2px;background:#263c55}
+.schedule-level-item .schedule-level-type-icon{flex:none}
+.schedule-level-name{font-size:10px;white-space:nowrap}
+.schedule-level-item strong{font-size:16px;color:#faf6de}
+.schedule-level-item small{font-size:10px;color:#bed0e5}
+.schedule-training-note{margin:0;font-size:11px;color:#c0cee0;line-height:1.35}
