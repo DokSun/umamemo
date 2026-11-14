@@ -75,7 +75,9 @@ try{
  await page.locator('#tool-menu-toggle').click();
  if(!(await page.locator('[data-tool-category="settings"]').isVisible()))throw new Error('Settings group missing from feature drawer');
  const settingLinks=page.locator('#tool-menu-list [data-settings-open]');
- if((await settingLinks.allTextContents()).join('|')!=='육성 설정|카운팅 설정|화면·서버 설정')throw new Error('Settings category names changed');
+ if((await settingLinks.allTextContents()).join('|')!=='카운팅 설정|화면·서버 설정')throw new Error('Only counter and display settings should appear');
+ if(await page.locator('[data-settings-open="cultivation"], #settings-inline-cultivation').count())throw new Error('Cultivation settings must be removed from the function drawer');
+ if(await page.locator('#schedule-character').isVisible())throw new Error('Internal record fields must not appear as user settings');
  if(await page.locator('#settings-inline-counter').isVisible())throw new Error('Counter settings should start collapsed');
  await page.locator('[data-settings-open="counter"]').click();
  if(!(await page.locator('#settings-inline-counter').isVisible()))throw new Error('Counter section did not expand inline');
@@ -88,14 +90,32 @@ try{
  if(!(await page.locator('#settings-inline-general').isVisible()))throw new Error('General settings did not expand inline');
  if(!(await page.locator('#server-mode').isVisible()))throw new Error('Inline server selector missing');
  if(!(await page.locator('#split-toggle').isVisible()))throw new Error('Inline display mode selector missing');
- await page.locator('[data-settings-open="cultivation"]').click();
- if(!(await page.locator('#settings-inline-cultivation').isVisible()))throw new Error('Cultivation section did not expand');
- if(await page.locator('#settings-inline-general').isVisible())throw new Error('Previous accordion should collapse when switching settings');
- if(!(await page.locator('#schedule-character').isVisible()))throw new Error('Inline character selector missing');
- await page.locator('#schedule-scenario').selectOption('onsen');
- if(!(await page.locator('#schedule-header-scenario').innerText()).includes('온천향'))throw new Error('Cultivation changes did not update header');
- if(!(await page.locator('#tool-menu').isVisible()))throw new Error('Drawer closed after changing a setting');
  if(await page.locator('#schedule-plans-open').count())throw new Error('Plan management shortcut must stay removed');
+ // Use the retained nonvisual record field for legacy onsen regression tests.
+ await page.evaluate(()=>{
+  const field=document.getElementById('schedule-scenario');
+  field.value='onsen';field.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ if(!(await page.locator('#schedule-header-scenario').innerText()).includes('온천향'))throw new Error('Internal scenario state no longer works');
+ await page.setViewportSize({width:390,height:844});
+ if(!(await page.locator('#split-ratio').isVisible()))throw new Error('Ratio options must be available in the drawer');
+ const geometry=await page.locator('#settings-inline-general').evaluate(panel=>{
+  const drawer=document.getElementById('tool-menu').getBoundingClientRect();
+  const switches=[...panel.querySelectorAll('.ratio-segments label')].map(el=>el.getBoundingClientRect());
+  const swap=panel.querySelector('#swap-panels').getBoundingClientRect();
+  const parent=panel.getBoundingClientRect();
+  const select=panel.querySelector('#server-mode').getBoundingClientRect();
+  return {drawerRight:drawer.right, parentRight:parent.right, parentLeft:parent.left,
+   labels:switches.map(r=>({left:r.left,right:r.right,top:r.top,width:r.width})),
+   swap:{left:swap.left,right:swap.right,width:swap.width},
+   select:{left:select.left,right:select.right}};
+ });
+ if(geometry.labels.length!==3||geometry.labels.some(r=>r.width<60))throw new Error('Ratio buttons are too narrow');
+ if(Math.max(...geometry.labels.map(r=>r.top))-Math.min(...geometry.labels.map(r=>r.top))>3)throw new Error('Ratio buttons must occupy one row');
+ if(Math.max(...geometry.labels.map(r=>r.width))-Math.min(...geometry.labels.map(r=>r.width))>4)throw new Error('Ratio button widths must match');
+ if(geometry.labels.some(r=>r.right>geometry.parentRight+2)||geometry.swap.right>geometry.parentRight+2||geometry.select.right>geometry.parentRight+2)throw new Error('Settings controls overflow drawer panel');
+ if(geometry.swap.width<geometry.parentRight-geometry.parentLeft-24)throw new Error('Swap button should use available panel width');
+ await page.setViewportSize({width:1366,height:900});
  await page.locator('#tool-menu-close').click();
  if(await page.locator('#tool-menu').isVisible())throw new Error('Function drawer did not close normally');
  await page.locator('#tool-menu-toggle').click();
