@@ -66,6 +66,10 @@ try{
  // Cultivation information is summarized in the global header, not editable inline.
  if(await page.locator('#schedule-panel #schedule-character').count())throw new Error('Character selector must be outside schedule');
  if(!(await page.locator('#schedule-header-character').isVisible()))throw new Error('Header cultivation summary missing');
+ if((await page.locator('header .header-brand > h1').count())!==1)throw new Error('Site title should be adjacent to function menu');
+ if((await page.locator('#schedule-panel .schedule-title-row #schedule-plan-caption').count())!==1)throw new Error('Initial plan should sit beside scheduler title');
+ if(await page.locator('header #schedule-plan-caption').count())throw new Error('Initial plan must not be in site header');
+ if(await page.locator('#schedule-training-note').count())throw new Error('Training explanation should be removed');
  await page.locator('#settings-open').click();
  if(!(await page.locator('#settings-backdrop').isVisible()))throw new Error('Settings panel did not open');
  await page.locator('[data-settings-tab="counter"]').click();

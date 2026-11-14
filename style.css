@@ -777,3 +777,19 @@ body.settings-open{overflow:hidden}
  .settings-pane .schedule-character-row{align-items:stretch;flex-direction:column;gap:4px}
  .settings-pane .schedule-character-row label{min-width:0}
 }
+
+/* Keep the site title directly beside the function menu at every breakpoint. */
+header .header-brand{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
+header .header-brand>h1{margin:0;order:initial;white-space:nowrap}
+header .header-brand>.tool-menu-wrap{order:initial;flex:none}
+header .header-cultivation{order:initial;flex:1;justify-content:flex-start}
+header .header-settings-button{order:initial;margin-left:auto}
+#schedule-panel .schedule-title-row{display:flex;align-items:center;justify-content:flex-start;gap:9px;flex-wrap:wrap}
+#schedule-panel .schedule-title-row h2{margin:0}
+#schedule-panel .schedule-title-row #schedule-plan-caption{font-size:12px;color:#d9caee;background:#263650;border:1px solid #4c5879;padding:3px 7px;border-radius:6px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:min(360px,75%)}
+@media(max-width:700px){
+ header .header-brand{gap:5px}
+ header .header-brand>h1{font-size:17px}
+ header .header-cultivation{order:4;flex-basis:100%}
+ #schedule-panel .schedule-title-row #schedule-plan-caption{max-width:72%}
+}
