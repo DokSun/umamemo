@@ -52,7 +52,8 @@ function readLayout(){
 }
 const layout=readLayout();
 function saveLayout(){try{devStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){console.warn('화면 설정 저장 실패',e)}}
-function visibleToolIds(){return layout.mode==='single'?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
+function isSoloLayout(){return layout.tool==='plan'||layout.mode==='single';}
+function visibleToolIds(){return isSoloLayout()?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
 function shouldShowScheduleReset(ids=visibleToolIds()){
  return !scheduleEditingPlan&&ids.includes('schedule')&&!ids.includes('counter');
 }
@@ -74,7 +75,7 @@ function renderResetActions(){
 }
 function applyLayout(){
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
- const ids=visibleToolIds(),workspace=$('workspace'),solo=layout.mode==='single';
+ const ids=visibleToolIds(),workspace=$('workspace'),solo=isSoloLayout(),planOnly=layout.tool==='plan';
  workspace.classList.toggle('single',solo);
  workspace.classList.toggle('split',!solo);
  workspace.classList.toggle('reversed',!solo&&layout.reversed);
@@ -82,7 +83,8 @@ function applyLayout(){
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
  if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
- $('split-toggle').checked=!solo;
+ $('split-toggle').checked=layout.mode==='split';
+ $('split-toggle').disabled=planOnly;
  $('split-ratio').querySelectorAll('input[type="radio"]').forEach(r=>{r.checked=Number(r.value)===layout.ratio});
  $('split-options').hidden=false;
  $('split-options').classList.toggle('inactive',solo);
@@ -105,7 +107,8 @@ function resetTargets(button){
  const desc=ids.length===1?(includesSchedule?'현재 육성 스케줄을':TOOLS[ids[0]].name+'의 기록을'):'현재 표시된 육성 기록을 모두';
  const sessionReset=ids.every(id=>TOOLS[id].scope==='session');
  const planNotice=includesSchedule?'\n\n저장된 계획은 유지되고 지정한 초기 계획이 육성 기록에 다시 적용됩니다.':'';
- if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'+planNotice))return;
+ const popupHint=ids.includes('counter')?'\n\n≡ 기능 > 설정 > 카운팅 설정 > 초기화 팝업에서 이 확인창을 표시하지 않도록 설정할 수 있습니다.':'';
+ if((!sessionReset||confirmCounterReset)&&!confirm(desc+' 초기화할까요?'+planNotice+popupHint))return;
  ids.forEach(id=>TOOLS[id].reset());
  toast(includesSchedule?(ids.length>1?'이벤트 카운팅을 초기화하고 육성 기록을 초기 계획으로 복원했습니다.':'육성 기록을 초기 계획으로 복원했습니다.'):ids.length>1?'육성 기록을 함께 초기화했습니다':'초기화했습니다');
 }
@@ -174,7 +177,7 @@ function initSettings(){
 }
 function initWorkspace(){
  const nodes=[];
- for(const [category,heading,ids] of [['plan','계획',['plan']],['record','기록',['schedule','counter','memo']]]){
+ for(const [category,heading,ids] of [['plan','계획',['plan']],['record','기록',['counter','schedule','memo']]]){
   const group=document.createElement('div');group.className='tool-menu-heading tool-menu-group-heading';group.dataset.toolCategory=category;group.textContent=heading;nodes.push(group);
   for(const id of ids){const tool=TOOLS[id];const btn=document.createElement('button');btn.type='button';btn.dataset.tool=id;btn.textContent=tool.name;btn.className='tool-menu-item';nodes.push(btn);}
  }
@@ -218,6 +221,7 @@ function initWorkspace(){
   toggleToolMenu(false);
  });
  $('split-toggle').addEventListener('change',e=>{
+  if(layout.tool==='plan'){e.target.checked=layout.mode==='split';return;}
   layout.mode=e.target.checked?'split':'single';
   if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
   applyLayout();
