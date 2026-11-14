@@ -65,7 +65,8 @@ function renderResetActions(){
  counterFooter.hidden=!ids.includes('counter');
  memoFooter.hidden=!ids.includes('memo');
  secondary.dataset.targets='memo';
- scheduleFooter.hidden=!ids.includes('schedule');
+ // The counter's unified reset already clears both records in split mode.
+ scheduleFooter.hidden=!ids.includes('schedule')||(ids.includes('counter')&&ids.includes('schedule'));
  $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
