@@ -1051,8 +1051,11 @@ header .header-settings-button{order:initial;margin-left:auto}
 }
 
 
-/* Permanently expanded screen/server controls, last in the drawer. */
+
+/* Bottom-anchored display/server settings; layout stays stationary on mode changes. */
 #tool-menu{display:flex;flex-direction:column}
-#tool-menu-list{flex:1;min-height:calc(100% - 84px)}
-#tool-menu-list .general-settings-heading{margin-top:auto}
-#tool-menu-list .permanent-settings-panel{margin-bottom:0}
+#tool-menu-list{flex:1;display:flex;flex-direction:column;min-height:calc(100% - 84px)}
+#tool-menu-list .permanent-settings-panel{margin-top:auto;margin-bottom:0}
+#tool-menu-list .permanent-settings-panel #split-options{display:flex!important}
+#tool-menu-list .permanent-settings-panel #split-options.inactive{opacity:.48}
+#tool-menu-list .permanent-settings-panel #split-options.inactive #swap-panels{cursor:not-allowed}
