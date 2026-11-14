@@ -47,6 +47,9 @@ function readLayout(){
 const layout=readLayout();
 function saveLayout(){try{localStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){console.warn('화면 설정 저장 실패',e)}}
 function visibleToolIds(){return layout.mode==='single'?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
+function shouldShowScheduleReset(ids=visibleToolIds()){
+ return !scheduleEditingPlan&&ids.includes('schedule')&&!ids.includes('counter');
+}
 function renderResetActions(){
  const ids=visibleToolIds();
  const sessionIds=ids.filter(id=>TOOLS[id].scope==='session');
@@ -60,7 +63,7 @@ function renderResetActions(){
  memoFooter.hidden=!ids.includes('memo');
  secondary.dataset.targets='memo';
  // The counter's unified reset already clears both records in split mode.
- scheduleFooter.hidden=!ids.includes('schedule')||(ids.includes('counter')&&ids.includes('schedule'));
+ scheduleFooter.hidden=!shouldShowScheduleReset(ids);
  $('schedule-reset').dataset.targets='schedule';
 }
 function applyLayout(){
@@ -729,7 +732,7 @@ function renderSchedule(){
  $('schedule-view-heading').textContent=scheduleEditingPlan?'육성 계획':'육성 기록';
  $('schedule-work-title').textContent='현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
- $('schedule-reset-footer').hidden=!!scheduleEditingPlan||!visibleToolIds().includes('schedule');
+ $('schedule-reset-footer').hidden=!shouldShowScheduleReset();
  $('schedule-panel').classList.toggle('editing-plan',!!scheduleEditingPlan);
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
