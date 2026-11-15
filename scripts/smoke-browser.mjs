@@ -137,7 +137,7 @@ try{
   const legacy=emptySchedule();
   legacy.scenario='onsen';
   delete legacy.scenarioData;
-  legacy.scenarioEvents={'junior-2':['dig1','ticket'],'junior-3':['ticketSuper','dig1'],'senior-0':['dig8']};
+  legacy.scenarioEvents={'junior-2':['dig1','ticket'],'junior-3':['ticketSuper','dig1'],'junior-4':['dig8']};
   const converted=normalizeSchedule(legacy);
   const saved=normalizeSchedule(JSON.parse(JSON.stringify(converted)));
   const newPlan=normalizeSchedule(legacy);
@@ -147,7 +147,7 @@ try{
    legacyRemoved:!Object.hasOwn(converted,'scenarioEvents'),
    migrated:converted.scenarioData.onsen.events['junior-2'],
    ticketBlocked:converted.scenarioData.onsen.events['junior-3'],
-   illegal:converted.scenarioData.onsen.events['senior-0'],
+   illegal:converted.scenarioData.onsen.events['junior-4'],
    roundTrip:saved.scenarioData.onsen.events['junior-2'],
    isolated:!converted.scenarioData.onsen.events['junior-2'].includes('dig2'),
    fresh:emptySchedule().scenarioData
