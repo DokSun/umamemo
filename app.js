@@ -1177,7 +1177,7 @@ function counterSyncFriendOuting(year,i,oldAction,newAction,wasRecorded){
 }
 function counterClearFriendOutingLinks(){
  for(const key of Object.keys(state.friendOutingLinks||{})){
-  const m=/^(junior|classic|senior)-(\\d+)$/.exec(key);
+  const m=/^(junior|classic|senior)-(\d+)$/.exec(key);
   if(m)counterUnlinkFriendOuting(m[1],Number(m[2]));
   else delete state.friendOutingLinks[key];
  }
