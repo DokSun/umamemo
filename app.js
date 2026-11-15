@@ -75,6 +75,9 @@ function applyLayout(){
  workspace.classList.toggle('reversed',!solo&&layout.reversed);
  workspace.style.setProperty('--counter-share',layout.ratio+'fr');
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
+ const middleShare=Math.min(24,Math.max(18,layout.ratio-30));
+ workspace.style.setProperty('--scenario-middle-share',middleShare+'fr');
+ workspace.style.setProperty('--scenario-counter-share',(layout.ratio-middleShare)+'fr');
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
  if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
  $('split-toggle').checked=layout.mode==='split';
@@ -93,9 +96,9 @@ function applyLayout(){
  renderResetActions();
  saveLayout();
  // The flyout belongs only to the live cultivation view.
- if(typeof scenarioStatusOpen!=='undefined'&&scenarioStatusOpen){
-  if(!ids.includes('schedule')){scenarioStatusOpen=false;renderScheduleScenarioStatus();}
-  else requestAnimationFrame(positionScenarioStatus);
+ if(typeof scenarioStatusOpen!=='undefined'){
+  if(!ids.includes('schedule'))scenarioStatusOpen=false;
+  renderScheduleScenarioStatus();
  }
 }
 function resetTargets(button){
@@ -653,59 +656,23 @@ const SCHEDULE_SCENARIO_STATUS_RENDERERS={
  }
 };
 let scenarioStatusOpen=false;
-function positionScenarioStatus(){
- const panel=$('schedule-scenario-status');
- if(!panel||panel.hidden)return;
- const workspace=$('workspace'),counter=$('counter-panel'),schedule=$('schedule-panel');
- const viewW=document.documentElement.clientWidth,viewH=window.innerHeight;
- const available=workspace.classList.contains('split')&&!counter.hidden&&!schedule.hidden&&viewW>850;
- let sidecar=false;
- if(available){
-  const counterRect=counter.getBoundingClientRect();
-  const controls=[...counter.querySelectorAll('.event-controls button')].map(b=>b.getBoundingClientRect());
-  const buttonsRight=controls.length?Math.max(...controls.map(r=>r.right)):counterRect.left+420;
-  const left=Math.ceil(buttonsRight+12),right=Math.floor(counterRect.right-12);
-  const width=right-left;
-  if(width>=220&&counterRect.bottom-counterRect.top>=210){
-   panel.style.left=left+'px';
-   panel.style.top=Math.max(8,Math.round(counterRect.top+46))+'px';
-   panel.style.width=width+'px';
-   panel.style.maxHeight=Math.max(160,Math.min(viewH-16,counterRect.bottom-Math.max(8,counterRect.top+46)-10))+'px';
-   counter.style.setProperty('--scenario-counter-name-max',Math.max(140,left-counterRect.left-30)+'px');
-   sidecar=true;
-  }
- }
- counter.classList.toggle('scenario-sidecar-active',sidecar);
- panel.classList.toggle('sidecar',sidecar);
- if(!sidecar){
-  counter.style.removeProperty('--scenario-counter-name-max');
-  const button=$('schedule-scenario-status-toggle').getBoundingClientRect();
-  const width=Math.min(350,viewW-20);
-  panel.style.left=Math.max(10,Math.min(viewW-width-10,button.right-width))+'px';
-  panel.style.top=Math.max(8,Math.min(viewH-190,button.bottom+8))+'px';
-  panel.style.width=width+'px';
-  panel.style.maxHeight=Math.max(160,viewH-Math.max(8,Math.min(viewH-190,button.bottom+8))-10)+'px';
- }
-}
 function renderScheduleScenarioStatus(){
  const panel=$('schedule-scenario-status'),toggle=$('schedule-scenario-status-toggle');
  if(!panel||!toggle)return;
- const scenario=scheduleCurrent.scenario;
- const renderer=SCHEDULE_SCENARIO_STATUS_RENDERERS[scenario];
- const canShow=!scheduleEditingPlan&&Boolean(renderer);
- toggle.hidden=!canShow;
+ const renderer=SCHEDULE_SCENARIO_STATUS_RENDERERS[scheduleCurrent.scenario];
+ const canShow=!scheduleEditingPlan&&Boolean(renderer)&&!$('schedule-panel').hidden;
+ toggle.hidden=!renderer||Boolean(scheduleEditingPlan);
  if(!canShow)scenarioStatusOpen=false;
  panel.hidden=!canShow||!scenarioStatusOpen;
+ $('workspace').classList.toggle('scenario-expanded',!panel.hidden);
  toggle.setAttribute('aria-expanded',String(!panel.hidden));
  toggle.textContent=panel.hidden?'시나리오 현황 ◀':'시나리오 현황 닫기 ▶';
  if(panel.hidden){
   $('schedule-scenario-status-content').replaceChildren();
-  $('counter-panel').classList.remove('scenario-sidecar-active');
   return;
  }
- $('schedule-scenario-status-name').textContent=scheduleScenarioLabel(scenario);
+ $('schedule-scenario-status-name').textContent=scheduleScenarioLabel(scheduleCurrent.scenario);
  $('schedule-scenario-status-content').innerHTML=renderer(scheduleCurrent,scheduleCurrentTurn());
- positionScenarioStatus();
 }
 $('schedule-scenario-status-toggle').addEventListener('click',()=>{
  scenarioStatusOpen=!scenarioStatusOpen;
@@ -715,11 +682,8 @@ $('schedule-scenario-status-close').addEventListener('click',()=>{
  scenarioStatusOpen=false;renderScheduleScenarioStatus();
  $('schedule-scenario-status-toggle').focus();
 });
-window.addEventListener('resize',positionScenarioStatus);
 document.addEventListener('keydown',e=>{
- if(e.key==='Escape'&&scenarioStatusOpen){
-  scenarioStatusOpen=false;renderScheduleScenarioStatus();
- }
+ if(e.key==='Escape'&&scenarioStatusOpen){scenarioStatusOpen=false;renderScheduleScenarioStatus();}
 });
 
 // The selected plan is an editable starting snapshot, not a display overlay.
