@@ -58,7 +58,7 @@ try{
   ||!scenarioPreview.expired.includes('적용 중인 효과 없음')
   ||!scenarioPreview.empty.includes('선택 기록 없음'))throw new Error('Onsen scenario status display failed');
  if((await page.locator('#schedule-training-levels > #schedule-scenario-status').count())!==0)throw new Error('Scenario status must not add an independent row');
- if((await page.locator('#schedule-training-levels .schedule-level-head #schedule-scenario-status').count())!==1)throw new Error('Scenario status must be inline with training header');
+ if((await page.locator('#workspace > #schedule-scenario-status').count())!==1)throw new Error('Scenario status must be its own workspace grid frame');
  const current=page.locator('#schedule-current-turn');
  if((await current.innerText()).startsWith('현재 '))throw new Error('Current turn label must not have 현재 prefix');
  if(await page.getByText('실제 육성 기록과 별도로 편집됩니다.').count())throw new Error('Redundant plan editing help remains');
@@ -176,23 +176,39 @@ try{
   ||scenarioStore.ticketBlocked.join(',')!=='dig1'||scenarioStore.illegal
   ||scenarioStore.roundTrip.join(',')!=='dig1,ticket'||!scenarioStore.isolated
   ||Object.keys(scenarioStore.fresh).length)throw new Error('Scenario storage migration/normalization failed');
- // The scenario flyout stays outside the schedule layout and is dismissible.
- const flyoutCheck=await page.evaluate(()=>{
+ // Opening the scenario status creates a real middle frame, not a floating overlay.
+ const frameCheck=await page.evaluate(()=>{
   scheduleCurrent.scenario='onsen';
-  renderSchedule();
+  layout.tool='schedule';layout.mode='split';layout.reversed=false;layout.ratio=60;
+  applyLayout();renderSchedule();
   const button=document.getElementById('schedule-scenario-status-toggle');
   button.click();
   const panel=document.getElementById('schedule-scenario-status');
-  const parent=panel.parentElement.tagName;
-  const open=!panel.hidden&&button.getAttribute('aria-expanded')==='true';
-  const fixed=getComputedStyle(panel).position==='fixed';
-  const levelCells=document.querySelectorAll('#schedule-training-grid .schedule-level-item').length;
+  const workspace=document.getElementById('workspace');
+  const counter=document.getElementById('counter-panel').getBoundingClientRect();
+  const middle=panel.getBoundingClientRect();
+  const record=document.getElementById('schedule-panel').getBoundingClientRect();
+  const normal={
+   parent:panel.parentElement.id,
+   open:!panel.hidden&&button.getAttribute('aria-expanded')==='true',
+   position:getComputedStyle(panel).position,
+   threeColumns:getComputedStyle(workspace).gridTemplateColumns.split(' ').length,
+   middleBetween:counter.right<=middle.left+2&&middle.right<=record.left+2
+  };
+  layout.reversed=true;applyLayout();
+  const reversedRecord=document.getElementById('schedule-panel').getBoundingClientRect();
+  const reversedMiddle=panel.getBoundingClientRect();
+  const reversedCounter=document.getElementById('counter-panel').getBoundingClientRect();
+  normal.reversed=reversedRecord.right<=reversedMiddle.left+2&&reversedMiddle.right<=reversedCounter.left+2;
   document.getElementById('schedule-scenario-status-close').click();
-  const closed=panel.hidden;
-  scheduleCurrent.scenario='basic';renderSchedule();
-  return {parent,open,fixed,closed,levelCells};
+  normal.closed=panel.hidden&&!workspace.classList.contains('scenario-expanded');
+  normal.levelCells=document.querySelectorAll('#schedule-training-grid .schedule-level-item').length;
+  scheduleCurrent.scenario='basic';layout.reversed=false;renderSchedule();applyLayout();
+  return normal;
  });
- if(flyoutCheck.parent!=='BODY'||!flyoutCheck.open||!flyoutCheck.fixed||!flyoutCheck.closed||flyoutCheck.levelCells!==5)throw new Error('Scenario flyout overlay or close behavior failed');
+ if(frameCheck.parent!=='workspace'||!frameCheck.open||frameCheck.position==='fixed'
+  ||frameCheck.threeColumns!==3||!frameCheck.middleBetween||!frameCheck.reversed
+  ||!frameCheck.closed||frameCheck.levelCells!==5)throw new Error('Scenario middle grid frame placement failed: '+JSON.stringify(frameCheck));
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
