@@ -1351,3 +1351,6 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-cell-face>.schedule-friend-outing-art{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto}
 .schedule-cell-face:has(>.schedule-friend-outing-art){padding:0;overflow:hidden;border:0}
 .schedule-cell-face>.schedule-friend-outing-art>.schedule-friend-marker{width:24%;max-width:22px;top:1px;right:1px}
+
+/* First three turns use original rest / outing / disabled-race row. */
+.schedule-action-choices.initial-actions > [data-schedule-action="outing"]{grid-column:span 10}
