@@ -1,7 +1,12 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261115-scenario-flyout"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모</title><link rel="stylesheet" href="style.css?v=20261115-scenario-third-frame"></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">우마 메모</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 </nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
+<section id="schedule-scenario-status" class="panel tool-panel schedule-scenario-status" role="region" aria-label="시나리오 현황" hidden>
+ <div class="panel-title schedule-scenario-flyout-head"><strong>시나리오 현황</strong><button type="button" id="schedule-scenario-status-close" aria-label="시나리오 현황 닫기">✕</button></div>
+ <span id="schedule-scenario-status-name" class="schedule-scenario-status-name"></span>
+ <div id="schedule-scenario-status-content" class="schedule-scenario-status-content" aria-live="polite"></div>
+</section>
 <aside id="memo-panel" class="panel tool-panel"><div class="panel-title"><h2>메모장</h2></div><textarea id="scenario"></textarea><div class="panel-reset-footer" id="memo-reset-footer"><button id="secondary-reset" type="button">메모장 초기화</button></div></aside>
 <section id="schedule-panel" class="panel tool-panel" hidden>
  <div class="panel-title schedule-title-row"><h2 id="schedule-view-heading">육성 기록</h2><button type="button" id="schedule-scenario-status-toggle" class="schedule-scenario-status-toggle" aria-controls="schedule-scenario-status" aria-expanded="false" hidden>시나리오 현황 ◀</button><span id="schedule-plan-caption">초기 계획 미지정</span></div>
@@ -40,11 +45,7 @@
   <aside id="plan-preview" class="plan-preview" aria-label="육성 계획 미리보기" aria-live="polite"><p class="plan-preview-placeholder">계획 항목을 클릭하면 여기에 일정이 표시됩니다.</p></aside>
  </div>
 </section>
-</main><section id="schedule-scenario-status" class="schedule-scenario-status schedule-scenario-flyout" role="region" aria-label="시나리오 현황" hidden>
- <div class="schedule-scenario-flyout-head"><strong>시나리오 현황</strong><button type="button" id="schedule-scenario-status-close" aria-label="시나리오 현황 닫기">✕</button></div>
- <span id="schedule-scenario-status-name" class="schedule-scenario-status-name"></span>
- <div id="schedule-scenario-status-content" class="schedule-scenario-status-content" aria-live="polite"></div>
-</section><div id="settings-source" hidden>
+</main><div id="settings-source" hidden>
    <div class="settings-pane" data-settings-pane="counter" hidden>
     <h3>서포트 이벤트 카운팅</h3><label class="reset-popup-option" for="reset-popup-toggle"><span>초기화 팝업</span><input id="reset-popup-toggle" type="checkbox" role="switch" aria-label="이벤트 초기화 확인 팝업" checked><span class="reset-popup-track" aria-hidden="true"></span></label>
     <p class="settings-hint">OFF로 설정하면 카운팅 초기화 시 확인창을 표시하지 않습니다.</p>
@@ -63,4 +64,4 @@
   <button type="button" id="schedule-action-clear" class="schedule-secondary-action">턴 초기화</button>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261115-scenario-flyout" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261115-scenario-third-frame" defer></script></body></html>
