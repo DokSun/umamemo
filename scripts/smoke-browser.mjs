@@ -57,6 +57,8 @@ try{
   ||!scenarioPreview.second.includes('회복 · 2/2턴')
   ||!scenarioPreview.expired.includes('적용 중인 효과 없음')
   ||!scenarioPreview.empty.includes('선택 기록 없음'))throw new Error('Onsen scenario status display failed');
+ if((await page.locator('#schedule-training-levels > #schedule-scenario-status').count())!==0)throw new Error('Scenario status must not add an independent row');
+ if((await page.locator('#schedule-training-levels .schedule-level-head #schedule-scenario-status').count())!==1)throw new Error('Scenario status must be inline with training header');
  const current=page.locator('#schedule-current-turn');
  if((await current.innerText()).startsWith('현재 '))throw new Error('Current turn label must not have 현재 prefix');
  if(await page.getByText('실제 육성 기록과 별도로 편집됩니다.').count())throw new Error('Redundant plan editing help remains');
