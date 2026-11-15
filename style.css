@@ -1354,3 +1354,7 @@ header .header-settings-button{order:initial;margin-left:auto}
 
 /* First three turns use original rest / outing / disabled-race row. */
 .schedule-action-choices.initial-actions > [data-schedule-action="outing"]{grid-column:span 10}
+
+/* Two equally sized action slots during summer camp. */
+.schedule-action-choices.camp-actions > [data-schedule-action="camp_rest"],
+.schedule-action-choices.camp-actions > [data-schedule-action="race"]{grid-column:span 15}
