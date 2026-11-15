@@ -176,6 +176,23 @@ try{
   ||scenarioStore.ticketBlocked.join(',')!=='dig1'||scenarioStore.illegal
   ||scenarioStore.roundTrip.join(',')!=='dig1,ticket'||!scenarioStore.isolated
   ||Object.keys(scenarioStore.fresh).length)throw new Error('Scenario storage migration/normalization failed');
+ // The scenario flyout stays outside the schedule layout and is dismissible.
+ const flyoutCheck=await page.evaluate(()=>{
+  scheduleCurrent.scenario='onsen';
+  renderSchedule();
+  const button=document.getElementById('schedule-scenario-status-toggle');
+  button.click();
+  const panel=document.getElementById('schedule-scenario-status');
+  const parent=panel.parentElement.tagName;
+  const open=!panel.hidden&&button.getAttribute('aria-expanded')==='true';
+  const fixed=getComputedStyle(panel).position==='fixed';
+  const levelCells=document.querySelectorAll('#schedule-training-grid .schedule-level-item').length;
+  document.getElementById('schedule-scenario-status-close').click();
+  const closed=panel.hidden;
+  scheduleCurrent.scenario='basic';renderSchedule();
+  return {parent,open,fixed,closed,levelCells};
+ });
+ if(flyoutCheck.parent!=='BODY'||!flyoutCheck.open||!flyoutCheck.fixed||!flyoutCheck.closed||flyoutCheck.levelCells!==5)throw new Error('Scenario flyout overlay or close behavior failed');
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
