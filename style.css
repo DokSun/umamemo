@@ -1358,3 +1358,15 @@ header .header-settings-button{order:initial;margin-left:auto}
 /* Two equally sized action slots during summer camp. */
 .schedule-action-choices.camp-actions > [data-schedule-action="camp_rest"],
 .schedule-action-choices.camp-actions > [data-schedule-action="race"]{grid-column:span 15}
+
+/* Scenario-specific live status; independent of the common training levels. */
+.schedule-scenario-status{border:1px solid #435b79;border-radius:9px;padding:9px 10px;background:#1b3047;display:flex;flex-direction:column;gap:8px}
+.schedule-scenario-status[hidden]{display:none!important}
+.schedule-scenario-status-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.schedule-scenario-status-head strong{font-size:13px}
+.schedule-scenario-status-head span{color:#bde0f5;font-size:11px}
+.schedule-scenario-status-content{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.schedule-scenario-status-item{min-width:0;display:flex;flex-direction:column;gap:5px;border:1px solid #3f5672;border-radius:7px;padding:9px;background:#263c55}
+.schedule-scenario-status-item span{color:#bed0e5;font-size:11px}
+.schedule-scenario-status-item strong{font-size:13px;color:#faf6de;overflow-wrap:anywhere}
+@media(max-width:390px){.schedule-scenario-status-content{grid-template-columns:1fr}}
