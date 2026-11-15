@@ -92,6 +92,11 @@ function applyLayout(){
  });
  renderResetActions();
  saveLayout();
+ // The flyout belongs only to the live cultivation view.
+ if(typeof scenarioStatusOpen!=='undefined'&&scenarioStatusOpen){
+  if(!ids.includes('schedule')){scenarioStatusOpen=false;renderScheduleScenarioStatus();}
+  else requestAnimationFrame(positionScenarioStatus);
+ }
 }
 function resetTargets(button){
  const ids=(button.dataset.targets||'').split(',').filter(id=>Object.hasOwn(TOOLS,id));
