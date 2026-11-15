@@ -73,6 +73,19 @@ function renderResetActions(){
  scheduleFooter.hidden=!shouldShowScheduleReset(ids);
  $('schedule-reset').dataset.targets='schedule';
 }
+function updateScenarioFrameWidth(){
+ const workspace=$('workspace');
+ if(!workspace)return;
+ const width=workspace.clientWidth;
+ const gap=8;
+ const available=width-gap;
+ // Counter and record originally share (width - one gap). On expansion, take
+ // the middle frame only from the counter share, preserving record width.
+ const oldCounter=available*layout.ratio/100;
+ const middle=Math.max(160,Math.min(326,(oldCounter-110)/2));
+ workspace.style.setProperty('--scenario-middle-width',middle.toFixed(1)+'px');
+}
+window.addEventListener('resize',updateScenarioFrameWidth);
 function applyLayout(){
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
  const ids=visibleToolIds(),workspace=$('workspace'),solo=isSoloLayout(),planOnly=layout.tool==='plan';
@@ -83,7 +96,9 @@ function applyLayout(){
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
  // Preserve the recording frame's exact two-column width when the middle opens.
  workspace.style.setProperty('--scenario-record-fraction',String((100-layout.ratio)/100));
- workspace.style.setProperty('--scenario-middle-fraction','0.23');
+ // Keep the original recording width; use part of counter space for the middle.
+ // Target the width of the five support-event buttons / card name field.
+ updateScenarioFrameWidth();
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
  if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
  $('split-toggle').checked=layout.mode==='split';
