@@ -1491,3 +1491,18 @@ header .header-settings-button{order:initial;margin-left:auto}
 #workspace #counter-panel #counter-reset-footer .reset-popup-option{
  margin-left:auto;margin-right:0;order:0;
 }
+
+/* Do not scale event buttons when the scenario frame is expanded.
+   On desktop, five 62px square buttons and four 4px gaps span 326px. */
+@media(min-width:851px){
+ #workspace #counter-panel .slot .info{--counter-events-width:326px}
+ #workspace #counter-panel .event-controls{
+  width:min(100%,326px);max-width:326px;flex-wrap:nowrap;gap:4px;
+ }
+ #workspace #counter-panel .event-controls button[data-step],
+ #workspace #counter-panel .event-controls button[data-random]{
+  flex:0 0 62px;width:62px;min-width:62px;max-width:62px;
+  height:62px;min-height:62px;max-height:62px;aspect-ratio:1;
+ }
+ #workspace #counter-panel .slot .topline{width:min(100%,326px);max-width:326px}
+}
