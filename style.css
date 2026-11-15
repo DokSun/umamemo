@@ -1370,3 +1370,35 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-scenario-status-item span{color:#bed0e5;font-size:11px}
 .schedule-scenario-status-item strong{font-size:13px;color:#faf6de;overflow-wrap:anywhere}
 @media(max-width:390px){.schedule-scenario-status-content{grid-template-columns:1fr}}
+
+/* Scenario state shares the training header; it must not add a new panel row. */
+#schedule-panel .schedule-training-levels{gap:6px}
+#schedule-panel .schedule-level-head{display:flex;align-items:center;flex-wrap:nowrap;gap:8px;min-width:0}
+#schedule-panel .schedule-level-head>strong{flex:none;white-space:nowrap}
+#schedule-panel .schedule-level-head>.schedule-current-turn{flex:none;margin-left:auto;white-space:nowrap}
+#schedule-panel .schedule-scenario-status{
+ display:flex;flex:1 1 auto;min-width:0;align-items:center;gap:5px;
+ padding:0;border:0;border-radius:0;background:transparent;overflow:hidden
+}
+#schedule-panel .schedule-scenario-status[hidden]{display:none!important}
+#schedule-panel .schedule-scenario-status-name{font-size:10px;color:#bde0f5;white-space:nowrap;flex:none}
+#schedule-panel .schedule-scenario-status-content{
+ display:flex;align-items:center;gap:5px;flex:1 1 auto;min-width:0;overflow:hidden
+}
+#schedule-panel .schedule-scenario-status-item{
+ display:inline-flex;flex:0 1 auto;min-width:0;align-items:center;gap:3px;
+ padding:4px 5px;border:1px solid #3f5672;border-radius:5px;background:#263c55
+}
+#schedule-panel .schedule-scenario-status-item span{font-size:10px;color:#bed0e5;white-space:nowrap}
+#schedule-panel .schedule-scenario-status-item strong{
+ font-size:11px;color:#faf6de;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+@media(max-width:700px){
+ #schedule-panel .schedule-scenario-status-name{display:none}
+ #schedule-panel .schedule-level-head{gap:4px}
+ #schedule-panel .schedule-scenario-status-content{gap:3px}
+ #schedule-panel .schedule-scenario-status-item{padding:3px 4px}
+ #schedule-panel .schedule-scenario-status-item span{display:none}
+ #schedule-panel .schedule-level-head>strong{font-size:11px}
+ #schedule-panel .schedule-level-head>.schedule-current-turn{padding:4px;font-size:10px}
+}
