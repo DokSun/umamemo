@@ -170,7 +170,7 @@ function initSettings(){
   // switching to a scenario that doesn't offer them.
   const normalized=normalizeSchedule(scheduleCurrent);
   scheduleCurrent.turns=normalized.turns;
-  scheduleCurrent.scenarioEvents=normalized.scenarioEvents;
+  scheduleCurrent.scenarioData=normalized.scenarioData;
   renderSchedule();
  });
 
@@ -421,10 +421,10 @@ function scheduleOnsenIconHtml(id){
 function scheduleTurnEventKey(year,i){return year+'-'+i}
 function scheduleOnsenEvents(year,i,source=scheduleCurrent){
  if(scheduleGlobalTurn(year,i)<3)return [];
- const value=source.scenarioEvents?.[scheduleTurnEventKey(year,i)];
+ const value=scheduleOnsenData(source).events?.[scheduleTurnEventKey(year,i)];
  return Array.isArray(value)?value.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_EVENTS,id)&&scheduleOnsenUnlocked(id,year,i)):[];
 }
-function scheduleOnsenTicketBlocked(year,i,events=scheduleCurrent.scenarioEvents){
+function scheduleOnsenTicketBlocked(year,i,events=scheduleOnsenData(scheduleCurrent).events){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
  if(index<=0)return false;
  const prevYear=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
@@ -434,7 +434,7 @@ function scheduleOnsenTicketBlocked(year,i,events=scheduleCurrent.scenarioEvents
 function scheduleOnsenTicketStatus(year,i,source=scheduleCurrent){
  const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
  if(index<0)return {turn:0,superRecovery:false};
- if(scheduleOnsenTicketBlocked(year,i,source.scenarioEvents)){
+ if(scheduleOnsenTicketBlocked(year,i,scheduleOnsenData(source).events)){
   const prevYear=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
   return {turn:2,superRecovery:scheduleOnsenEvents(prevYear,(index-1)%24,source).includes('ticketSuper')};
  }
@@ -483,9 +483,18 @@ function scheduleActionUnlocked(action,year,i){
  return !action?.unlocksAt||scheduleGlobalTurn(year,i)>=action.unlocksAt;
 }
 function scheduleKey(kind){return 'uma-schedule-'+kind+'-v1-'+serverMode}
+const SCHEDULE_DATA_VERSION=2;
+function scheduleOnsenData(source){return source.scenarioData?.onsen||{events:{}}}
+function scheduleScenarioTurnEvents(source,scenario,year,i){return source.scenarioData?.[scenario]?.events?.[scheduleTurnEventKey(year,i)]||[]}
+function scheduleResetScenarioData(source){source.scenarioData={};}
+function scheduleEnsureScenarioData(source,scenario){
+ if(!source.scenarioData||typeof source.scenarioData!=='object')source.scenarioData={};
+ if(!Object.hasOwn(source.scenarioData,scenario))source.scenarioData[scenario]={events:{}};
+ return source.scenarioData[scenario];
+}
 function scheduleSlots(year){return 24}
 function emptySchedule(){
- return {character:'',year:'junior',scenario:'basic',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)])),selectedRaces:{},scenarioEvents:{}};
+ return {dataVersion:SCHEDULE_DATA_VERSION,character:'',year:'junior',scenario:'basic',turns:Object.fromEntries(Object.keys(SCHEDULE_YEARS).map(year=>[year,Array(scheduleSlots(year)).fill(null)])),selectedRaces:{},scenarioData:{}};
 }
 function normalizeSchedule(raw){
  const result=emptySchedule();
@@ -493,30 +502,39 @@ function normalizeSchedule(raw){
  result.character=typeof raw.character==='string'?raw.character.slice(0,60):'';
  result.year=Object.hasOwn(SCHEDULE_YEARS,raw.year)?raw.year:'junior';
  result.scenario=typeof raw.scenario==='string'&&Object.hasOwn(SCHEDULE_SCENARIO_ACTIONS,raw.scenario)?raw.scenario:'basic';
- if(raw.scenarioEvents&&typeof raw.scenarioEvents==='object'&&!Array.isArray(raw.scenarioEvents)){
-  for(const [key,events] of Object.entries(raw.scenarioEvents)){
+ // Migrate the previous flat onsen scenarioEvents to a scenario-specific namespace.
+ // An explicit new-format onsen namespace takes precedence over legacy fields.
+ const rawData=raw.scenarioData&&typeof raw.scenarioData==='object'&&!Array.isArray(raw.scenarioData)?raw.scenarioData:{};
+ const rawOnsen=rawData.onsen&&typeof rawData.onsen==='object'&&!Array.isArray(rawData.onsen)?rawData.onsen:null;
+ const rawOnsenEvents=rawOnsen?rawOnsen.events:raw.scenarioEvents;
+ const onsenEvents={};
+ if(rawOnsenEvents&&typeof rawOnsenEvents==='object'&&!Array.isArray(rawOnsenEvents)){
+  for(const [key,events] of Object.entries(rawOnsenEvents)){
    if(!/^(junior|classic|senior)-([0-9]|1[0-9]|2[0-3])$/.test(key)||!Array.isArray(events))continue;
    const [eventYear,eventTurnText]=key.split('-');
    const eventTurn=Number(eventTurnText);
    const valid=scheduleGlobalTurn(eventYear,eventTurn)<3?[]:[...new Set(events.filter(id=>typeof id==='string'&&SCHEDULE_ONSEN_EVENT_IDS.includes(id)&&scheduleOnsenUnlocked(id,eventYear,eventTurn)))];
-   if(valid.length)result.scenarioEvents[key]=valid;
+   if(valid.length)onsenEvents[key]=valid;
   }
  }
  // The second turn of a ticket effect cannot activate another ticket.
  for(const year of SCHEDULE_YEAR_ORDER){
   for(let i=0;i<24;i++){
    const key=scheduleTurnEventKey(year,i);
-   let events=result.scenarioEvents[key];
+   let events=onsenEvents[key];
    if(!events)continue;
    const index=SCHEDULE_YEAR_ORDER.indexOf(year)*24+i;
    const py=SCHEDULE_YEAR_ORDER[Math.floor((index-1)/24)];
-   const previous=index>0?result.scenarioEvents[scheduleTurnEventKey(py,(index-1)%24)]:null;
+   const previous=index>0?onsenEvents[scheduleTurnEventKey(py,(index-1)%24)]:null;
    if(scheduleHasTicket(previous))events=events.filter(id=>!SCHEDULE_ONSEN_TICKET_IDS.includes(id));
    if(events.includes('ticketSuper'))events=events.filter(id=>id!=='ticket');
-   if(events.length)result.scenarioEvents[key]=events;
-   else delete result.scenarioEvents[key];
+   if(events.length)onsenEvents[key]=events;
+   else delete onsenEvents[key];
   }
  }
+ // Each scenario owns its own validated data. New scenarios add explicit
+ // normalizers here rather than sharing the former flat onsen event dictionary.
+ if(Object.keys(onsenEvents).length)result.scenarioData.onsen={events:onsenEvents};
  if(raw.selectedRaces&&typeof raw.selectedRaces==='object'){
   result.selectedRaces=Object.fromEntries(Object.entries(raw.selectedRaces).filter(([k,v])=>/^(junior|classic|senior)-([0-9]|1[0-9]|2[0-3])$/.test(k)&&typeof v==='string').map(([k,v])=>[k,v.slice(0,120)]));
  }
@@ -620,7 +638,7 @@ function scheduleInitialRun(){
 }
 function scheduleHasRunData(run){
  return Object.values(run.turns).some(ts=>ts.some(Boolean))||
-  Object.keys(run.scenarioEvents||{}).length>0||
+  Object.values(run.scenarioData||{}).some(data=>Object.keys(data.events||{}).length>0)||
   Object.keys(run.selectedRaces||{}).length>0;
 }
 // Migrate the previous plan-overlay model once, retaining any existing actual records.
@@ -632,11 +650,11 @@ function scheduleMigratePreviousGuide(){
  const merged=normalizeSchedule(scheduleCurrent);
  for(const year of SCHEDULE_YEAR_ORDER)for(let i=0;i<24;i++){
   const k=scheduleTurnEventKey(year,i);
-  if(merged.turns[year][i]||merged.scenarioEvents[k]?.length)continue;
+  if(merged.turns[year][i]||scheduleScenarioTurnEvents(merged,'onsen',year,i).length)continue;
   const act=plan.turns[year]?.[i];
   if(act)merged.turns[year][i]=act;
   if(act==='race'&&plan.selectedRaces[k])merged.selectedRaces[k]=plan.selectedRaces[k];
-  if(plan.scenarioEvents?.[k]?.length)merged.scenarioEvents[k]=[...plan.scenarioEvents[k]];
+  if(scheduleScenarioTurnEvents(plan,'onsen',year,i).length)scheduleEnsureScenarioData(merged,'onsen').events[k]=[...scheduleScenarioTurnEvents(plan,'onsen',year,i)];
  }
  merged.character=plan.character||merged.character;
  merged.scenario=plan.scenario;
@@ -821,7 +839,7 @@ $('schedule-character').addEventListener('change',e=>{
  if(!scheduleEditingPlan)scheduleResetRecordedTurns();
  for(const year of Object.keys(SCHEDULE_YEARS))scheduleCurrent.turns[year]=Array(scheduleSlots(year)).fill(null);
  scheduleCurrent.selectedRaces={};
- scheduleCurrent.scenarioEvents={};
+ scheduleResetScenarioData(scheduleCurrent);
  saveScheduleCurrent();
  renderSchedule();
 });
@@ -920,11 +938,11 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  if(SCHEDULE_ONSEN_TICKET_IDS.includes(id)&&scheduleOnsenTicketBlocked(year,scheduleTurn))return;
  const key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
- if(!scheduleCurrent.scenarioEvents||typeof scheduleCurrent.scenarioEvents!=='object')scheduleCurrent.scenarioEvents={};
+ const onsenData=scheduleEnsureScenarioData(scheduleCurrent,'onsen');
  // Exactly one excavation type per turn; ticket is independent.
  const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]:SCHEDULE_ONSEN_TICKET_IDS.includes(id)?[...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id]:[...current,id];
- if(next.length)scheduleCurrent.scenarioEvents[key]=next;
- else delete scheduleCurrent.scenarioEvents[key];
+ if(next.length)onsenData.events[key]=next;
+ else delete onsenData.events[key];
  saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,scheduleTurn);
 });
 $('schedule-scenario').addEventListener('change',e=>{
@@ -993,9 +1011,10 @@ $('schedule-action-clear').addEventListener('click',()=>{
   if(baseline?.selectedRaces?.[key])scheduleCurrent.selectedRaces[key]=baseline.selectedRaces[key];
   else delete scheduleCurrent.selectedRaces[key];
  }
- const initialEvents=scheduleActivePlan()?.schedule.scenarioEvents?.[key];
- if(Array.isArray(initialEvents)&&initialEvents.length)scheduleCurrent.scenarioEvents[key]=[...initialEvents];
- else delete scheduleCurrent.scenarioEvents[key];
+ const initialEvents=scheduleActivePlan()?scheduleScenarioTurnEvents(scheduleActivePlan().schedule,'onsen',year,scheduleTurn):[];
+ const existing=scheduleOnsenData(scheduleCurrent).events;
+ if(initialEvents.length)scheduleEnsureScenarioData(scheduleCurrent,'onsen').events[key]=[...initialEvents];
+ else if(existing)delete existing[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 let planPreviewId='';
