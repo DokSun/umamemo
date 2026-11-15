@@ -73,12 +73,18 @@ function updateScenarioFrameWidth(){
  // Measure the actual two-frame record width rather than deriving it from
  // percentages. This also preserves the browser's fractional-pixel rounding.
  const expanded=workspace.classList.contains('scenario-expanded');
+ const middlePanel=$('schedule-scenario-status');
+ const panelWasHidden=middlePanel.hidden;
+ // Temporarily restore the true 2-frame layout for a precise measurement.
+ // Changes happen synchronously before painting, with no visible flicker.
+ middlePanel.hidden=true;
  if(expanded)workspace.classList.remove('scenario-expanded');
  const recordWidth=record.getBoundingClientRect().width;
  const styles=getComputedStyle(workspace);
  const inner=workspace.clientWidth-parseFloat(styles.paddingLeft)-parseFloat(styles.paddingRight);
  const gap=parseFloat(styles.columnGap)||8;
  if(expanded)workspace.classList.add('scenario-expanded');
+ middlePanel.hidden=panelWasHidden;
  if(recordWidth>0)workspace.style.setProperty('--scenario-record-width',recordWidth+'px');
  // Leave adequate space for the counting buttons, allocating the remaining
  // counter-side width to the scenario's middle column.
