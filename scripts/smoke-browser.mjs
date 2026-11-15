@@ -231,6 +231,30 @@ try{
  });
  if(alignment.gap>2||alignment.resetLeft>20||!alignment.middleVariable)
   throw new Error('Counter alignment or left reset placement incorrect: '+JSON.stringify(alignment));
+ // Event controls keep their original desktop size with the scenario frame open.
+ if((await page.evaluate(()=>window.innerWidth))>=851){
+  const eventSizes=await page.evaluate(()=>{
+   const workspace=document.getElementById('workspace'),button=document.getElementById('schedule-scenario-status-toggle');
+   layout.mode='split';layout.tool='schedule';layout.ratio=60;layout.reversed=false;
+   scheduleCurrent.scenario='onsen';applyLayout();renderSchedule();
+   const nodes=[...document.querySelectorAll('#counter-panel .slot:first-child .event-controls button[data-step],#counter-panel .slot:first-child .event-controls button[data-random]')];
+   const before=nodes.map(el=>el.getBoundingClientRect().width);
+   const recordBefore=document.getElementById('schedule-panel').getBoundingClientRect().width;
+   button.click();
+   const after=nodes.map(el=>el.getBoundingClientRect().width);
+   const recordAfter=document.getElementById('schedule-panel').getBoundingClientRect().width;
+   const info=document.querySelector('#counter-panel .slot .info');
+   const topRight=info.querySelector('.topline').getBoundingClientRect().right;
+   const controlsRight=info.querySelector('.event-controls').getBoundingClientRect().right;
+   button.click();
+   scheduleCurrent.scenario='basic';renderSchedule();
+   return {before,after,recordDiff:Math.abs(recordAfter-recordBefore),titleGap:Math.abs(topRight-controlsRight)};
+  });
+  if(eventSizes.before.length!==5||eventSizes.before.some(n=>Math.abs(n-62)>0.25)
+   ||eventSizes.after.some(n=>Math.abs(n-62)>0.25)
+   ||eventSizes.recordDiff>0.25||eventSizes.titleGap>1)
+    throw new Error('Counter event buttons changed size with scenario frame: '+JSON.stringify(eventSizes));
+ }
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
