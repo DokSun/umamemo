@@ -190,6 +190,8 @@ try{
   const record=document.getElementById('schedule-panel').getBoundingClientRect();
   const normal={
    parent:panel.parentElement.id,
+   noCloseButton:!document.getElementById('schedule-scenario-status-close'),
+   labelOpen:button.textContent==='▶ 시나리오 현황',
    open:!panel.hidden&&button.getAttribute('aria-expanded')==='true',
    position:getComputedStyle(panel).position,
    threeColumns:getComputedStyle(workspace).gridTemplateColumns.split(' ').length,
@@ -200,13 +202,14 @@ try{
   const reversedMiddle=panel.getBoundingClientRect();
   const reversedCounter=document.getElementById('counter-panel').getBoundingClientRect();
   normal.reversed=reversedRecord.right<=reversedMiddle.left+2&&reversedMiddle.right<=reversedCounter.left+2;
-  document.getElementById('schedule-scenario-status-close').click();
+  button.click();
   normal.closed=panel.hidden&&!workspace.classList.contains('scenario-expanded');
+  normal.labelClosed=button.textContent==='◀ 시나리오 현황';
   normal.levelCells=document.querySelectorAll('#schedule-training-grid .schedule-level-item').length;
   scheduleCurrent.scenario='basic';layout.reversed=false;renderSchedule();applyLayout();
   return normal;
  });
- if(frameCheck.parent!=='workspace'||!frameCheck.open||frameCheck.position==='fixed'
+ if(frameCheck.parent!=='workspace'||!frameCheck.noCloseButton||!frameCheck.labelOpen||!frameCheck.labelClosed||!frameCheck.open||frameCheck.position==='fixed'
   ||frameCheck.threeColumns!==3||!frameCheck.middleBetween||!frameCheck.reversed
   ||!frameCheck.closed||frameCheck.levelCells!==5)throw new Error('Scenario middle grid frame placement failed: '+JSON.stringify(frameCheck));
  // A senior plan icon must not determine the current turn.
