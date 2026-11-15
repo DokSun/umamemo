@@ -8,13 +8,13 @@ const devStorage={
 const SERVER_KEY='uma-tracker-server-v1';
 let serverMode=devStorage.getItem(SERVER_KEY)==='jp'?'jp':'ko';
 let KEY=serverMode==='ko'?'uma-tracker-v1':'uma-tracker-v1-jp';
-function initialState(){return {slots:Array.from({length:6},()=>({id:null,step:0,random:[false,false],groupCount:3})),scenario:''}}
+function initialState(){return {slots:Array.from({length:6},()=>({id:null,step:0,random:[false,false],groupCount:3})),scenario:'',friendOutingLinks:{}}}
 function readState(){
  const base=initialState();
  try{
   const old=JSON.parse(devStorage.getItem(KEY));
   if(old&&Array.isArray(old.slots))
-   return {...base,...old,slots:Array.from({length:6},(_,i)=>({...base.slots[i],...(old.slots[i]||{})}))};
+   return {...base,...old,slots:Array.from({length:6},(_,i)=>({...base.slots[i],...(old.slots[i]||{})})),friendOutingLinks:old.friendOutingLinks&&typeof old.friendOutingLinks==='object'&&!Array.isArray(old.friendOutingLinks)?old.friendOutingLinks:{}};
  }catch(err){console.warn('진행 상태 읽기 실패',err)}
  return base;
 }
@@ -31,7 +31,7 @@ try{confirmCounterReset=devStorage.getItem(RESET_POPUP_KEY)!=='off'}catch(e){con
 
 const TOOLS={
  counter:{name:'서포트 이벤트 카운팅',scope:'session',element:'counter-panel',
-  reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.slots.forEach((_,i)=>updateEvents(i));save()}},
+  reset(){state.slots.forEach(s=>{s.step=0;s.random=[false,false]});state.friendOutingLinks={};state.slots.forEach((_,i)=>updateEvents(i));save()}},
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
  schedule:{name:'육성 기록',group:'record',scope:'session',element:'schedule-panel',reset(){resetCurrentScheduleOnly()}},
@@ -579,6 +579,7 @@ function scheduleSaveRecordedTurns(){
  catch(e){console.warn('진행 턴 저장 실패',e)}
 }
 function scheduleResetRecordedTurns(){
+ counterClearFriendOutingLinks();
  scheduleRecordedTurns=Array(72).fill(false);
  scheduleSaveRecordedTurns();
 }
@@ -958,7 +959,10 @@ $('schedule-action-choices').addEventListener('click',e=>{
  if(!btn||btn.disabled||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||!action||!scheduleActionVisible(key,action,scheduleCurrent.year,scheduleTurn,scheduleCurrent.scenario)||scheduleActionDisabled(key,scheduleCurrent.year,scheduleTurn))return;
  if(key==='friend_outing'&&scheduleFriendOutingCount(scheduleCurrent.year,scheduleTurn)>=5)return toast('친구 외출은 최대 5회까지 기록할 수 있습니다');
  if(btn.dataset.scheduleAction==='race'&&scheduleEditingPlan)return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
+ const wasRecorded=scheduleIsRecorded(scheduleCurrent.year,scheduleTurn);
+ const previousAction=scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn];
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
+ counterSyncFriendOuting(scheduleCurrent.year,scheduleTurn,previousAction,btn.dataset.scheduleAction,wasRecorded);
  delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
  scheduleCompleteTurn(scheduleCurrent.year,scheduleTurn);
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
@@ -976,6 +980,7 @@ $('schedule-action-clear').addEventListener('click',()=>{
  if(!scheduleTurnEditable(year,scheduleTurn))return;
  if(!scheduleEditingPlan){
   if(!scheduleRecordedTurns[turn-1])return;
+  counterUnlinkFriendOuting(year,scheduleTurn);
   // Keep later completed actions intact when undoing an earlier turn.
   scheduleRecordedTurns[turn-1]=false;
   scheduleSaveRecordedTurns();
@@ -1145,6 +1150,49 @@ function visibleCard(c){
  return serverMode==='jp'||(typeof c.releaseKo==='string'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(c.releaseKo)&&c.releaseKo<=koreaDate());
 }
 function findCard(id){return cards.find(c=>String(c.id)===String(id))}
+// A confirmed friend outing counts as one sequential event on the equipped friend support.
+function friendOutingCounterSlot(){
+ const candidates=state.slots.map((slot,i)=>({slot,i})).filter(({slot})=>slot.id!=null&&category(findCard(slot.id))==='friend');
+ return candidates.find(({i})=>i===5)||candidates[0]||null;
+}
+function counterUnlinkFriendOuting(year,i){
+ const key=scheduleTurnEventKey(year,i),link=state.friendOutingLinks?.[key];
+ if(!link)return;
+ const slot=state.slots[link.slot];
+ if(slot&&String(slot.id)===String(link.cardId)&&slot.step>0){
+  slot.step-=1;
+  updateEvents(link.slot);
+ }
+ delete state.friendOutingLinks[key];
+ save();
+}
+function counterLinkFriendOuting(year,i){
+ const key=scheduleTurnEventKey(year,i);
+ if(state.friendOutingLinks?.[key])return;
+ const picked=friendOutingCounterSlot();
+ if(!picked||picked.slot.step>=5)return;
+ picked.slot.step+=1;
+ state.friendOutingLinks[key]={slot:picked.i,cardId:String(picked.slot.id)};
+ updateEvents(picked.i);
+ save();
+}
+function counterSyncFriendOuting(year,i,oldAction,newAction,wasRecorded){
+ if(scheduleEditingPlan)return;
+ if(oldAction==='friend_outing'&&newAction!=='friend_outing')counterUnlinkFriendOuting(year,i);
+ if(newAction==='friend_outing'&&(!wasRecorded||oldAction!=='friend_outing'))counterLinkFriendOuting(year,i);
+}
+function counterClearFriendOutingLinks(){
+ for(const key of Object.keys(state.friendOutingLinks||{})){
+  const m=/^(junior|classic|senior)-(\d+)$/.exec(key);
+  if(m)counterUnlinkFriendOuting(m[1],Number(m[2]));
+  else delete state.friendOutingLinks[key];
+ }
+ save();
+}
+function counterForgetLinksForSlot(index){
+ for(const [key,link] of Object.entries(state.friendOutingLinks||{}))
+  if(link?.slot===index)delete state.friendOutingLinks[key];
+}
 function category(c){return c?.type==='친구'?'friend':c?.type==='그룹'?'group':'normal'}
 function countFor(slot,c){return category(c)==='friend'?5:category(c)==='group'?slot.groupCount:3}
 const TYPE_ICONS={스피드:'speed',스태미나:'stamina',파워:'power',근성:'guts',지능:'wisdom',친구:'friend',그룹:'group'};
@@ -1305,11 +1353,13 @@ $('picker-pager').addEventListener('click',e=>{
 $('picker-grid').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-card]');if(!b||pickerSlot===null)return;
  const c=findCard(b.dataset.pickerCard);if(!c||!visibleCard(c))return;
+ counterForgetLinksForSlot(pickerSlot);
  state.slots[pickerSlot]={id:c.id,step:0,random:[false,false],groupCount:3};
  pickerClose();render();
 });
 $('picker-clear').addEventListener('click',()=>{
  if(pickerSlot===null)return;
+ counterForgetLinksForSlot(pickerSlot);
  state.slots[pickerSlot]={id:null,step:0,random:[false,false],groupCount:3};
  pickerClose();
  render();
