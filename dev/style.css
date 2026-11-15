@@ -1421,3 +1421,51 @@ header .header-settings-button{order:initial;margin-left:auto}
 #schedule-scenario-status .schedule-scenario-status-item span{display:block;font-size:11px;color:#bfd3ea}
 #schedule-scenario-status .schedule-scenario-status-item strong{display:block;font-size:13px;color:#fff5d5;white-space:normal;overflow-wrap:anywhere}
 #counter-panel.scenario-sidecar-active .slot .topline{max-width:var(--scenario-counter-name-max)}
+
+/* Scenario status as a genuine third grid frame, never a floating dialog. */
+#workspace.split.scenario-expanded{
+ grid-template-columns:minmax(0,var(--scenario-counter-share,36fr)) minmax(0,var(--scenario-middle-share,24fr)) minmax(0,var(--other-share,40fr));
+}
+#workspace.split.scenario-expanded.reversed{
+ grid-template-columns:minmax(0,var(--other-share,40fr)) minmax(0,var(--scenario-middle-share,24fr)) minmax(0,var(--scenario-counter-share,36fr));
+}
+#workspace.split.scenario-expanded:not(.reversed) #counter-panel{grid-column:1;grid-row:1}
+#workspace.split.scenario-expanded:not(.reversed) #schedule-scenario-status{grid-column:2;grid-row:1}
+#workspace.split.scenario-expanded:not(.reversed) #schedule-panel{grid-column:3;grid-row:1}
+#workspace.split.scenario-expanded.reversed #schedule-panel{grid-column:1;grid-row:1}
+#workspace.split.scenario-expanded.reversed #schedule-scenario-status{grid-column:2;grid-row:1}
+#workspace.split.scenario-expanded.reversed #counter-panel{grid-column:3;grid-row:1}
+#workspace.single.scenario-expanded{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+#workspace.single.scenario-expanded #schedule-scenario-status{grid-column:1;grid-row:1}
+#workspace.single.scenario-expanded #schedule-panel{grid-column:2;grid-row:1}
+#workspace #schedule-scenario-status[hidden]{display:none!important}
+#workspace #schedule-scenario-status{
+ position:static;z-index:auto;min-width:0;min-height:0;max-width:none;max-height:none;
+ display:flex;flex-direction:column;gap:8px;padding:8px;
+ border:1px solid #304058;border-radius:10px;background:#19283d;
+ box-shadow:none;overflow:visible;
+}
+#workspace #schedule-scenario-status .schedule-scenario-flyout-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#workspace #schedule-scenario-status .schedule-scenario-flyout-head strong{font-size:13px}
+#workspace #schedule-scenario-status .schedule-scenario-status-name{font-size:11px;color:#bde0f5}
+#workspace #schedule-scenario-status .schedule-scenario-status-content{display:flex;flex-direction:column;gap:7px;min-width:0}
+#workspace #schedule-scenario-status .schedule-scenario-status-item{
+ display:flex;flex-direction:column;gap:4px;min-width:0;border:1px solid #405f7a;
+ border-radius:7px;padding:9px;background:#263c55
+}
+#workspace #schedule-scenario-status .schedule-scenario-status-item span{font-size:11px;color:#bfd3ea}
+#workspace #schedule-scenario-status .schedule-scenario-status-item strong{font-size:13px;color:#fff5d5;white-space:normal;overflow-wrap:anywhere}
+@media(max-width:850px){
+ #workspace.split.scenario-expanded,#workspace.split.scenario-expanded.reversed,
+ #workspace.single.scenario-expanded{grid-template-columns:minmax(0,1fr)}
+ #workspace.split.scenario-expanded #counter-panel,#workspace.split.scenario-expanded #schedule-panel,
+ #workspace.split.scenario-expanded #schedule-scenario-status,
+ #workspace.single.scenario-expanded #schedule-scenario-status,
+ #workspace.single.scenario-expanded #schedule-panel{grid-column:1;grid-row:auto}
+ #workspace.split.scenario-expanded:not(.reversed) #counter-panel{order:1}
+ #workspace.split.scenario-expanded:not(.reversed) #schedule-scenario-status{order:2}
+ #workspace.split.scenario-expanded:not(.reversed) #schedule-panel{order:3}
+ #workspace.split.scenario-expanded.reversed #schedule-panel{order:1}
+ #workspace.split.scenario-expanded.reversed #schedule-scenario-status{order:2}
+ #workspace.split.scenario-expanded.reversed #counter-panel{order:3}
+}
