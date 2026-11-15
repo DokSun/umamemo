@@ -75,9 +75,9 @@ function applyLayout(){
  workspace.classList.toggle('reversed',!solo&&layout.reversed);
  workspace.style.setProperty('--counter-share',layout.ratio+'fr');
  workspace.style.setProperty('--other-share',(100-layout.ratio)+'fr');
- const middleShare=Math.min(24,Math.max(18,layout.ratio-30));
- workspace.style.setProperty('--scenario-middle-share',middleShare+'fr');
- workspace.style.setProperty('--scenario-counter-share',(layout.ratio-middleShare)+'fr');
+ // Preserve the recording frame's exact two-column width when the middle opens.
+ workspace.style.setProperty('--scenario-record-fraction',String((100-layout.ratio)/100));
+ workspace.style.setProperty('--scenario-middle-fraction','0.23');
  for(const [id,tool] of Object.entries(TOOLS))$(tool.element).hidden=!ids.includes(id);
  if(ids.includes('plan')&&scheduleEditingPlan){$('plan-panel').hidden=true;$('schedule-panel').hidden=false;}
  $('split-toggle').checked=layout.mode==='split';
@@ -666,7 +666,7 @@ function renderScheduleScenarioStatus(){
  panel.hidden=!canShow||!scenarioStatusOpen;
  $('workspace').classList.toggle('scenario-expanded',!panel.hidden);
  toggle.setAttribute('aria-expanded',String(!panel.hidden));
- toggle.textContent=panel.hidden?'시나리오 현황 ◀':'시나리오 현황 닫기 ▶';
+ toggle.textContent=panel.hidden?'◀ 시나리오 현황':'▶ 시나리오 현황';
  if(panel.hidden){
   $('schedule-scenario-status-content').replaceChildren();
   return;
@@ -677,10 +677,6 @@ function renderScheduleScenarioStatus(){
 $('schedule-scenario-status-toggle').addEventListener('click',()=>{
  scenarioStatusOpen=!scenarioStatusOpen;
  renderScheduleScenarioStatus();
-});
-$('schedule-scenario-status-close').addEventListener('click',()=>{
- scenarioStatusOpen=false;renderScheduleScenarioStatus();
- $('schedule-scenario-status-toggle').focus();
 });
 document.addEventListener('keydown',e=>{
  if(e.key==='Escape'&&scenarioStatusOpen){scenarioStatusOpen=false;renderScheduleScenarioStatus();}
