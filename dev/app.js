@@ -390,6 +390,8 @@ const SCHEDULE_ACTIONS={
  wisdom:{label:'지능 훈련',typeIcon:'wisdom'},
  rest:{label:'휴식',image:'./assets/ui/rest.png'},
  outing:{label:'외출',image:'./assets/ui/outing.png'},
+ friend_outing:{label:'친구 외출',image:'./assets/ui/outing.png',friendBadge:true},
+ camp_rest:{label:'여름합숙 휴식',image:'./assets/ui/camp-rest.svg'},
  race:{label:'레이스',image:'./assets/ui/race.png'}
 };
 // Each scenario may define its own extra actions in this registry later.
@@ -462,6 +464,19 @@ const LEGACY_SCHEDULE_ACTIONS={
 };
 function scheduleAvailableActions(scenario='basic'){
  return {...SCHEDULE_ACTIONS,...(SCHEDULE_SCENARIO_ACTIONS[scenario]||{})};
+}
+// Classic/senior July-August camp; future junior-specific camp rules remain separate.
+function scheduleIsSummerCamp(year,i,scenario){return (year==='classic'||year==='senior')&&i>=12&&i<=15;}
+function scheduleActionVisible(key,action,year,i,scenario){
+ if(!scheduleActionUnlocked(action,year,i))return false;
+ if(scheduleIsSummerCamp(year,i,scenario))return !['rest','outing','friend_outing'].includes(key);
+ if(key==='camp_rest')return false;
+ if(key==='friend_outing'&&scheduleGlobalTurn(year,i)<=3)return false;
+ return true;
+}
+function scheduleActionDisabled(key,year,i){return key==='race'&&year==='junior'&&i<=12;}
+function scheduleFriendOutingCount(excludeYear=null,excludeTurn=null){
+ return SCHEDULE_YEAR_ORDER.reduce((sum,year)=>sum+scheduleCurrent.turns[year].filter((v,i)=>v==='friend_outing'&&!(year===excludeYear&&i===excludeTurn)).length,0);
 }
 // A scenario-specific command can be used from its unlock turn onward.
 function scheduleActionUnlocked(action,year,i){
@@ -696,6 +711,7 @@ function saveSchedulePlans(){
 scheduleMigratePreviousGuide();
 function scheduleActionIcon(action){
  if(!action)return '<span class="schedule-empty-mark">+</span>';
+ if(action.friendBadge)return '<span class="schedule-friend-outing-art"><img class="schedule-action-image" src="'+escapeHTML(action.image)+'" alt="" aria-hidden="true" loading="lazy"><img class="schedule-friend-marker" src="./assets/ui/friend-outing-badge.svg" alt="" aria-hidden="true"></span>';
  if(action.image)return '<img class="schedule-action-image" src="'+escapeHTML(action.image)+'" alt="" aria-hidden="true" loading="lazy">';
  if(action.text)return '<span class="schedule-pr-icon" aria-hidden="true">'+escapeHTML(action.text)+'</span>';
  if(action.typeIcon&&['speed','stamina','power','guts','wisdom','friend','group'].includes(action.typeIcon))
@@ -854,16 +870,21 @@ $('schedule-grid').addEventListener('click',e=>{
  select.value=previous>=0?String(previous):'';
  updateSelectedRaceDescription();
  // Keep training in the first row, followed by scenario-specific training, then rest/outing/race.
- const actionOrder=['speed','stamina','power','guts','wisdom','pr','rest','outing','race'];
+ const firstThree=scheduleGlobalTurn(year,scheduleTurn)<=3;
+ const actionOrder=firstThree?['speed','stamina','power','guts','wisdom','pr','rest','outing','race']:['speed','stamina','power','guts','wisdom','pr','rest','camp_rest','friend_outing','race','outing'];
  const choices=$('schedule-action-choices');
  choices.classList.toggle('with-sixth-training',Boolean(scheduleAvailableActions(scheduleCurrent.scenario).pr&&scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario).pr,year,scheduleTurn)));
+ choices.classList.toggle('initial-actions',firstThree);
+ choices.classList.toggle('camp-actions',scheduleIsSummerCamp(year,scheduleTurn,scheduleCurrent.scenario));
  choices.replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario))
-  .filter(([key,action])=>scheduleActionUnlocked(action,year,scheduleTurn)&&!(year==='junior'&&scheduleTurn<=12&&key==='race'))
+  .filter(([key,action])=>scheduleActionVisible(key,action,year,scheduleTurn,scheduleCurrent.scenario))
   .sort(([x],[y])=>(actionOrder.indexOf(x)===-1?99:actionOrder.indexOf(x))-(actionOrder.indexOf(y)===-1?99:actionOrder.indexOf(y)))
   .map(([key,action])=>{
   const b=document.createElement('button');b.type='button';b.dataset.scheduleAction=key;
   b.className='schedule-action-option';
   b.innerHTML=scheduleActionIcon(action);
+  if(scheduleActionDisabled(key,year,scheduleTurn)){b.disabled=true;b.classList.add('unavailable');}
+  if(key==='friend_outing'&&scheduleFriendOutingCount(year,scheduleTurn)>=5){b.disabled=true;b.classList.add('unavailable');}
    b.setAttribute('aria-label',action.label);
    b.title=action.label;
   if(scheduleCurrent.turns[year][scheduleTurn]===key)b.classList.add('selected');
@@ -932,7 +953,10 @@ $('schedule-race-apply').addEventListener('click',()=>{
 });
 $('schedule-action-choices').addEventListener('click',e=>{
  const btn=e.target.closest('[data-schedule-action]');
- if(!btn||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||(scheduleCurrent.year==='junior'&&scheduleTurn<=12&&btn.dataset.scheduleAction==='race')||!Object.hasOwn(scheduleAvailableActions(scheduleCurrent.scenario),btn.dataset.scheduleAction)||!scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario)[btn.dataset.scheduleAction],scheduleCurrent.year,scheduleTurn))return;
+ const key=btn?.dataset.scheduleAction;
+ const action=scheduleAvailableActions(scheduleCurrent.scenario)[key];
+ if(!btn||btn.disabled||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||!action||!scheduleActionVisible(key,action,scheduleCurrent.year,scheduleTurn,scheduleCurrent.scenario)||scheduleActionDisabled(key,scheduleCurrent.year,scheduleTurn))return;
+ if(key==='friend_outing'&&scheduleFriendOutingCount(scheduleCurrent.year,scheduleTurn)>=5)return toast('친구 외출은 최대 5회까지 기록할 수 있습니다');
  if(btn.dataset.scheduleAction==='race'&&scheduleEditingPlan)return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
  delete scheduleCurrent.selectedRaces[scheduleCurrent.year+'-'+scheduleTurn];
