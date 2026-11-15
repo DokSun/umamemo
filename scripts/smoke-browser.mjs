@@ -132,6 +132,31 @@ try{
  if(actionCases.first.join(',')!=='rest,outing,race'||actionCases.third.includes('friend_outing')||!actionCases.fourth.includes('friend_outing'))throw new Error('Opening turn action visibility mismatch');
  if(!actionCases.earlyRaceDisabled||actionCases.lateRaceDisabled||!actionCases.july.includes('race'))throw new Error('Junior race must be visible but disabled until July first half');
  if(actionCases.camp.join(',')!=='camp_rest,race'||!actionCases.afterCamp.includes('friend_outing')||actionCases.afterCamp.includes('camp_rest'))throw new Error('Summer-camp action replacement mismatch');
+ // Old onsen events migrate into a scenario-specific namespace without affecting turns.
+ const scenarioStore=await page.evaluate(()=>{
+  const legacy=emptySchedule();
+  legacy.scenario='onsen';
+  delete legacy.scenarioData;
+  legacy.scenarioEvents={'junior-2':['dig1','ticket'],'junior-3':['ticketSuper','dig1'],'senior-0':['dig8']};
+  const converted=normalizeSchedule(legacy);
+  const saved=normalizeSchedule(JSON.parse(JSON.stringify(converted)));
+  const newPlan=normalizeSchedule(legacy);
+  newPlan.scenarioData.onsen.events['junior-2'].push('dig2');
+  return {
+   version:converted.dataVersion,
+   legacyRemoved:!Object.hasOwn(converted,'scenarioEvents'),
+   migrated:converted.scenarioData.onsen.events['junior-2'],
+   ticketBlocked:converted.scenarioData.onsen.events['junior-3'],
+   illegal:converted.scenarioData.onsen.events['senior-0'],
+   roundTrip:saved.scenarioData.onsen.events['junior-2'],
+   isolated:!converted.scenarioData.onsen.events['junior-2'].includes('dig2'),
+   fresh:emptySchedule().scenarioData
+  };
+ });
+ if(scenarioStore.version!==2||!scenarioStore.legacyRemoved||scenarioStore.migrated.join(',')!=='dig1,ticket'
+  ||scenarioStore.ticketBlocked.join(',')!=='dig1'||scenarioStore.illegal
+  ||scenarioStore.roundTrip.join(',')!=='dig1,ticket'||!scenarioStore.isolated
+  ||Object.keys(scenarioStore.fresh).length)throw new Error('Scenario storage migration/normalization failed');
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
