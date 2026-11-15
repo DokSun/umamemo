@@ -630,6 +630,41 @@ function renderScheduleTrainingLevels(){
  const status=TrainingLevels.calculate(scheduleCurrent,completed);
  $('schedule-training-grid').innerHTML=status.levels.map(e=>`<div class="schedule-level-item" aria-label="${e.label} Lv.${e.level}, 일반 훈련 ${e.count}회"><span class="type-icon type-icon-${e.type} schedule-level-type-icon" aria-hidden="true"></span><span class="schedule-level-name">${e.label}</span><strong>Lv.${e.level}</strong><small>${status.summerCamp?'합숙':e.baseLevel===5?'MAX':e.count%4+'/4회'}</small></div>`).join('');
 }
+// Scenario status is derived from the current run and never written back to storage.
+// Future scenario implementations can register renderers without altering training levels.
+const SCHEDULE_SCENARIO_STATUS_RENDERERS={
+ onsen(source,turn){
+  const safeTurn=Math.max(1,Math.min(72,turn));
+  const year=SCHEDULE_YEAR_ORDER[Math.floor((safeTurn-1)/24)];
+  const index=(safeTurn-1)%24;
+  const ticket=scheduleOnsenTicketStatus(year,index,source);
+  const ticketText=ticket.turn?(ticket.superRecovery?'초회복':'회복')+' · '+ticket.turn+'/2턴':'적용 중인 효과 없음';
+  let lastDig=null;
+  // A selected excavation is NOT a completed excavation: show the latest
+  // explicit selection only, without assuming its quest has finished.
+  for(let n=1;n<=safeTurn;n++){
+   const y=SCHEDULE_YEAR_ORDER[Math.floor((n-1)/24)];
+   const i=(n-1)%24;
+   const selected=scheduleOnsenEvents(y,i,source).find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
+   if(selected)lastDig=selected;
+  }
+  const digText=lastDig?SCHEDULE_ONSEN_DIGS[lastDig].label:'선택 기록 없음';
+  return '<div class="schedule-scenario-status-item"><span>온천권 효과</span><strong>'+escapeHTML(ticketText)+'</strong></div>'
+   +'<div class="schedule-scenario-status-item"><span>최근 굴착 선택</span><strong>'+escapeHTML(digText)+'</strong></div>';
+ }
+};
+function renderScheduleScenarioStatus(){
+ const panel=$('schedule-scenario-status');
+ if(!panel)return;
+ const scenario=scheduleCurrent.scenario;
+ const renderer=SCHEDULE_SCENARIO_STATUS_RENDERERS[scenario];
+ // Plan editing uses the same schedule panel but must never show a
+ // live cultivation status based on the draft's future turns.
+ panel.hidden=Boolean(scheduleEditingPlan)||!renderer;
+ if(panel.hidden){$('schedule-scenario-status-content').replaceChildren();return}
+ $('schedule-scenario-status-name').textContent=scheduleScenarioLabel(scenario);
+ $('schedule-scenario-status-content').innerHTML=renderer(scheduleCurrent,scheduleCurrentTurn());
+}
 // The selected plan is an editable starting snapshot, not a display overlay.
 function scheduleInitialRun(){
  const run=normalizeSchedule(scheduleActivePlan()?.schedule||emptySchedule());
@@ -785,6 +820,7 @@ function renderSchedule(){
   btn.setAttribute('aria-selected',String(active));
  });
  renderScheduleTrainingLevels();
+ renderScheduleScenarioStatus();
  $('schedule-grid').innerHTML=SCHEDULE_YEAR_ORDER.map(year=>{
   const cells=scheduleCurrent.turns[year].map((action,i)=>{
     const source=scheduleCurrent;
