@@ -1424,10 +1424,10 @@ header .header-settings-button{order:initial;margin-left:auto}
 
 /* Scenario status as a genuine third grid frame, never a floating dialog. */
 #workspace.split.scenario-expanded{
- grid-template-columns:minmax(0,1fr) minmax(0,var(--scenario-middle-width,326px)) minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4)));
+ grid-template-columns:minmax(0,1fr) minmax(0,var(--scenario-middle-width,326px)) minmax(0,var(--scenario-record-width,500px));
 }
 #workspace.split.scenario-expanded.reversed{
- grid-template-columns:minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4))) minmax(0,var(--scenario-middle-width,326px)) minmax(0,1fr);
+ grid-template-columns:minmax(0,var(--scenario-record-width,500px)) minmax(0,var(--scenario-middle-width,326px)) minmax(0,1fr);
 }
 #workspace.split.scenario-expanded:not(.reversed) #counter-panel{grid-column:1;grid-row:1}
 #workspace.split.scenario-expanded:not(.reversed) #schedule-scenario-status{grid-column:2;grid-row:1}
@@ -1482,3 +1482,12 @@ header .header-settings-button{order:initial;margin-left:auto}
 #counter-panel .slot .topline .card-name-text{min-width:0}
 #counter-reset-footer{justify-content:flex-start}
 @media(max-width:420px){#counter-panel .slot .info{--counter-events-width:287px}}
+
+/* Override the legacy reset-button auto margin as well as footer alignment. */
+#workspace #counter-panel #counter-reset-footer{justify-content:flex-start}
+#workspace #counter-panel #counter-reset-footer #reset{
+ margin-left:0;margin-right:auto;order:-1;align-self:flex-end;
+}
+#workspace #counter-panel #counter-reset-footer .reset-popup-option{
+ margin-left:auto;margin-right:0;order:0;
+}
