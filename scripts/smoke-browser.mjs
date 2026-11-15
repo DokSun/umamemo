@@ -212,6 +212,22 @@ try{
  if(frameCheck.parent!=='workspace'||!frameCheck.noCloseButton||!frameCheck.labelOpen||!frameCheck.labelClosed||!frameCheck.open||frameCheck.position==='fixed'
   ||frameCheck.threeColumns!==3||!frameCheck.middleBetween||!frameCheck.reversed
   ||!frameCheck.closed||frameCheck.levelCells!==5)throw new Error('Scenario middle grid frame placement failed: '+JSON.stringify(frameCheck));
+ // Counter title and event controls use one shared width; reset is bottom-left.
+ const alignment=await page.evaluate(()=>{
+  const info=document.querySelector('#counter-panel .slot .info');
+  const title=info.querySelector('.topline').getBoundingClientRect();
+  const buttons=info.querySelector('.event-controls').getBoundingClientRect();
+  const footer=document.querySelector('#counter-reset-footer').getBoundingClientRect();
+  const reset=document.querySelector('#reset').getBoundingClientRect();
+  const workspace=document.querySelector('#workspace');
+  const nameWidth=getComputedStyle(info).getPropertyValue('--counter-events-width').trim();
+  return {gap:Math.abs(title.right-buttons.right),nameWidth,resetLeft:Math.abs(footer.left-reset.left),
+   recordWidth:document.querySelector('#schedule-panel').getBoundingClientRect().width,
+   gridMiddle:document.querySelector('#schedule-scenario-status').getBoundingClientRect().width,
+   middleVariable:getComputedStyle(workspace).getPropertyValue('--scenario-middle-width').trim()};
+ });
+ if(alignment.gap>2||alignment.resetLeft>20||!alignment.middleVariable)
+  throw new Error('Counter alignment or left reset placement incorrect: '+JSON.stringify(alignment));
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
