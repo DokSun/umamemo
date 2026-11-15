@@ -181,8 +181,10 @@ try{
   scheduleCurrent.scenario='onsen';
   layout.tool='schedule';layout.mode='split';layout.reversed=false;layout.ratio=60;
   applyLayout();renderSchedule();
+  const recordBefore=document.getElementById('schedule-panel').getBoundingClientRect().width;
   const button=document.getElementById('schedule-scenario-status-toggle');
   button.click();
+  const recordAfter=document.getElementById('schedule-panel').getBoundingClientRect().width;
   const panel=document.getElementById('schedule-scenario-status');
   const workspace=document.getElementById('workspace');
   const counter=document.getElementById('counter-panel').getBoundingClientRect();
@@ -190,6 +192,7 @@ try{
   const record=document.getElementById('schedule-panel').getBoundingClientRect();
   const normal={
    parent:panel.parentElement.id,
+   recordWidthDifference:Math.abs(recordBefore-recordAfter),
    noCloseButton:!document.getElementById('schedule-scenario-status-close'),
    labelOpen:button.textContent==='▶ 시나리오 현황',
    open:!panel.hidden&&button.getAttribute('aria-expanded')==='true',
@@ -209,7 +212,7 @@ try{
   scheduleCurrent.scenario='basic';layout.reversed=false;renderSchedule();applyLayout();
   return normal;
  });
- if(frameCheck.parent!=='workspace'||!frameCheck.noCloseButton||!frameCheck.labelOpen||!frameCheck.labelClosed||!frameCheck.open||frameCheck.position==='fixed'
+ if(frameCheck.parent!=='workspace'||frameCheck.recordWidthDifference>0.15||!frameCheck.noCloseButton||!frameCheck.labelOpen||!frameCheck.labelClosed||!frameCheck.open||frameCheck.position==='fixed'
   ||frameCheck.threeColumns!==3||!frameCheck.middleBetween||!frameCheck.reversed
   ||!frameCheck.closed||frameCheck.levelCells!==5)throw new Error('Scenario middle grid frame placement failed: '+JSON.stringify(frameCheck));
  // Counter title and event controls use one shared width; reset is bottom-left.
