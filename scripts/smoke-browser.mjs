@@ -85,6 +85,18 @@ try{
  await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="13"]').click();
  if(!(await page.locator('#schedule-race-picker').isHidden()))throw new Error('Existing race in record must remain generic');
  await page.locator('#schedule-action-clear').click();
+ // Verify the action sets before loading another saved plan.
+ const actionCases=await page.evaluate(()=>{
+  const scenario='basic',actions=scheduleAvailableActions(scenario);
+  function visible(year,turn){return Object.keys(actions).filter(key=>scheduleActionVisible(key,actions[key],year,turn,scenario)&&['rest','outing','friend_outing','camp_rest','race'].includes(key));}
+  return {first:visible('junior',0),third:visible('junior',2),fourth:visible('junior',3),
+   july:visible('junior',12),camp:visible('classic',12),afterCamp:visible('classic',16),
+   earlyRaceDisabled:scheduleActionDisabled('race','junior',12),
+   lateRaceDisabled:scheduleActionDisabled('race','junior',13)};
+ });
+ if(actionCases.first.join(',')!=='rest,outing,race'||actionCases.third.includes('friend_outing')||!actionCases.fourth.includes('friend_outing'))throw new Error('Opening turn action visibility mismatch');
+ if(!actionCases.earlyRaceDisabled||actionCases.lateRaceDisabled||!actionCases.july.includes('race'))throw new Error('Junior race must be visible but disabled until July first half');
+ if(actionCases.camp.join(',')!=='camp_rest,race'||!actionCases.afterCamp.includes('friend_outing')||actionCases.afterCamp.includes('camp_rest'))throw new Error('Summer-camp action replacement mismatch');
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
