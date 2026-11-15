@@ -649,8 +649,8 @@ const SCHEDULE_SCENARIO_STATUS_RENDERERS={
    if(selected)lastDig=selected;
   }
   const digText=lastDig?SCHEDULE_ONSEN_DIGS[lastDig].label:'선택 기록 없음';
-  return '<div class="schedule-scenario-status-item"><span>온천권 효과</span><strong>'+escapeHTML(ticketText)+'</strong></div>'
-   +'<div class="schedule-scenario-status-item"><span>최근 굴착 선택</span><strong>'+escapeHTML(digText)+'</strong></div>';
+  return '<span class="schedule-scenario-status-item" title="온천권 효과: '+escapeHTML(ticketText)+'"><span>온천권</span><strong>'+escapeHTML(ticketText)+'</strong></span>'
+   +'<span class="schedule-scenario-status-item" title="최근 굴착 선택: '+escapeHTML(digText)+'"><span>굴착</span><strong>'+escapeHTML(digText)+'</strong></span>';
  }
 };
 function renderScheduleScenarioStatus(){
