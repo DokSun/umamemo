@@ -85,6 +85,41 @@ try{
  await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="13"]').click();
  if(!(await page.locator('#schedule-race-picker').isHidden()))throw new Error('Existing race in record must remain generic');
  await page.locator('#schedule-action-clear').click();
+ // Friend outing must count the equipped friend support event, but not twice.
+ await page.waitForFunction(()=>typeof cards!=='undefined'&&cards.some(c=>c.type==='친구'),{timeout:20000});
+ await page.evaluate(()=>{
+  const friend=cards.find(c=>c.type==='친구');
+  state.slots[5]={id:friend.id,step:0,random:[false,false],groupCount:3};
+  state.friendOutingLinks={};
+  scheduleCurrent.turns.junior=Array(24).fill(null);
+  for(let i=0;i<3;i++)scheduleCurrent.turns.junior[i]='speed';
+  scheduleRecordedTurns=Array(72).fill(false);
+  for(let i=0;i<3;i++)scheduleRecordedTurns[i]=true;
+  scheduleCurrent.year='junior';
+  scheduleSaveRecordedTurns();saveScheduleCurrent();render();renderSchedule();
+ });
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="friend_outing"]').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==1)throw new Error('Friend outing did not increment friend card event');
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="friend_outing"]').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==1)throw new Error('Friend outing was double counted');
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="rest"]').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==0)throw new Error('Revising friend outing did not reverse linked event');
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="friend_outing"]').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==1)throw new Error('Re-added friend outing did not recount');
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-clear').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==0)throw new Error('Clearing recorded friend outing did not reverse event');
+ await page.evaluate(()=>{
+  state.slots[5]={id:null,step:0,random:[false,false],groupCount:3};
+  render();renderSchedule();
+ });
+ await page.locator('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="3"]').click();
+ await page.locator('#schedule-action-choices [data-schedule-action="friend_outing"]').click();
+ if((await page.evaluate(()=>state.slots[5].step))!==0)throw new Error('Friend outing counted when friend card is absent');
  // Verify the action sets before loading another saved plan.
  const actionCases=await page.evaluate(()=>{
   const scenario='basic',actions=scheduleAvailableActions(scenario);
