@@ -68,14 +68,21 @@ function renderResetActions(){
  $('schedule-reset').dataset.targets='schedule';
 }
 function updateScenarioFrameWidth(){
- const workspace=$('workspace');
- if(!workspace)return;
- const width=workspace.clientWidth;
- const gap=8;
- const available=width-gap;
- // Counter and record originally share (width - one gap). On expansion, take
- // the middle frame only from the counter share, preserving record width.
- const oldCounter=available*layout.ratio/100;
+ const workspace=$('workspace'),record=$('schedule-panel');
+ if(!workspace||!record)return;
+ // Measure the actual two-frame record width rather than deriving it from
+ // percentages. This also preserves the browser's fractional-pixel rounding.
+ const expanded=workspace.classList.contains('scenario-expanded');
+ if(expanded)workspace.classList.remove('scenario-expanded');
+ const recordWidth=record.getBoundingClientRect().width;
+ const styles=getComputedStyle(workspace);
+ const inner=workspace.clientWidth-parseFloat(styles.paddingLeft)-parseFloat(styles.paddingRight);
+ const gap=parseFloat(styles.columnGap)||8;
+ if(expanded)workspace.classList.add('scenario-expanded');
+ if(recordWidth>0)workspace.style.setProperty('--scenario-record-width',recordWidth+'px');
+ // Leave adequate space for the counting buttons, allocating the remaining
+ // counter-side width to the scenario's middle column.
+ const oldCounter=(inner-gap)*layout.ratio/100;
  const middle=Math.max(160,Math.min(326,(oldCounter-110)/2));
  workspace.style.setProperty('--scenario-middle-width',middle.toFixed(1)+'px');
 }
@@ -679,6 +686,7 @@ function renderScheduleScenarioStatus(){
  toggle.hidden=!renderer||Boolean(scheduleEditingPlan);
  if(!canShow)scenarioStatusOpen=false;
  panel.hidden=!canShow||!scenarioStatusOpen;
+ if(!panel.hidden)updateScenarioFrameWidth();
  $('workspace').classList.toggle('scenario-expanded',!panel.hidden);
  toggle.setAttribute('aria-expanded',String(!panel.hidden));
  toggle.textContent=panel.hidden?'◀ 시나리오 현황':'▶ 시나리오 현황';
