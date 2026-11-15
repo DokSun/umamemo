@@ -40,6 +40,23 @@ try{
  if(await page.locator('#schedule-reset').isVisible())throw new Error('Duplicate schedule reset returned in split mode');
  await page.locator('#tool-menu-close').click();
  if((await page.locator('#schedule-training-grid .schedule-level-item').count())!==5)throw new Error('Expected five training levels');
+ if(await page.locator('#schedule-scenario-status').isVisible())throw new Error('Basic scenario must not display an empty status panel');
+ const scenarioPreview=await page.evaluate(()=>{
+  const source=emptySchedule();
+  source.scenario='onsen';
+  source.scenarioData={onsen:{events:{'junior-2':['dig1','ticket']}}};
+  const render=SCHEDULE_SCENARIO_STATUS_RENDERERS.onsen;
+  return {
+   first:render(source,3),
+   second:render(source,4),
+   expired:render(source,5),
+   empty:render(emptySchedule(),3)
+  };
+ });
+ if(!scenarioPreview.first.includes('회복 · 1/2턴')||!scenarioPreview.first.includes('온천 1')
+  ||!scenarioPreview.second.includes('회복 · 2/2턴')
+  ||!scenarioPreview.expired.includes('적용 중인 효과 없음')
+  ||!scenarioPreview.empty.includes('선택 기록 없음'))throw new Error('Onsen scenario status display failed');
  const current=page.locator('#schedule-current-turn');
  if((await current.innerText()).startsWith('현재 '))throw new Error('Current turn label must not have 현재 prefix');
  if(await page.getByText('실제 육성 기록과 별도로 편집됩니다.').count())throw new Error('Redundant plan editing help remains');
