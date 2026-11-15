@@ -864,9 +864,11 @@ $('schedule-grid').addEventListener('click',e=>{
  select.value=previous>=0?String(previous):'';
  updateSelectedRaceDescription();
  // Keep training in the first row, followed by scenario-specific training, then rest/outing/race.
- const actionOrder=['speed','stamina','power','guts','wisdom','pr','rest','camp_rest','friend_outing','race','outing'];
+ const firstThree=scheduleGlobalTurn(year,scheduleTurn)<=3;
+ const actionOrder=firstThree?['speed','stamina','power','guts','wisdom','pr','rest','outing','race']:['speed','stamina','power','guts','wisdom','pr','rest','camp_rest','friend_outing','race','outing'];
  const choices=$('schedule-action-choices');
  choices.classList.toggle('with-sixth-training',Boolean(scheduleAvailableActions(scheduleCurrent.scenario).pr&&scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario).pr,year,scheduleTurn)));
+ choices.classList.toggle('initial-actions',firstThree);
  choices.replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario))
   .filter(([key,action])=>scheduleActionVisible(key,action,year,scheduleTurn,scheduleCurrent.scenario))
   .sort(([x],[y])=>(actionOrder.indexOf(x)===-1?99:actionOrder.indexOf(x))-(actionOrder.indexOf(y)===-1?99:actionOrder.indexOf(y)))
