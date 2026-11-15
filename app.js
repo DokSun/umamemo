@@ -86,11 +86,12 @@ function updateScenarioFrameWidth(){
  if(expanded)workspace.classList.add('scenario-expanded');
  middlePanel.hidden=panelWasHidden;
  if(recordWidth>0)workspace.style.setProperty('--scenario-record-width',recordWidth+'px');
- // Leave adequate space for the counting buttons, allocating the remaining
- // counter-side width to the scenario's middle column.
- const oldCounter=(inner-gap)*layout.ratio/100;
- const middle=Math.max(160,Math.min(326,(oldCounter-110)/2));
- workspace.style.setProperty('--scenario-middle-width',middle.toFixed(1)+'px');
+ // Keep the 5 original 62px event buttons (plus four 4px gaps) intact.
+ // Allocate only truly spare counter-side space to the middle scenario frame.
+ const counterMin=76+7+326+20; // portrait + card gap + event row + panel padding/border
+ const middleAvailable=inner-2*gap-recordWidth-counterMin;
+ const middle=Math.max(0,Math.min(326,middleAvailable));
+ workspace.style.setProperty('--scenario-middle-width',middle.toFixed(2)+'px');
 }
 window.addEventListener('resize',updateScenarioFrameWidth);
 function applyLayout(){
