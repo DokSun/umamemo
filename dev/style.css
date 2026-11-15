@@ -1402,3 +1402,22 @@ header .header-settings-button{order:initial;margin-left:auto}
  #schedule-panel .schedule-level-head>strong{font-size:11px}
  #schedule-panel .schedule-level-head>.schedule-current-turn{padding:4px;font-size:10px}
 }
+
+/* Scenario flyout uses unused space at the right of counter events, when available. */
+#schedule-scenario-status-toggle[hidden],#schedule-scenario-status[hidden]{display:none!important}
+#schedule-scenario-status-toggle{min-height:28px;padding:3px 8px;font-size:11px;white-space:nowrap;border:1px solid #648d9b;border-radius:6px;background:#254653;color:#def6f8;cursor:pointer}
+#schedule-scenario-status-toggle[aria-expanded="true"]{border-color:#69b69f;background:#215b4d}
+#schedule-scenario-status.schedule-scenario-flyout{
+ position:fixed;z-index:105;display:flex;flex-direction:column;gap:8px;
+ border:1px solid #5b8b9f;border-radius:9px;padding:10px;
+ background:#1c3046;box-shadow:0 12px 34px #0008;overflow-y:auto;overflow-x:hidden;
+}
+#schedule-scenario-status .schedule-scenario-flyout-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#schedule-scenario-status .schedule-scenario-flyout-head strong{font-size:13px}
+#schedule-scenario-status-close{flex:none;padding:3px 7px;min-height:26px;border:1px solid #657e9e;border-radius:5px;background:#293e58;color:#fff;cursor:pointer}
+#schedule-scenario-status .schedule-scenario-status-name{display:block;color:#bde0f5;font-size:11px}
+#schedule-scenario-status .schedule-scenario-status-content{display:flex;flex-direction:column;gap:7px;overflow:visible}
+#schedule-scenario-status .schedule-scenario-status-item{display:flex;flex-direction:column;gap:4px;background:#263c55;border:1px solid #405f7a;border-radius:7px;padding:9px}
+#schedule-scenario-status .schedule-scenario-status-item span{display:block;font-size:11px;color:#bfd3ea}
+#schedule-scenario-status .schedule-scenario-status-item strong{display:block;font-size:13px;color:#fff5d5;white-space:normal;overflow-wrap:anywhere}
+#counter-panel.scenario-sidecar-active .slot .topline{max-width:var(--scenario-counter-name-max)}
