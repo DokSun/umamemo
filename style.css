@@ -1424,10 +1424,10 @@ header .header-settings-button{order:initial;margin-left:auto}
 
 /* Scenario status as a genuine third grid frame, never a floating dialog. */
 #workspace.split.scenario-expanded{
- grid-template-columns:minmax(0,1fr) minmax(0,calc((100% - 16px) * var(--scenario-middle-fraction,0.23))) minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4)));
+ grid-template-columns:minmax(0,1fr) minmax(0,var(--scenario-middle-width,326px)) minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4)));
 }
 #workspace.split.scenario-expanded.reversed{
- grid-template-columns:minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4))) minmax(0,calc((100% - 16px) * var(--scenario-middle-fraction,0.23))) minmax(0,1fr);
+ grid-template-columns:minmax(0,calc((100% - 8px) * var(--scenario-record-fraction,0.4))) minmax(0,var(--scenario-middle-width,326px)) minmax(0,1fr);
 }
 #workspace.split.scenario-expanded:not(.reversed) #counter-panel{grid-column:1;grid-row:1}
 #workspace.split.scenario-expanded:not(.reversed) #schedule-scenario-status{grid-column:2;grid-row:1}
@@ -1470,8 +1470,15 @@ header .header-settings-button{order:initial;margin-left:auto}
  #workspace.split.scenario-expanded.reversed #counter-panel{order:3}
 }
 
-/* Keep support card name fields aligned to the right edge of the five event buttons. */
-#counter-panel .slot .topline{width:min(100%,326px);max-width:100%}
-#counter-panel .slot .topline .choices{min-width:0}
-#counter-panel .slot .topline .card-title-line{min-width:0}
-@media(max-width:420px){#counter-panel .slot .topline{width:min(100%,287px)}}
+/* One shared width for name/title and the full five-button row. */
+#counter-panel .slot .info{--counter-events-width:326px}
+#counter-panel .slot .topline,
+#counter-panel .slot .event-controls{
+ box-sizing:border-box;width:min(100%,var(--counter-events-width));max-width:100%;
+ flex:none;
+}
+#counter-panel .slot .topline .choices,
+#counter-panel .slot .topline .card-title-line{min-width:0;width:100%}
+#counter-panel .slot .topline .card-name-text{min-width:0}
+#counter-reset-footer{justify-content:flex-start}
+@media(max-width:420px){#counter-panel .slot .info{--counter-events-width:287px}}
