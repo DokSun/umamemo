@@ -255,6 +255,25 @@ try{
    ||eventSizes.recordDiff>0.25||eventSizes.titleGap>1)
     throw new Error('Counter event buttons changed size with scenario frame: '+JSON.stringify(eventSizes));
  }
+ // Rendering counter events must not recreate an already loaded card image.
+ const imageReuse=await page.evaluate(()=>{
+  const original={...state.slots[0],random:[...state.slots[0].random]};
+  const card=cards.find(c=>c.id!=null);
+  if(!card)return {cardFound:false};
+  state.slots[0]={id:card.id,step:0,random:[false,false],groupCount:3};
+  render();
+  const box=document.getElementById('photo-0');
+  const img=document.createElement('img');
+  img.id='photo-0';img.className='portrait';img.dataset.cardId=String(card.id);
+  img.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=';
+  box.replaceWith(img);
+  render();
+  const sameNode=document.getElementById('photo-0')===img;
+  state.slots[0]=original;
+  render();
+  return {cardFound:true,sameNode};
+ });
+ if(!imageReuse.cardFound||!imageReuse.sameNode)throw new Error('Loaded card portrait should survive unrelated render');
  // A senior plan icon must not determine the current turn.
  await page.evaluate(()=>{
   const base={character:'',year:'junior',scenario:'basic',turns:{junior:Array(24).fill(null),classic:Array(24).fill(null),senior:Array(24).fill(null)},selectedRaces:{},scenarioEvents:{}};
