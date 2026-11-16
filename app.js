@@ -1302,6 +1302,7 @@ function slotRender(i){const s=state.slots[i],c=findCard(s.id),n=countFor(s,c),k
 // External URL metadata, not image files, is published with the site.
 const wikiLookups = new Map();
 const photoVersions = Array(6).fill(0);
+let imageIndexReady=false;
 function validRemoteURL(url){
  try{return typeof url==='string'&&new URL(url).protocol==='https:'}catch{return false}
 }
@@ -1348,11 +1349,18 @@ async function renderPhoto(i){
   return token===photoVersions[i]&&String(state.slots[i]?.id)===id&&box.isConnected;
  }
  let src=remoteImages[id];
- if(!validRemoteURL(src))src=await lookupWikiImage(id);
+ if(!validRemoteURL(src)){
+  // The indexed URL may arrive shortly; avoid unnecessary slow wiki API requests.
+  if(!imageIndexReady)return;
+  src=await lookupWikiImage(id);
+ }
  if(!stillCurrent()||!validRemoteURL(src))return;
  const img=document.createElement('img');
  img.className='portrait';img.id='photo-'+i;img.alt=cardLabel(card);
  img.referrerPolicy='no-referrer';
+ img.loading='eager';
+ img.decoding='async';
+ img.dataset.cardId=id;
  img.onerror=()=>{
   if(img.isConnected){
    const placeholder=document.createElement('div');
@@ -1366,13 +1374,14 @@ async function renderPhoto(i){
 }
 async function loadRemoteImageIndex(){
  try{
-  const response=await fetch('./data/image_sources.json',{cache:'no-store'});
+  const response=await fetch('./data/image_sources.json');
   if(!response.ok)throw Error('Image URL index missing');
   const index=await response.json();
   if(index&&typeof index.images==='object'&&!Array.isArray(index.images))
-   remoteImages=index.images;
+   remoteImages={...remoteImages,...index.images};
   if(!$('card-picker').hidden)pickerRender();
  }catch(e){console.debug('Using on-demand wiki image lookup',e)}
+ imageIndexReady=true;
  state.slots.forEach((_,i)=>{
   const box=$('photo-'+i);
   if(box&&box.classList.contains('placeholder'))renderPhoto(i);
@@ -1380,7 +1389,24 @@ async function loadRemoteImageIndex(){
 }
 loadRemoteImageIndex();
 
-function render(){const target=$('slots');target.replaceChildren(...state.slots.map((_,i)=>slotRender(i)));state.slots.forEach((_,i)=>renderPhoto(i));save()}
+function render(){
+ const target=$('slots');
+ // Keep image nodes already attached to this card. Recreating them causes
+ // unnecessary requests to the external thumbnail service on every refresh.
+ const existing=state.slots.map((slot,i)=>{
+  const photo=$('photo-'+i);
+  return photo?.tagName==='IMG'&&String(photo.dataset.cardId)===String(slot.id)?photo:null;
+ });
+ target.replaceChildren(...state.slots.map((_,i)=>slotRender(i)));
+ state.slots.forEach((_,i)=>{
+  const photo=existing[i],placeholder=$('photo-'+i);
+  if(photo&&placeholder){
+   photoVersions[i]++; // invalidate any old pending image lookup
+   placeholder.replaceWith(photo);
+  }else renderPhoto(i);
+ });
+ save();
+}
 function updateEvents(i){const s=state.slots[i];document.querySelectorAll('[data-step]').forEach(b=>{const [slot,n]=b.dataset.step.split(':').map(Number);if(slot!==i)return;const on=s.step>=n;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))});document.querySelectorAll('[data-random]').forEach(b=>{const [slot,n]=b.dataset.random.split(':').map(Number);if(slot!==i)return;const on=!!s.random[n];b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))})}
 // Image gallery card picker: uses the existing card DB and external thumbnail index.
 const PICKER_PAGE_SIZE=20;
