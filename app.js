@@ -377,7 +377,7 @@ function scheduleGoalDetailHtml(goal){
  return '<div class="schedule-goal-heading">'+(goal.c?'선택 목표':'육성 목표')+'</div>'+list;
 }
 function scheduleScenarioLabel(id){
- return id==='onsen'?'극락♪ 유코마 온천향':'기본';
+ return id==='onsen'?'극락♪ 유코마 온천향':id==='island'?'무인도':'기본';
 }
 function renderScheduleCharacterOptionsFor(selector,characterValue){
  const value=findScheduleCharacter(characterValue)?.id||characterValue;
@@ -438,7 +438,11 @@ const SCHEDULE_ACTIONS={
 };
 // Each scenario may define its own extra actions in this registry later.
 // Entries are merged with the shared actions without replacing existing IDs.
-const SCHEDULE_SCENARIO_ACTIONS={basic:{},onsen:{pr:{label:'PR활동',image:'./assets/ui/pr-training-matched.svg',unlocksAt:3}}};
+const SCHEDULE_SCENARIO_ACTIONS={
+ basic:{},
+ island:{island_train:{label:'섬트레',image:'./assets/ui/pr-training-matched.svg',unlocksAt:3}},
+ onsen:{pr:{label:'PR활동',image:'./assets/ui/pr-training-matched.svg',unlocksAt:3}}
+};
 // The nine original Onsen excavation icons are arranged in the order uploaded.
 // spriteIndex maps that visual order to the source image order in the sprite sheet.
 // Sprite positions follow the images' upload order (5,4,2,3,1,9,8,7,6), not filename order.
@@ -984,9 +988,10 @@ $('schedule-grid').addEventListener('click',e=>{
  updateSelectedRaceDescription();
  // Keep training in the first row, followed by scenario-specific training, then rest/outing/race.
  const firstThree=scheduleGlobalTurn(year,scheduleTurn)<=3;
- const actionOrder=firstThree?['speed','stamina','power','guts','wisdom','pr','rest','outing','race']:['speed','stamina','power','guts','wisdom','pr','rest','camp_rest','friend_outing','race','outing'];
+ const actionOrder=firstThree?['speed','stamina','power','guts','wisdom','pr','island_train','rest','outing','race']:['speed','stamina','power','guts','wisdom','pr','island_train','rest','camp_rest','friend_outing','race','outing'];
  const choices=$('schedule-action-choices');
- choices.classList.toggle('with-sixth-training',Boolean(scheduleAvailableActions(scheduleCurrent.scenario).pr&&scheduleActionUnlocked(scheduleAvailableActions(scheduleCurrent.scenario).pr,year,scheduleTurn)));
+ const extraTraining=scheduleAvailableActions(scheduleCurrent.scenario).pr||scheduleAvailableActions(scheduleCurrent.scenario).island_train;
+  choices.classList.toggle('with-sixth-training',Boolean(extraTraining&&scheduleActionUnlocked(extraTraining,year,scheduleTurn)));
  choices.classList.toggle('initial-actions',firstThree);
  choices.classList.toggle('camp-actions',scheduleIsSummerCamp(year,scheduleTurn,scheduleCurrent.scenario));
  choices.replaceChildren(...Object.entries(scheduleAvailableActions(scheduleCurrent.scenario))
