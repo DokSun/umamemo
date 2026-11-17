@@ -151,6 +151,29 @@ try{
  if(actionCases.first.join(',')!=='rest,outing,race'||actionCases.third.includes('friend_outing')||!actionCases.fourth.includes('friend_outing'))throw new Error('Opening turn action visibility mismatch');
  if(!actionCases.earlyRaceDisabled||actionCases.lateRaceDisabled||!actionCases.july.includes('race'))throw new Error('Junior race must be visible but disabled until July first half');
  if(actionCases.camp.join(',')!=='camp_rest,race'||!actionCases.afterCamp.includes('friend_outing')||actionCases.afterCamp.includes('camp_rest'))throw new Error('Summer-camp action replacement mismatch');
+ // Island scenario: one distinct sixth training, sharing PR icon and turn rules.
+ const islandTraining=await page.evaluate(()=>{
+  const island=scheduleAvailableActions('island');
+  const onsen=scheduleAvailableActions('onsen');
+  const model=emptySchedule();
+  model.scenario='island';model.turns.junior[2]='island_train';
+  const normalized=normalizeSchedule(model);
+  return {
+   option:!!document.querySelector('#schedule-scenario option[value="island"]')
+    &&!!document.querySelector('#plan-edit-scenario option[value="island"]'),
+   label:scheduleScenarioLabel('island'),
+   action:island.island_train,
+   iconSame:island.island_train.image===onsen.pr.image,
+   before:scheduleActionVisible('island_train',island.island_train,'junior',1,'island'),
+   unlocked:scheduleActionVisible('island_train',island.island_train,'junior',2,'island'),
+   saved:normalized.scenario==='island'&&normalized.turns.junior[2]==='island_train',
+   isolated:!Object.hasOwn(onsen,'island_train')&&!Object.hasOwn(island,'pr')
+  };
+ });
+ if(!islandTraining.option||islandTraining.label!=='무인도'||islandTraining.action.label!=='섬트레'
+  ||!islandTraining.iconSame||islandTraining.before||!islandTraining.unlocked
+  ||!islandTraining.saved||!islandTraining.isolated)
+   throw new Error('Island sixth training registry, icon or persistence failed: '+JSON.stringify(islandTraining));
  // Old onsen events migrate into a scenario-specific namespace without affecting turns.
  const scenarioStore=await page.evaluate(()=>{
   const legacy=emptySchedule();
