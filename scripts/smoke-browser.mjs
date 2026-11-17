@@ -243,16 +243,25 @@ try{
    button.click();
    const after=nodes.map(el=>el.getBoundingClientRect().width);
    const recordAfter=document.getElementById('schedule-panel').getBoundingClientRect().width;
+   const counter=document.getElementById('counter-panel');
+   const counterRect=counter.getBoundingClientRect();
+   const lastButton=nodes[nodes.length-1].getBoundingClientRect();
+   const slotDivider=document.querySelector('#counter-panel .slot:nth-child(2)').getBoundingClientRect();
+   const inset=(parseFloat(getComputedStyle(counter).paddingRight)||0)+(parseFloat(getComputedStyle(counter).borderRightWidth)||0);
+   const dividerGap=slotDivider.right-lastButton.right;
+   const frameGap=counterRect.right-lastButton.right-inset;
+   const middleWidth=document.getElementById('schedule-scenario-status').getBoundingClientRect().width;
    const info=document.querySelector('#counter-panel .slot .info');
    const topRight=info.querySelector('.topline').getBoundingClientRect().right;
    const controlsRight=info.querySelector('.event-controls').getBoundingClientRect().right;
    button.click();
    scheduleCurrent.scenario='basic';renderSchedule();
-   return {before,after,recordDiff:Math.abs(recordAfter-recordBefore),titleGap:Math.abs(topRight-controlsRight)};
+   return {before,after,recordDiff:Math.abs(recordAfter-recordBefore),titleGap:Math.abs(topRight-controlsRight),dividerGap,frameGap,middleWidth};
   });
   if(eventSizes.before.length!==5||eventSizes.before.some(n=>Math.abs(n-62)>0.25)
    ||eventSizes.after.some(n=>Math.abs(n-62)>0.25)
-   ||eventSizes.recordDiff>0.25||eventSizes.titleGap>1)
+   ||eventSizes.recordDiff>0.25||eventSizes.titleGap>1||Math.abs(eventSizes.dividerGap)>1.5
+   ||Math.abs(eventSizes.frameGap)>1.5||eventSizes.middleWidth<326)
     throw new Error('Counter event buttons changed size with scenario frame: '+JSON.stringify(eventSizes));
  }
  // Rendering counter events must not recreate an already loaded card image.
