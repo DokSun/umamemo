@@ -1506,3 +1506,11 @@ header .header-settings-button{order:initial;margin-left:auto}
  }
  #workspace #counter-panel .slot .topline{width:min(100%,326px);max-width:326px}
 }
+
+/* Island training is a sixth training action, visually matching PR activity. */
+.schedule-action-choices.with-sixth-training > [data-schedule-action="island_train"]{grid-column:span 5}
+.schedule-action-choices [data-schedule-action="island_train"]{background:#263b55;border-color:#435a76}
+.schedule-action-choices [data-schedule-action="island_train"].selected{background:#276e5a;border-color:#6fd5b2}
+.schedule-action-choices .schedule-action-option[data-schedule-action="island_train"] > .schedule-action-image{
+ width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;border-radius:0
+}
