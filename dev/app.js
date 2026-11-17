@@ -92,11 +92,22 @@ function updateScenarioFrameWidth(){
  if(expanded)workspace.classList.add('scenario-expanded');
  middlePanel.hidden=panelWasHidden;
  if(recordWidth>0)workspace.style.setProperty('--scenario-record-width',recordWidth+'px');
- // Keep the 5 original 62px event buttons (plus four 4px gaps) intact.
- // Allocate only truly spare counter-side space to the middle scenario frame.
- const counterMin=76+7+326+20; // portrait + card gap + event row + panel padding/border
- const middleAvailable=inner-2*gap-recordWidth-counterMin;
- const middle=Math.max(0,Math.min(326,middleAvailable));
+ // Match the counter frame's right edge to the 5th event button,
+ // leaving only the panel's normal right padding after the button.
+ // This also shortens each slot divider, since it fills the panel width.
+ const counter=$('counter-panel');
+ const controls=counter.querySelector('.slot .event-controls');
+ const counterRect=counter.getBoundingClientRect();
+ const controlRect=controls?.getBoundingClientRect();
+ const counterStyle=getComputedStyle(counter);
+ const rightInset=(parseFloat(counterStyle.paddingRight)||0)+(parseFloat(counterStyle.borderRightWidth)||0);
+ const counterNeeded=controlRect?.width>0
+  ?Math.ceil(controlRect.right-counterRect.left+rightInset)
+  :76+7+326+18;
+ // Preserve the record frame's measured width, and transfer all remaining
+ // horizontal counter whitespace to the middle scenario frame.
+ const middleAvailable=inner-2*gap-recordWidth-counterNeeded;
+ const middle=Math.max(0,middleAvailable);
  workspace.style.setProperty('--scenario-middle-width',middle.toFixed(2)+'px');
 }
 window.addEventListener('resize',updateScenarioFrameWidth);
