@@ -383,7 +383,7 @@ function scheduleGoalDetailHtml(goal){
  return '<div class="schedule-goal-heading">'+(goal.c?'선택 목표':'육성 목표')+'</div>'+list;
 }
 function scheduleScenarioLabel(id){
- return id==='onsen'?'극락♪ 유코마 온천향':id==='island'?'무인도':'기본';
+ return id==='onsen'?'극락♪ 유코마 온천향':id==='island'?'무인도에 어서 오세요 -DESIGN YOUR ISLAND-':'기본';
 }
 function renderScheduleCharacterOptionsFor(selector,characterValue){
  const value=findScheduleCharacter(characterValue)?.id||characterValue;
