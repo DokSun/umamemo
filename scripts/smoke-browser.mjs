@@ -170,7 +170,7 @@ try{
    isolated:!Object.hasOwn(onsen,'island_train')&&!Object.hasOwn(island,'pr')
   };
  });
- if(!islandTraining.option||islandTraining.label!=='무인도'||islandTraining.action.label!=='섬트레'
+ if(!islandTraining.option||islandTraining.label!=='무인도에 어서 오세요 -DESIGN YOUR ISLAND-'||islandTraining.action.label!=='섬트레'
   ||!islandTraining.iconSame||islandTraining.before||!islandTraining.unlocked
   ||!islandTraining.saved||!islandTraining.isolated)
    throw new Error('Island sixth training registry, icon or persistence failed: '+JSON.stringify(islandTraining));
