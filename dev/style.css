@@ -438,7 +438,7 @@ body.schedule-dialog-open{overflow:hidden}
 .schedule-plan-name small{color:#bacbdf}
 .schedule-plan-actions{display:flex;gap:5px;flex-wrap:wrap}
 .schedule-plan-actions button{font-size:12px;min-height:36px}
-#schedule-reset-footer{margin-top:auto;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+#schedule-reset-footer{margin-top:6px;padding-top:0;border-top:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 #schedule-panel .schedule-title-row #schedule-save-as-plan{margin-left:auto;flex:0 0 auto;background:#276f61;border-color:#5bbba0;color:#f4fffb;font-size:12px;min-height:34px;padding:6px 10px}
 #schedule-panel .schedule-title-row #schedule-save-as-plan[hidden]{display:none!important}
 @media(max-width:560px){#schedule-panel .schedule-title-row #schedule-save-as-plan{font-size:11px;padding:5px 7px;min-height:32px}#schedule-panel .schedule-title-row #schedule-plan-caption{max-width:48%}}
