@@ -790,12 +790,32 @@ function scheduleSetActivePlan(id){
   devStorage.setItem(scheduleKey('initial-plan-migrated-v2'),'done');
  }catch(e){console.warn(e)}
 }
-function scheduleBeginPlanEdit(entry){
+function scheduleRecordedPlanSnapshot(){
+ // Only completed, explicitly recorded turns belong to an actual-record plan.
+ // Do not accidentally copy future actions inherited from the active initial plan.
+ const snapshot=emptySchedule();
+ snapshot.character=scheduleCurrent.character;
+ snapshot.scenario=scheduleCurrent.scenario;
+ for(const year of SCHEDULE_YEAR_ORDER){
+  for(let i=0;i<24;i++){
+   if(!scheduleIsRecorded(year,i))continue;
+   const key=scheduleTurnEventKey(year,i);
+   snapshot.turns[year][i]=scheduleCurrent.turns[year][i];
+   if(snapshot.turns[year][i]==='race'&&scheduleCurrent.selectedRaces[key]){
+    snapshot.selectedRaces[key]=scheduleCurrent.selectedRaces[key];
+   }
+   const events=scheduleScenarioTurnEvents(scheduleCurrent,'onsen',year,i);
+   if(events.length)scheduleEnsureScenarioData(snapshot,'onsen').events[key]=[...events];
+  }
+ }
+ return normalizeSchedule(snapshot);
+}
+function scheduleBeginPlanEdit(entry,initialSnapshot=null){
  if(scheduleEditingPlan)return;
  scheduleRunBeforeEdit=scheduleCurrent;
- // A new plan must not inherit the year or any recorded state from the live run.
- // Editing an existing plan preserves its saved year and its own schedule.
- const draft=entry?normalizeSchedule(entry.schedule):emptySchedule();
+ // New plans and record-derived plans are independent drafts.
+ // Editing an existing plan preserves its own saved year and schedule.
+ const draft=entry?normalizeSchedule(entry.schedule):initialSnapshot?normalizeSchedule(initialSnapshot):emptySchedule();
  if(!entry)draft.year='junior';
  scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:draft};
  scheduleCurrent=scheduleEditingPlan.schedule;
@@ -1279,6 +1299,15 @@ $('plan-preview').addEventListener('click',e=>{
  });
 });
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
+$('schedule-save-as-plan').addEventListener('click',()=>{
+ if(scheduleEditingPlan)return;
+ if(!scheduleRecordedTurns.some(Boolean))return toast('저장할 육성 기록이 없습니다');
+ const snapshot=scheduleRecordedPlanSnapshot();
+ scheduleBeginPlanEdit(null,snapshot);
+ $('schedule-plan-name').value='육성 기록 '+new Date().toLocaleDateString('ko-KR');
+ $('schedule-plan-name').dispatchEvent(new Event('input',{bubbles:true}));
+ $('schedule-plan-name').focus();
+});
 $('schedule-plan-name').addEventListener('input',e=>{
  if(!scheduleEditingPlan)return;
  scheduleEditingPlan.name=e.target.value;
