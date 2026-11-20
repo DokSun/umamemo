@@ -1090,9 +1090,9 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-title').textContent=(readOnly?'목표 · ':'')+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
- // Goals are fixed, but their turn-free scenario actions must still be resettable.
- // The active turn is editable even before recording it.
- $('schedule-action-clear').hidden=!scheduleTurnEditable(year,scheduleTurn);
+ // In record mode only completed turns can be reset.
+ // Plan editing continues to allow clearing any editable turn.
+ $('schedule-action-clear').hidden=!scheduleEditingPlan&&!scheduleIsRecorded(year,scheduleTurn);
  $('schedule-goal-complete').hidden=scheduleEditingPlan||!readOnly||scheduleGlobalTurn(year,scheduleTurn)!==scheduleCurrentTurn();
  if(readOnly){
   $('schedule-action-choices').replaceChildren();
@@ -1225,7 +1225,7 @@ $('schedule-action-clear').addEventListener('click',()=>{
  if(scheduleTurn===null)return;
  const year=scheduleCurrent.year;
  const index=scheduleTurn;
- if(!scheduleTurnEditable(year,index))return;
+ if(!scheduleTurnEditable(year,index)||(!scheduleEditingPlan&&!scheduleIsRecorded(year,index)))return;
  const turn=scheduleGlobalTurn(year,index);
  const key=scheduleTurnEventKey(year,index);
  if(!scheduleEditingPlan&&scheduleRecordedTurns[turn-1]){
