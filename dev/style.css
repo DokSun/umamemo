@@ -1517,7 +1517,7 @@ header .header-settings-button{order:initial;margin-left:auto}
 
 /* Non-race objectives are deadline periods; overlays do not change grid sizing. */
 .schedule-year-grid{position:relative}
-.schedule-goal-period-outline{
+.schedule-goal-period-outline:not(svg){
  position:absolute;pointer-events:none;z-index:4;border:2px solid #e7b54f;
  border-radius:7px;background:rgba(231,181,79,.045);
  box-shadow:0 0 0 1px rgba(35,25,9,.2);box-sizing:border-box
