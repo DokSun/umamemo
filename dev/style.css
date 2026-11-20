@@ -1355,9 +1355,10 @@ header .header-settings-button{order:initial;margin-left:auto}
 /* First three turns use original rest / outing / disabled-race row. */
 .schedule-action-choices.initial-actions > [data-schedule-action="outing"]{grid-column:span 10}
 
-/* Two equally sized action slots during summer camp. */
-.schedule-action-choices.camp-actions > [data-schedule-action="camp_rest"],
-.schedule-action-choices.camp-actions > [data-schedule-action="race"]{grid-column:span 15}
+/* Summer-camp rest and race use the same 10-column icon width as normal turns.
+   Center their two choices rather than enlarging them to half the full row. */
+.schedule-action-choices.camp-actions > [data-schedule-action="camp_rest"]{grid-column:6 / span 10}
+.schedule-action-choices.camp-actions > [data-schedule-action="race"]{grid-column:16 / span 10}
 
 /* Scenario-specific live status; independent of the common training levels. */
 .schedule-scenario-status{border:1px solid #435b79;border-radius:9px;padding:9px 10px;background:#1b3047;display:flex;flex-direction:column;gap:8px}
