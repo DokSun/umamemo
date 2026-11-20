@@ -668,6 +668,12 @@ function scheduleCompletedPrefix(){
 }
 function scheduleCurrentTurn(){return scheduleCompletedPrefix()+1}
 function scheduleIsRecorded(year,i){return scheduleRecordedTurns[scheduleGlobalTurn(year,i)-1]===true}
+// Only the most recently completed sequential turn can be undone.
+// Earlier recorded turns remain editable without rewinding the run.
+function scheduleCanResetTurn(year,i){
+ const turn=scheduleGlobalTurn(year,i);
+ return Boolean(scheduleEditingPlan)||(turn===scheduleCurrentTurn()-1&&scheduleIsRecorded(year,i));
+}
 function scheduleSaveRecordedTurns(){
  try{devStorage.setItem(scheduleKey('recorded-turns-v2'),JSON.stringify(scheduleRecordedTurns))}
  catch(e){console.warn('진행 턴 저장 실패',e)}
@@ -1090,9 +1096,9 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-title').textContent=(readOnly?'목표 · ':'')+SCHEDULE_YEAR_KO[year]+' '+month+'월 '+(scheduleTurn%2===0?'전반':'후반');
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
- // In record mode only completed turns can be reset.
- // Plan editing continues to allow clearing any editable turn.
- $('schedule-action-clear').hidden=!scheduleEditingPlan&&!scheduleIsRecorded(year,scheduleTurn);
+ // Only the latest recorded turn may be reset; all past recorded actions
+ // can still be edited normally. Plan draft editing is unrestricted.
+ $('schedule-action-clear').hidden=!scheduleCanResetTurn(year,scheduleTurn);
  $('schedule-goal-complete').hidden=scheduleEditingPlan||!readOnly||scheduleGlobalTurn(year,scheduleTurn)!==scheduleCurrentTurn();
  if(readOnly){
   $('schedule-action-choices').replaceChildren();
@@ -1225,7 +1231,7 @@ $('schedule-action-clear').addEventListener('click',()=>{
  if(scheduleTurn===null)return;
  const year=scheduleCurrent.year;
  const index=scheduleTurn;
- if(!scheduleTurnEditable(year,index)||(!scheduleEditingPlan&&!scheduleIsRecorded(year,index)))return;
+ if(!scheduleCanResetTurn(year,index))return;
  const turn=scheduleGlobalTurn(year,index);
  const key=scheduleTurnEventKey(year,index);
  if(!scheduleEditingPlan&&scheduleRecordedTurns[turn-1]){
