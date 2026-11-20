@@ -495,9 +495,11 @@ function scheduleOnsenDigState(year,i,source=scheduleCurrent,includeCurrent=true
  for(let n=1;n<=target;n++){
   const y=SCHEDULE_YEAR_ORDER[Math.floor((n-1)/24)],idx=(n-1)%24;
   const entries=scheduleOnsenEvents(y,idx,source);
-  const selected=entries.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
-  if(selected&&!completed.has(selected))active=selected;
   for(const event of entries){
+   if(Object.hasOwn(SCHEDULE_ONSEN_DIGS,event)){
+    if(!completed.has(event))active=event;
+    continue;
+   }
    if(!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,event))continue;
    const dig='dig'+event.slice(4);
    if(active!==dig||completed.has(dig))continue;
@@ -1087,7 +1089,7 @@ function renderScheduleOnsenControls(year,i){
  }).join('');
  const done=$('schedule-onsen-dig-complete');
  const completedHere=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
- const dig=state.active||state.finishedHere||(completedHere?'dig'+completedHere.slice(4):null);
+ const dig=completedHere?'dig'+completedHere.slice(4):state.active||state.finishedHere;
  done.hidden=!dig;
  done.disabled=!dig;
  done.textContent=completedHere?'완료 취소 · '+SCHEDULE_ONSEN_DIGS[dig]?.label:'굴착 완료 · '+(SCHEDULE_ONSEN_DIGS[dig]?.label||'');
@@ -1115,7 +1117,12 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  const current=scheduleOnsenEvents(year,scheduleTurn);
  const onsenData=scheduleEnsureScenarioData(scheduleCurrent,'onsen');
  // Exactly one excavation type per turn; ticket is independent.
- const next=current.includes(id)?current.filter(x=>x!==id):Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)?[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)&&!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x)),id]:SCHEDULE_ONSEN_TICKET_IDS.includes(id)?[...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id]:[...current,id];
+ // Keep earlier same-turn completions when starting a new excavation.
+ const lastCompletedIndex=current.findLastIndex(x=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x));
+ const next=current.includes(id)?current.filter(x=>x!==id):
+  Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)
+   ?[...current.slice(0,lastCompletedIndex+1),...current.slice(lastCompletedIndex+1).filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]
+   :SCHEDULE_ONSEN_TICKET_IDS.includes(id)?[...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id]:[...current,id];
  if(next.length)onsenData.events[key]=next;
  else delete onsenData.events[key];
  saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,scheduleTurn);
