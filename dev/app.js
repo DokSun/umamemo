@@ -1190,7 +1190,8 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
    return;
   }else if(before.active===id){
    // The same dig was started in a previous turn: finish it here.
-   next=[...current.filter(event=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,event)),doneId];
+   // A completion precedes any new dig start on the same turn.
+   next=[...current.filter(event=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,event)&&!Object.hasOwn(SCHEDULE_ONSEN_DIGS,event)),doneId,...current.filter(event=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,event))];
   }else{
    // Switch digs: prior unfinished dig returns to waiting.
    // Preserve any independent completion on this turn.
