@@ -1137,9 +1137,14 @@ function renderScheduleOnsenControls(year,i){
  const state=scheduleOnsenDigState(year,i);
  $('schedule-onsen-options').innerHTML=Object.entries(SCHEDULE_ONSEN_DIGS).map(([id,entry])=>{
   if(!scheduleOnsenUnlocked(id,year,i))return '';
-  const completed=state.completed.has(id),selected=state.active===id;
-  const status=completed?' · 완료':selected?' · 진행 중':'';
-  return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected?'selected':'')+(completed?' completed':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+status+'" title="'+entry.label+status+'" aria-pressed="'+selected+'" '+(completed?'disabled':'')+'>'+scheduleOnsenIconHtml(id)+'</button>';
+  const completedHere=events.includes('done'+id.slice(3));
+  const completed=state.completed.has(id);
+  const selected=state.active===id;
+  // Only a completion recorded on this exact turn can be undone from here.
+  // A completion from an earlier turn remains locked.
+  const status=completedHere?' · 완료 (다시 누르면 완료 취소)':completed?' · 완료':selected?' · 진행 중':'';
+  const disabled=completed&&!completedHere;
+  return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected||completedHere?'selected':'')+(disabled?' completed':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+status+'" title="'+entry.label+status+'" aria-pressed="'+(selected||completedHere)+'" '+(disabled?'disabled':'')+'>'+scheduleOnsenIconHtml(id)+'</button>';
  }).join('');
  // Completion is entered by pressing the active excavation icon a second time.
  // The former separate completion control is no longer part of the workflow.
@@ -1162,36 +1167,38 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  const id=button.dataset.onsenEvent;
  if(!SCHEDULE_ONSEN_EVENT_IDS.includes(id)||Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id))return;
  const year=scheduleCurrent.year;
- if(Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)&&scheduleOnsenDigState(year,scheduleTurn).completed.has(id))return;
+ if(Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)){
+  const finishedOnThisTurn=scheduleOnsenEvents(year,scheduleTurn).includes('done'+id.slice(3));
+  if(!finishedOnThisTurn&&scheduleOnsenDigState(year,scheduleTurn).completed.has(id))return;
+ }
  if(!scheduleOnsenUnlocked(id,year,scheduleTurn))return;
  if(SCHEDULE_ONSEN_TICKET_IDS.includes(id)&&scheduleOnsenTicketBlocked(year,scheduleTurn))return;
  const key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
  const onsenData=scheduleEnsureScenarioData(scheduleCurrent,'onsen');
- // Ticket selection remains independent from excavation state.
- // Pressing the active excavation again finishes it on this turn.
- // Pressing a different excavation starts it and leaves the old one available.
+ // Start and completion are distinct events: undoing completion must never
+ // create a new start marker on the completion turn.
  let next;
  if(Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)){
-  const state=scheduleOnsenDigState(year,scheduleTurn);
-  const alreadyFinishedHere=current.includes('done'+id.slice(3));
-  if(alreadyFinishedHere){
-   // Reopen a completion from this turn, without duplicating a start marker.
-   next=current.filter(x=>x!=='done'+id.slice(3));
-   if(!next.includes(id))next.push(id);
-  }else if(state.active===id){
-   // A dig cannot be completed on the same turn it was started.
-   // Repeated presses on its starting turn must not add a completion event.
-   if(current.includes(id))return;
-   // Completion is allowed only when the active dig began in an earlier turn.
-   next=[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x)),'done'+id.slice(3)];
+  const doneId='done'+id.slice(3);
+  const before=scheduleOnsenDigState(year,scheduleTurn,scheduleCurrent,false);
+  if(current.includes(doneId)){
+   // Undo only the completion marker; preserve the original start turn.
+   next=current.filter(event=>event!==doneId);
+  }else if(current.includes(id)){
+   // Re-selecting a dig on its start turn cannot finish it.
+   return;
+  }else if(before.active===id){
+   // The same dig was started in a previous turn: finish it here.
+   next=[...current.filter(event=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,event)),doneId];
   }else{
-   // Replace an unfinished same-turn selection; preserve recorded completions.
-   next=[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id];
+   // Switch digs: prior unfinished dig returns to waiting.
+   // Preserve any independent completion on this turn.
+   next=[...current.filter(event=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,event)),id];
   }
  }else{
-  next=current.includes(id)?current.filter(x=>x!==id):
-   [...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id];
+  next=current.includes(id)?current.filter(event=>event!==id):
+   [...current.filter(event=>!SCHEDULE_ONSEN_TICKET_IDS.includes(event)),id];
  }
  if(next.length)onsenData.events[key]=next;
  else delete onsenData.events[key];
