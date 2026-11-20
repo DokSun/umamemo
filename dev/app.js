@@ -539,8 +539,11 @@ function scheduleOnsenBadges(year,i,source=scheduleCurrent){
  if(source.scenario!=='onsen')return '';
  const events=scheduleOnsenEvents(year,i,source);
  const badges=[];
- const dig=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
- if(dig)badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+'">'+scheduleOnsenIconHtml(dig)+'</span>');
+ const start=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
+ const done=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
+ // A completion is also an excavation marker, including same-turn start+finish.
+ const dig=done?'dig'+done.slice(4):start;
+ if(dig)badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+(done?' · 굴착 완료':' · 굴착 시작')+'">'+scheduleOnsenIconHtml(dig)+'</span>');
  const ticket=scheduleOnsenTicketStatus(year,i,source);
  if(ticket.turn){
   const label=(ticket.turn===1?'온천권 사용 · 효과 1턴째':'온천 효과 2턴째')+(ticket.superRecovery?' · 초회복':'');
@@ -1125,13 +1128,11 @@ function renderScheduleOnsenControls(year,i){
   const status=completed?' · 완료':selected?' · 진행 중':'';
   return '<button type="button" class="schedule-onsen-option schedule-onsen-dig-choice '+(selected?'selected':'')+(completed?' completed':'')+'" data-onsen-event="'+id+'" aria-label="'+entry.label+status+'" title="'+entry.label+status+'" aria-pressed="'+selected+'" '+(completed?'disabled':'')+'>'+scheduleOnsenIconHtml(id)+'</button>';
  }).join('');
+ // Completion is entered by pressing the active excavation icon a second time.
+ // The former separate completion control is no longer part of the workflow.
  const done=$('schedule-onsen-dig-complete');
- const completedHere=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
- const dig=completedHere?'dig'+completedHere.slice(4):state.active||state.finishedHere;
- done.hidden=!dig;
- done.disabled=!dig;
- done.textContent=completedHere?'완료 취소 · '+SCHEDULE_ONSEN_DIGS[dig]?.label:'굴착 완료 · '+(SCHEDULE_ONSEN_DIGS[dig]?.label||'');
- done.setAttribute('aria-pressed',String(Boolean(completedHere)));
+ done.hidden=true;
+ done.disabled=true;
  const blocked=scheduleOnsenTicketBlocked(year,i);
  for(const id of SCHEDULE_ONSEN_TICKET_IDS){
   const button=$(id==='ticket'?'schedule-onsen-ticket':'schedule-onsen-ticket-super');
@@ -1154,29 +1155,31 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
  const key=scheduleTurnEventKey(year,scheduleTurn);
  const current=scheduleOnsenEvents(year,scheduleTurn);
  const onsenData=scheduleEnsureScenarioData(scheduleCurrent,'onsen');
- // Exactly one excavation type per turn; ticket is independent.
- // Keep earlier same-turn completions when starting a new excavation.
- const lastCompletedIndex=current.findLastIndex(x=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x));
- const next=current.includes(id)?current.filter(x=>x!==id):
-  Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)
-   ?[...current.slice(0,lastCompletedIndex+1),...current.slice(lastCompletedIndex+1).filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id]
-   :SCHEDULE_ONSEN_TICKET_IDS.includes(id)?[...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id]:[...current,id];
+ // Ticket selection remains independent from excavation state.
+ // Pressing the active excavation again finishes it on this turn.
+ // Pressing a different excavation starts it and leaves the old one available.
+ let next;
+ if(Object.hasOwn(SCHEDULE_ONSEN_DIGS,id)){
+  const state=scheduleOnsenDigState(year,scheduleTurn);
+  const alreadyFinishedHere=current.includes('done'+id.slice(3));
+  if(alreadyFinishedHere){
+   // Reopen a completion from this turn, without duplicating a start marker.
+   next=current.filter(x=>x!=='done'+id.slice(3));
+   if(!next.includes(id))next.push(id);
+  }else if(state.active===id){
+   // If an earlier start is already present, only the completion is added.
+   next=[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x)),'done'+id.slice(3)];
+  }else{
+   // Replace an unfinished same-turn selection; preserve recorded completions.
+   next=[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIGS,x)),id];
+  }
+ }else{
+  next=current.includes(id)?current.filter(x=>x!==id):
+   [...current.filter(x=>!SCHEDULE_ONSEN_TICKET_IDS.includes(x)),id];
+ }
  if(next.length)onsenData.events[key]=next;
  else delete onsenData.events[key];
  saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,scheduleTurn);
-});
-$('schedule-onsen-dig-complete').addEventListener('click',()=>{
- if(scheduleTurn===null||scheduleCurrent.scenario!=='onsen'||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn))return;
- const year=scheduleCurrent.year,i=scheduleTurn,key=scheduleTurnEventKey(year,i);
- const current=scheduleOnsenEvents(year,i);
- const existing=current.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
- const active=scheduleOnsenDigState(year,i).active;
- if(!existing&&!active)return;
- const next=current.filter(id=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
- if(!existing)next.push('done'+active.slice(3));
- const data=scheduleEnsureScenarioData(scheduleCurrent,'onsen').events;
- if(next.length)data[key]=next;else delete data[key];
- saveScheduleCurrent();renderSchedule();renderScheduleOnsenControls(year,i);
 });
 $('schedule-scenario').addEventListener('change',e=>{
  if(!Object.hasOwn(SCHEDULE_SCENARIO_ACTIONS,e.target.value))return;
