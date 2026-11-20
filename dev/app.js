@@ -341,7 +341,7 @@ function scheduleGoalAt(year,i,source=scheduleCurrent){
 }
 // Non-race objectives have a deadline but do not consume the deadline turn.
 function scheduleGoalRequiresRace(goal){
- return Boolean(goal?.o?.some(o=>o.rid||o.track||o.m||o.g));
+ return Boolean(goal?.o?.some(o=>o.rid||o.track||o.m||o.g||o.n==='Junior Make Debut'||o.ko==='주니어급 데뷔전'));
 }
 function scheduleNonRaceGoalPeriods(source=scheduleCurrent){
  const character=findScheduleCharacter(source.character);
@@ -957,6 +957,8 @@ function renderScheduleGoalPeriods(){
  const root=$('schedule-grid');
  if(!root)return;
  root.querySelectorAll('.schedule-goal-period-outline').forEach(node=>node.remove());
+ // Draw one continuous outline for each deadline period within each year.
+ // Row transitions connect at the midpoint of the gap instead of closing each row.
  for(const period of scheduleNonRaceGoalPeriods(scheduleCurrent)){
   for(const year of SCHEDULE_YEAR_ORDER){
    const section=root.querySelector('.schedule-year-section[aria-label="'+SCHEDULE_YEAR_KO[year]+' 일정"]');
@@ -965,23 +967,53 @@ function renderScheduleGoalPeriods(){
    const offset=SCHEDULE_YEAR_ORDER.indexOf(year)*24;
    const first=Math.max(0,period.start-offset-1),last=Math.min(23,period.end-offset-1);
    if(first>last)continue;
+   const base=grid.getBoundingClientRect(),rows=[];
    for(let row=Math.floor(first/4);row<=Math.floor(last/4);row++){
     const lo=Math.max(first,row*4),hi=Math.min(last,row*4+3);
     const cellA=grid.querySelector('[data-schedule-turn="'+lo+'"]');
     const cellB=grid.querySelector('[data-schedule-turn="'+hi+'"]');
     if(!cellA||!cellB)continue;
-    const base=grid.getBoundingClientRect(),r1=cellA.getBoundingClientRect(),r2=cellB.getBoundingClientRect();
-    if(!base.width||!r1.width)continue;
-    const band=document.createElement('span');
-    band.className='schedule-goal-period-outline';
-    band.style.left=(r1.left-base.left-3)+'px';
-    band.style.top=(r1.top-base.top-3)+'px';
-    band.style.width=(r2.right-r1.left+6)+'px';
-    band.style.height=(Math.max(r1.bottom,r2.bottom)-r1.top+6)+'px';
-    band.title='기간 목표: '+period.label;
-    band.setAttribute('aria-hidden','true');
-    grid.append(band);
+    const a=cellA.getBoundingClientRect(),b=cellB.getBoundingClientRect();
+    if(!base.width||!a.width)continue;
+    rows.push({left:a.left-base.left-3,right:b.right-base.left+3,top:a.top-base.top-3,bottom:Math.max(a.bottom,b.bottom)-base.top+3});
    }
+   if(!rows.length)continue;
+   const ns='http://www.w3.org/2000/svg';
+   const svg=document.createElementNS(ns,'svg');
+   svg.classList.add('schedule-goal-period-outline');
+   svg.setAttribute('aria-hidden','true');
+   svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:4;overflow:visible';
+   svg.setAttribute('viewBox','0 0 '+base.width+' '+base.height);
+   svg.setAttribute('preserveAspectRatio','none');
+   const d=['M',rows[0].left,rows[0].top,'L',rows[0].right,rows[0].top];
+   for(let j=0;j<rows.length;j++){
+    const row=rows[j],next=rows[j+1];
+    if(next){
+     const middle=(row.bottom+next.top)/2;
+     d.push('L',row.right,middle,'L',next.right,middle);
+    }else d.push('L',row.right,row.bottom);
+   }
+   const lastRow=rows[rows.length-1];
+   d.push('L',lastRow.left,lastRow.bottom);
+   for(let j=rows.length-1;j>=0;j--){
+    const row=rows[j],prev=rows[j-1];
+    if(prev){
+     const middle=(prev.bottom+row.top)/2;
+     d.push('L',row.left,middle,'L',prev.left,middle);
+    }else d.push('L',row.left,row.top);
+   }
+   d.push('Z');
+   const shape=document.createElementNS(ns,'path');
+   shape.setAttribute('d',d.join(' '));
+   shape.setAttribute('fill','rgba(231,181,79,.045)');
+   shape.setAttribute('stroke','#e7b54f');
+   shape.setAttribute('stroke-width','2');
+   shape.setAttribute('stroke-linejoin','round');
+   svg.appendChild(shape);
+   const title=document.createElementNS(ns,'title');
+   title.textContent='기간 목표: '+period.label;
+   svg.appendChild(title);
+   grid.append(svg);
   }
  }
 }
