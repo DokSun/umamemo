@@ -70,9 +70,8 @@ function renderResetActions(){
  memoFooter.hidden=!ids.includes('memo');
  secondary.dataset.targets='memo';
  // The counter's unified reset already clears both records in split mode.
- // Keep "save record as plan" available even when a counter is shown alongside
- // the scheduler; only the duplicate reset button is hidden in that layout.
- scheduleFooter.hidden=!ids.includes('schedule')||Boolean(scheduleEditingPlan);
+ // The save button moved to the header. Never show an empty footer in split mode.
+ scheduleFooter.hidden=!shouldShowScheduleReset(ids);
  $('schedule-reset').hidden=!shouldShowScheduleReset(ids);
  $('schedule-reset').dataset.targets='schedule';
 }
@@ -790,6 +789,33 @@ function scheduleMigratePreviousGuide(){
  try{devStorage.setItem(key,'done')}catch(e){}
 }
 function scheduleActivePlan(){return schedulePlans.find(p=>p.id===scheduleActivePlanId)||null}
+function scheduleApplyPlanToUnrecordedTurns(plan){
+ // Replace the previous plan's entries only in unrecorded turns.
+ // Completed turns belong to the live record and must remain untouched.
+ const baseline=normalizeSchedule(plan||emptySchedule());
+ const hasRecorded=scheduleRecordedTurns.some(Boolean);
+ const next=normalizeSchedule(scheduleCurrent);
+ if(!hasRecorded){
+  next.character=baseline.character;
+  next.scenario=baseline.scenario;
+  next.year='junior';
+ }
+ for(const year of SCHEDULE_YEAR_ORDER){
+  for(let i=0;i<24;i++){
+   if(scheduleIsRecorded(year,i))continue;
+   const key=scheduleTurnEventKey(year,i);
+   next.turns[year][i]=baseline.turns[year][i];
+   if(baseline.selectedRaces[key])next.selectedRaces[key]=baseline.selectedRaces[key];
+   else delete next.selectedRaces[key];
+   const originalEvents=scheduleScenarioTurnEvents(baseline,'onsen',year,i);
+   const events=scheduleOnsenData(next).events;
+   if(originalEvents.length)scheduleEnsureScenarioData(next,'onsen').events[key]=[...originalEvents];
+   else if(events)delete events[key];
+  }
+ }
+ scheduleCurrent=normalizeSchedule(next);
+ saveScheduleCurrent();
+}
 function scheduleSetActivePlan(id){
  scheduleActivePlanId=id;
  try{
@@ -929,7 +955,7 @@ function renderSchedule(){
  $('schedule-view-heading').textContent=scheduleEditingPlan?'육성 계획':'육성 기록';
  $('schedule-work-title').textContent='현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
- $('schedule-reset-footer').hidden=Boolean(scheduleEditingPlan)||!visibleToolIds().includes('schedule');
+ $('schedule-reset-footer').hidden=!shouldShowScheduleReset();
  $('schedule-reset').hidden=!shouldShowScheduleReset();
  $('schedule-panel').classList.toggle('editing-plan',!!scheduleEditingPlan);
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
@@ -1356,19 +1382,25 @@ $('plan-quick-list').addEventListener('click',e=>{
  if(!entry)return;
  if(match==='planUse'){
   if(entry.id===scheduleActivePlanId){
-   scheduleSetActivePlan('');renderPlanPanel();renderSchedule();toast('계획 선택을 해제했습니다. 현재 기록은 유지됩니다.');return;
+   scheduleSetActivePlan('');
+   scheduleApplyPlanToUnrecordedTurns(null);
+   renderPlanPanel();renderSchedule();
+   toast('계획 선택을 해제했습니다. 기록 완료된 턴은 유지됩니다.');return;
   }
-  // Choosing a plan only marks it. Existing recording turns and actions stay intact.
   scheduleSetActivePlan(entry.id);
+  scheduleApplyPlanToUnrecordedTurns(entry.schedule);
   renderPlanPanel();renderSchedule();
-  toast('계획을 선택했습니다. 현재 육성 기록은 유지됩니다.');
+  toast('선택한 계획을 미기록 턴에 적용했습니다. 기존 기록은 유지됩니다.');
  }else if(match==='planEdit'){
   scheduleBeginPlanEdit(entry);
  }else if(match==='planDelete'){
   if(!confirm(entry.name+' 계획을 삭제할까요?'))return;
   const removed=schedulePlans.splice(index,1);
   if(!saveSchedulePlans()){schedulePlans.splice(index,0,removed[0]);return}
-  if(entry.id===scheduleActivePlanId)scheduleSetActivePlan('');
+  if(entry.id===scheduleActivePlanId){
+   scheduleSetActivePlan('');
+   scheduleApplyPlanToUnrecordedTurns(null);
+  }
   renderPlanPanel();renderSchedule();toast('계획을 삭제했습니다');
  }
 });
