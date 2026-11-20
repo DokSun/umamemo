@@ -818,9 +818,12 @@ function scheduleSetActivePlan(id){
 function scheduleBeginPlanEdit(entry){
  if(scheduleEditingPlan)return;
  scheduleRunBeforeEdit=scheduleCurrent;
- scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:normalizeSchedule(entry?.schedule||emptySchedule())};
+ // A new plan must not inherit the year or any recorded state from the live run.
+ // Editing an existing plan preserves its saved year and its own schedule.
+ const draft=entry?normalizeSchedule(entry.schedule):emptySchedule();
+ if(!entry)draft.year='junior';
+ scheduleEditingPlan={id:entry?.id||'',name:entry?.name||'',schedule:draft};
  scheduleCurrent=scheduleEditingPlan.schedule;
- scheduleCurrent.year=scheduleRunBeforeEdit.year;
  $('schedule-plan-name').value=scheduleEditingPlan.name;
  $('plan-info-fields').hidden=true;
  layout.tool='plan';applyLayout();
@@ -1170,7 +1173,10 @@ $('schedule-onsen-panel').addEventListener('click',e=>{
    next=current.filter(x=>x!=='done'+id.slice(3));
    if(!next.includes(id))next.push(id);
   }else if(state.active===id){
-   // If an earlier start is already present, only the completion is added.
+   // A dig cannot be completed on the same turn it was started.
+   // Repeated presses on its starting turn must not add a completion event.
+   if(current.includes(id))return;
+   // Completion is allowed only when the active dig began in an earlier turn.
    next=[...current.filter(x=>!Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,x)),'done'+id.slice(3)];
   }else{
    // Replace an unfinished same-turn selection; preserve recorded completions.
