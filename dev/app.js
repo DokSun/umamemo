@@ -946,21 +946,23 @@ function renderSchedule(){
    const goal=scheduleGoalAt(year,i,source);
    const selection=source.selectedRaces[year+'-'+i];
    const selectedRace=!(year==='junior'&&i<=12)&&action==='race'&&selection?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===selection||r.ko===selection)):null;
-   // Pending planned actions must not appear as recorded actions on the current turn.
-   const visibleAction=current&&!recorded?null:action;
+   // Show the selected plan as a clearly marked preview, never as a recorded action.
+   const pendingPlan=current&&!recorded&&Boolean(action)&&!scheduleGoalRequiresRace(goal);
+   const visibleAction=action;
    const display=(year==='junior'&&i<=12&&visibleAction==='race')?null:(scheduleAvailableActions(source.scenario)[visibleAction]||LEGACY_SCHEDULE_ACTIONS[visibleAction]||null);
    const seasonal=scheduleIsPrepTurn(year,i);
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
-   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):(!scheduleEditingPlan&&visibleAction==='race'?scheduleActionIcon(display):visibleAction==='race'&&selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):(pendingPlan&&selectedRace?scheduleBannerHtml(selectedRace):!scheduleEditingPlan&&visibleAction==='race'?scheduleActionIcon(display):visibleAction==='race'&&selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
+   const planTag=pendingPlan?'<span class="schedule-pending-plan-label" aria-hidden="true">계획 · 미기록</span>':'';
    const extras=scheduleOnsenBadges(year,i,source);
    const extraTitle=source.scenario==='onsen'?[...scheduleOnsenEvents(year,i,source).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i,source)===2?['온천 효과 2턴째']:[])].join(' · '):'';
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=scheduleEditingPlan&&selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
-   const title=goal&&scheduleGoalRequiresRace(goal)?'고정 목표 레이스':label;
+   const title=goal&&scheduleGoalRequiresRace(goal)?'고정 목표 레이스':pendingPlan?'계획(미기록): '+label:label;
     
-   return `<button type="button" class="schedule-cell ${visibleAction?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal'+(scheduleGoalRequiresRace(goal)?' locked-goal':''):''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
+   return `<button type="button" class="schedule-cell ${visibleAction&&!pendingPlan?'filled':''} ${pendingPlan?'pending-plan':''} ${seasonal?'seasonal':''} ${goal?'has-goal'+(scheduleGoalRequiresRace(goal)?' locked-goal':''):''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}${planTag}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
