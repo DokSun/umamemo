@@ -333,6 +333,21 @@ function scheduleGoalAt(year,i,source=scheduleCurrent){
  const turn=scheduleGlobalTurn(year,i);
  return character.goals.find(g=>g.t===turn)||null;
 }
+// Non-race objectives have a deadline but do not consume the deadline turn.
+function scheduleGoalRequiresRace(goal){
+ return Boolean(goal?.o?.some(o=>o.rid||o.track||o.m||o.g));
+}
+function scheduleNonRaceGoalPeriods(source=scheduleCurrent){
+ const character=findScheduleCharacter(source.character);
+ if(!character)return [];
+ let lastGoalTurn=0;
+ return [...character.goals].sort((x,y)=>x.t-y.t).flatMap(goal=>{
+  const end=Math.min(72,Number(goal.t)||0);
+  const start=lastGoalTurn+1;
+  lastGoalTurn=Math.max(lastGoalTurn,end);
+  return end>=start&&!scheduleGoalRequiresRace(goal)?[{start,end,label:goal.o.map(scheduleGoalName).join(' / ')}]:[];
+ });
+}
 function scheduleRacesAt(year,i){
  const turn=scheduleGlobalTurn(year,i);
  if(year==='junior'&&i<=12)return []; // Debut only through July first half
@@ -850,7 +865,7 @@ function scheduleBannerHtml(race){
   +' onerror="this.hidden=true;this.nextElementSibling.hidden=false">'+fallback;
 }
 function scheduleIsPrepTurn(year,i){return year==='junior'&&i<12}
-function scheduleIsLockedGoal(year,i){return !!scheduleGoalAt(year,i)}
+function scheduleIsLockedGoal(year,i){return scheduleGoalRequiresRace(scheduleGoalAt(year,i))}
 function renderSchedule(){
  if(!$('schedule-grid'))return;
  if(layout.tool==='plan'){
@@ -899,19 +914,53 @@ function renderSchedule(){
    const seasonal=scheduleIsPrepTurn(year,i);
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
-   const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
-   const icon=goal?scheduleBannerHtml(selectedGoal):(!scheduleEditingPlan&&action==='race'?scheduleActionIcon(display):selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
+   const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):(!scheduleEditingPlan&&action==='race'?scheduleActionIcon(display):selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
    const extras=scheduleOnsenBadges(year,i,source);
    const extraTitle=source.scenario==='onsen'?[...scheduleOnsenEvents(year,i,source).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i,source)===2?['온천 효과 2턴째']:[])].join(' · '):'';
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
    const raceTitle=scheduleEditingPlan&&selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
-   const title=goal?'고정 목표 레이스':label;
+   const title=goal&&scheduleGoalRequiresRace(goal)?'고정 목표 레이스':label;
     
    return `<button type="button" class="schedule-cell ${action?'filled':''} ${seasonal?'seasonal':''} ${goal?'has-goal locked-goal':''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
   }).join('');
   return `<section class="schedule-year-section ${year===activeYear?'active':''}" aria-label="${SCHEDULE_YEAR_KO[year]} 일정"><h3 class="schedule-year-heading">${SCHEDULE_YEAR_KO[year]}</h3><div class="schedule-year-grid">${cells}</div></section>`;
  }).join('');
+ renderScheduleGoalPeriods();
 }
+function renderScheduleGoalPeriods(){
+ const root=$('schedule-grid');
+ if(!root)return;
+ root.querySelectorAll('.schedule-goal-period-outline').forEach(node=>node.remove());
+ for(const period of scheduleNonRaceGoalPeriods(scheduleCurrent)){
+  for(const year of SCHEDULE_YEAR_ORDER){
+   const section=root.querySelector('.schedule-year-section[aria-label="'+SCHEDULE_YEAR_KO[year]+' 일정"]');
+   const grid=section?.querySelector('.schedule-year-grid');
+   if(!grid||getComputedStyle(section).display==='none')continue;
+   const offset=SCHEDULE_YEAR_ORDER.indexOf(year)*24;
+   const first=Math.max(0,period.start-offset-1),last=Math.min(23,period.end-offset-1);
+   if(first>last)continue;
+   for(let row=Math.floor(first/4);row<=Math.floor(last/4);row++){
+    const lo=Math.max(first,row*4),hi=Math.min(last,row*4+3);
+    const cellA=grid.querySelector('[data-schedule-turn="'+lo+'"]');
+    const cellB=grid.querySelector('[data-schedule-turn="'+hi+'"]');
+    if(!cellA||!cellB)continue;
+    const base=grid.getBoundingClientRect(),r1=cellA.getBoundingClientRect(),r2=cellB.getBoundingClientRect();
+    if(!base.width||!r1.width)continue;
+    const band=document.createElement('span');
+    band.className='schedule-goal-period-outline';
+    band.style.left=(r1.left-base.left-3)+'px';
+    band.style.top=(r1.top-base.top-3)+'px';
+    band.style.width=(r2.right-r1.left+6)+'px';
+    band.style.height=(Math.max(r1.bottom,r2.bottom)-r1.top+6)+'px';
+    band.title='기간 목표: '+period.label;
+    band.setAttribute('aria-hidden','true');
+    grid.append(band);
+   }
+  }
+ }
+}
+window.addEventListener('resize',()=>{if($('schedule-grid'))renderScheduleGoalPeriods()});
 function closeScheduleDialog(){
  $('schedule-action-backdrop').hidden=true;
  scheduleTurn=null;
@@ -962,7 +1011,7 @@ $('schedule-grid').addEventListener('click',e=>{
  const detail=$('schedule-goal-detail');
  detail.hidden=!goal;
  if(goal)detail.innerHTML=scheduleGoalDetailHtml(goal);
- const readOnly=!!goal;
+ const readOnly=scheduleGoalRequiresRace(goal);
  $('schedule-onsen-panel').hidden=scheduleCurrent.scenario!=='onsen'||scheduleGlobalTurn(year,scheduleTurn)<3;
  $('schedule-action-backdrop').querySelector('.schedule-action-modal').classList.toggle('has-scenario',scheduleCurrent.scenario==='onsen'&&scheduleGlobalTurn(year,scheduleTurn)>=3);
  if(scheduleCurrent.scenario==='onsen')renderScheduleOnsenControls(year,scheduleTurn);
@@ -1134,7 +1183,7 @@ function renderPlanPreview(){
    const race=action==='race'&&raceName?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===raceName||r.ko===raceName)):null;
    const info=scheduleAvailableActions(source.scenario)[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
-   const icon=goal?scheduleBannerHtml(selectedGoal):race?scheduleBannerHtml(race):scheduleActionIcon(info);
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):race?scheduleBannerHtml(race):scheduleActionIcon(info);
    const marker=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
    const badges=scheduleOnsenBadges(year,i,source);
    const seasonal=scheduleIsPrepTurn(year,i);
