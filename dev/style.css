@@ -1529,9 +1529,7 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-cell.has-goal:not(.locked-goal) .schedule-cell-face{border-color:#e7b54f}
 .schedule-cell.has-goal:not(.locked-goal) .schedule-goal-marker{background:#70603b}
 
-.schedule-onsen-dig-choice.completed,.schedule-onsen-dig-choice:disabled{opacity:.43;filter:grayscale(.75);cursor:not-allowed;border-style:dashed}
-.schedule-onsen-dig-complete{display:block;width:100%;margin-top:8px;min-height:33px;background:#315a58;border-color:#619b85;font-size:12px}
-.schedule-onsen-dig-complete[hidden]{display:none!important}
+
 
 /* Current turn: show the planned action as a reference, never as a completed record. */
 .schedule-cell.pending-plan .schedule-cell-face{position:relative;border-style:dashed;border-color:#9da8ca}
