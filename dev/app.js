@@ -924,7 +924,8 @@ function renderSchedule(){
   renderScheduleCharacterOptionsFor($('plan-edit-character'),scheduleCurrent.character);
   $('plan-edit-scenario').value=scheduleCurrent.scenario;
  }
- $('schedule-plan-caption').textContent=scheduleEditingPlan?(scheduleEditingPlan.name||'새 계획'):scheduleActivePlan()?'초기 계획: '+scheduleActivePlan().name:'초기 계획 미지정';
+ $('schedule-plan-caption').textContent=scheduleEditingPlan?(scheduleEditingPlan.name||'새 계획'):scheduleActivePlan()?scheduleActivePlan().name:'초기 계획 미지정';
+ $('schedule-save-as-plan').hidden=Boolean(scheduleEditingPlan);
  $('schedule-view-heading').textContent=scheduleEditingPlan?'육성 계획':'육성 기록';
  $('schedule-work-title').textContent='현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
