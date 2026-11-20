@@ -70,7 +70,10 @@ function renderResetActions(){
  memoFooter.hidden=!ids.includes('memo');
  secondary.dataset.targets='memo';
  // The counter's unified reset already clears both records in split mode.
- scheduleFooter.hidden=!shouldShowScheduleReset(ids);
+ // Keep "save record as plan" available even when a counter is shown alongside
+ // the scheduler; only the duplicate reset button is hidden in that layout.
+ scheduleFooter.hidden=!ids.includes('schedule')||Boolean(scheduleEditingPlan);
+ $('schedule-reset').hidden=!shouldShowScheduleReset(ids);
  $('schedule-reset').dataset.targets='schedule';
 }
 function updateScenarioFrameWidth(){
@@ -920,7 +923,8 @@ function renderSchedule(){
  $('schedule-view-heading').textContent=scheduleEditingPlan?'육성 계획':'육성 기록';
  $('schedule-work-title').textContent='현재 육성';
  $('schedule-plan-edit-bar').hidden=!scheduleEditingPlan;
- $('schedule-reset-footer').hidden=!shouldShowScheduleReset();
+ $('schedule-reset-footer').hidden=Boolean(scheduleEditingPlan)||!visibleToolIds().includes('schedule');
+ $('schedule-reset').hidden=!shouldShowScheduleReset();
  $('schedule-panel').classList.toggle('editing-plan',!!scheduleEditingPlan);
  $('schedule-panel').querySelectorAll('[data-schedule-year]').forEach(btn=>{
   const active=btn.dataset.scheduleYear===activeYear;
