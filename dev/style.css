@@ -651,6 +651,9 @@ body.schedule-dialog-open{overflow:hidden}
 /* Place the excavation badge at the top-left; keep ticket duration at the bottom-right. */
 .schedule-cell-face .schedule-onsen-badges{position:absolute;inset:0;width:100%;height:100%;box-sizing:border-box;max-width:none;display:block;pointer-events:none;z-index:3}
 .schedule-cell-face .schedule-onsen-dig-badge{position:absolute;left:2px;top:2px;right:auto;bottom:auto}
+/* When one turn completes a dig and starts another, show both badges side by side. */
+.schedule-cell-face .schedule-onsen-dig-badge + .schedule-onsen-dig-badge{left:calc(4px + clamp(18px,2.1vw,26px))}
+@media(max-width:520px){.schedule-cell-face .schedule-onsen-dig-badge + .schedule-onsen-dig-badge{left:22px}}
 .schedule-cell-face .schedule-onsen-ticket{position:absolute;right:2px;bottom:2px;left:auto;top:auto}
 .schedule-onsen-ticket-choice:disabled{opacity:.38;cursor:not-allowed;filter:grayscale(.65)}
 
