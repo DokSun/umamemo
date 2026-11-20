@@ -953,7 +953,9 @@ function renderSchedule(){
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
-   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):(pendingPlan&&selectedRace?scheduleBannerHtml(selectedRace):!scheduleEditingPlan&&visibleAction==='race'?scheduleActionIcon(display):visibleAction==='race'&&selectedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display));
+   // Plans show the generic race action. Specific banners belong to completed records.
+   const recordedRace=!scheduleEditingPlan&&recorded&&visibleAction==='race'&&selectedRace;
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):recordedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display);
 
    const extras=scheduleOnsenBadges(year,i,source);
    const extraTitle=source.scenario==='onsen'?[...scheduleOnsenEvents(year,i,source).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i,source)===2?['온천 효과 2턴째']:[])].join(' · '):'';
@@ -1099,7 +1101,8 @@ $('schedule-grid').addEventListener('click',e=>{
   return;
  }
  const r= scheduleRacesAt(year,scheduleTurn);
- $('schedule-race-picker').hidden=!scheduleEditingPlan||!r.length;
+ // Plans no longer select individual races.
+ $('schedule-race-picker').hidden=true;
  const select=$('schedule-race-select');
  select.replaceChildren(new Option('출전할 레이스 선택',''));
  for(let i=0;i<r.length;i++)select.add(new Option(scheduleRaceName(r[i])+' · '+r[i].g+' · '+r[i].m+'m',String(i)));
@@ -1204,7 +1207,7 @@ $('schedule-action-choices').addEventListener('click',e=>{
  const action=scheduleAvailableActions(scheduleCurrent.scenario)[key];
  if(!btn||btn.disabled||scheduleTurn===null||!scheduleTurnEditable(scheduleCurrent.year,scheduleTurn)||scheduleIsLockedGoal(scheduleCurrent.year,scheduleTurn)||!action||!scheduleActionVisible(key,action,scheduleCurrent.year,scheduleTurn,scheduleCurrent.scenario)||scheduleActionDisabled(key,scheduleCurrent.year,scheduleTurn))return;
  if(key==='friend_outing'&&scheduleFriendOutingCount(scheduleCurrent.year,scheduleTurn)>=5)return toast('친구 외출은 최대 5회까지 기록할 수 있습니다');
- if(btn.dataset.scheduleAction==='race'&&scheduleEditingPlan)return toast('레이스 목록에서 출전할 레이스를 선택해 주세요');
+ // Race is a generic selectable action when authoring a plan.
  const wasRecorded=scheduleIsRecorded(scheduleCurrent.year,scheduleTurn);
  const previousAction=scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn];
  scheduleCurrent.turns[scheduleCurrent.year][scheduleTurn]=btn.dataset.scheduleAction;
@@ -1261,12 +1264,12 @@ function renderPlanPreview(){
    const race=action==='race'&&raceName?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===raceName||r.ko===raceName)):null;
    const info=scheduleAvailableActions(source.scenario)[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
-   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):race?scheduleBannerHtml(race):scheduleActionIcon(info);
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):scheduleActionIcon(info);
    const marker=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
    const badges=scheduleOnsenBadges(year,i,source);
    const seasonal=scheduleIsPrepTurn(year,i);
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
-   const title=goal?'목표: '+goal.o.map(scheduleGoalName).join(' / '):race?'레이스: '+scheduleRaceName(race):info?.label||'미지정';
+   const title=goal?'목표: '+goal.o.map(scheduleGoalName).join(' / '):info?.label||'미지정';
    return '<div class="plan-preview-cell schedule-cell '+(action?'filled ':'')+(goal?'has-goal'+(scheduleGoalRequiresRace(goal)?' locked-goal':'')+' ':'')+(seasonal?'seasonal':'')+'" title="'+escapeHTML(SCHEDULE_YEAR_KO[year]+' '+month+'월 '+half+' · '+title)+'"><div class="plan-preview-face schedule-cell-face">'+icon+marker+badges+'</div><small class="schedule-cell-label">'+month+'월 '+half+'</small></div>';
   }).join('');
   return '<section class="plan-preview-year"><h4>'+SCHEDULE_YEAR_KO[year]+'</h4><div class="plan-preview-cells">'+cells+'</div></section>';
@@ -1303,12 +1306,20 @@ $('plan-preview').addEventListener('click',e=>{
  });
 });
 $('plan-create-new').addEventListener('click',()=>scheduleBeginPlanEdit(null));
+function scheduleRecordPlanName(date=new Date()){
+ // Stable Korean-local timestamp: 육성기록_yymmdd_hhmmss
+ const parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{
+  timeZone:'Asia/Seoul',year:'2-digit',month:'2-digit',day:'2-digit',
+  hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'
+ }).formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+ return '육성기록_'+parts.year+parts.month+parts.day+'_'+parts.hour+parts.minute+parts.second;
+}
 $('schedule-save-as-plan').addEventListener('click',()=>{
  if(scheduleEditingPlan)return;
  if(!scheduleRecordedTurns.some(Boolean))return toast('저장할 육성 기록이 없습니다');
  const snapshot=scheduleRecordedPlanSnapshot();
  scheduleBeginPlanEdit(null,snapshot);
- $('schedule-plan-name').value='육성 기록 '+new Date().toLocaleDateString('ko-KR');
+ $('schedule-plan-name').value=scheduleRecordPlanName();
  $('schedule-plan-name').dispatchEvent(new Event('input',{bubbles:true}));
  $('schedule-plan-name').focus();
 });
