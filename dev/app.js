@@ -857,13 +857,9 @@ function scheduleFinishPlanEdit(save=false){
 // Reset the working cultivation only. Saved plans are separate and must never be cleared here.
 function resetCurrentScheduleOnly(){
  if(scheduleEditingPlan)return;
+ // Restore the entire selected plan, including its first turn.
+ // The plan remains a separate immutable source for the new working run.
  scheduleCurrent=scheduleInitialRun();
- // Do not carry a recorded first-turn action into a fresh cultivation.
- // The selected plan remains stored separately.
- scheduleCurrent.turns.junior[0]=null;
- delete scheduleCurrent.selectedRaces['junior-0'];
- const firstTurnEvents=scheduleOnsenData(scheduleCurrent).events;
- if(firstTurnEvents)delete firstTurnEvents['junior-0'];
  scheduleResetRecordedTurns();
  scheduleTurn=null;
  saveScheduleCurrent();
@@ -1255,12 +1251,16 @@ $('schedule-action-clear').addEventListener('click',()=>{
   scheduleSaveRecordedTurns();
  }
  const key=scheduleTurnEventKey(year,scheduleTurn);
- // Clear all editable inputs, rather than restoring the active plan's values.
- // The character database supplies fixed goal races independently.
- scheduleCurrent.turns[year][scheduleTurn]=null;
- delete scheduleCurrent.selectedRaces[key];
+ // Reset an actual recorded turn to its initial plan, not to an empty plan.
+ // During explicit plan editing the button instead clears that draft turn.
+ const baseline=!scheduleEditingPlan?scheduleActivePlan()?.schedule:null;
+ scheduleCurrent.turns[year][scheduleTurn]=baseline?.turns?.[year]?.[scheduleTurn]||null;
+ if(baseline?.selectedRaces?.[key])scheduleCurrent.selectedRaces[key]=baseline.selectedRaces[key];
+ else delete scheduleCurrent.selectedRaces[key];
+ const initialEvents=baseline? [...scheduleScenarioTurnEvents(baseline,'onsen',year,scheduleTurn)]:[];
  const existing=scheduleOnsenData(scheduleCurrent).events;
- if(existing)delete existing[key];
+ if(initialEvents.length)scheduleEnsureScenarioData(scheduleCurrent,'onsen').events[key]=initialEvents;
+ else if(existing)delete existing[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 let planPreviewId='';
