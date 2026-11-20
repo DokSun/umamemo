@@ -877,9 +877,14 @@ function scheduleFinishPlanEdit(save=false){
    if(!saveSchedulePlans()){schedulePlans.pop();return}
   }
  }
+ const updatedActivePlan=save&&scheduleEditingPlan.id&&scheduleEditingPlan.id===scheduleActivePlanId
+  ?schedulePlans.find(plan=>plan.id===scheduleActivePlanId):null;
  $('plan-info-fields').hidden=true;
  scheduleCurrent=scheduleRunBeforeEdit;
  scheduleRunBeforeEdit=null;scheduleEditingPlan=null;
+ // Editing the selected plan must also refresh its unrecorded entries in the
+ // working cultivation; otherwise the pre-edit plan remains on screen.
+ if(updatedActivePlan)scheduleApplyPlanToUnrecordedTurns(updatedActivePlan.schedule);
  closeScheduleDialog();applyLayout();renderSchedule();renderPlanPanel();
  if(save)toast('계획을 저장했습니다');
 }
