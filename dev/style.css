@@ -1514,3 +1514,17 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-action-choices .schedule-action-option[data-schedule-action="island_train"] > .schedule-action-image{
  width:36px;height:36px;max-width:100%;max-height:100%;aspect-ratio:1;object-fit:contain;border-radius:0
 }
+
+/* Non-race objectives are deadline periods; overlays do not change grid sizing. */
+.schedule-year-grid{position:relative}
+.schedule-goal-period-outline{
+ position:absolute;pointer-events:none;z-index:4;border:2px solid #e7b54f;
+ border-radius:7px;background:rgba(231,181,79,.045);
+ box-shadow:0 0 0 1px rgba(35,25,9,.2);box-sizing:border-box
+}
+.schedule-cell.has-goal:not(.locked-goal) .schedule-cell-face{border-color:#e7b54f}
+.schedule-cell.has-goal:not(.locked-goal) .schedule-goal-marker{background:#70603b}
+
+.schedule-onsen-dig-choice.completed,.schedule-onsen-dig-choice:disabled{opacity:.43;filter:grayscale(.75);cursor:not-allowed;border-style:dashed}
+.schedule-onsen-dig-complete{display:block;width:100%;margin-top:8px;min-height:33px;background:#315a58;border-color:#619b85;font-size:12px}
+.schedule-onsen-dig-complete[hidden]{display:none!important}
