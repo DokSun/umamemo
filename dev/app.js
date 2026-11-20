@@ -858,6 +858,12 @@ function scheduleFinishPlanEdit(save=false){
 function resetCurrentScheduleOnly(){
  if(scheduleEditingPlan)return;
  scheduleCurrent=scheduleInitialRun();
+ // Do not carry a recorded first-turn action into a fresh cultivation.
+ // The selected plan remains stored separately.
+ scheduleCurrent.turns.junior[0]=null;
+ delete scheduleCurrent.selectedRaces['junior-0'];
+ const firstTurnEvents=scheduleOnsenData(scheduleCurrent).events;
+ if(firstTurnEvents)delete firstTurnEvents['junior-0'];
  scheduleResetRecordedTurns();
  scheduleTurn=null;
  saveScheduleCurrent();
@@ -1085,7 +1091,8 @@ $('schedule-grid').addEventListener('click',e=>{
  $('schedule-action-choices').hidden=readOnly;
  $('schedule-race-picker').hidden=readOnly;
  // Goals are fixed, but their turn-free scenario actions must still be resettable.
- $('schedule-action-clear').hidden=!scheduleEditingPlan&&!scheduleIsRecorded(year,scheduleTurn);
+ // The active turn is editable even before recording it.
+ $('schedule-action-clear').hidden=!scheduleTurnEditable(year,scheduleTurn);
  $('schedule-goal-complete').hidden=scheduleEditingPlan||!readOnly||scheduleGlobalTurn(year,scheduleTurn)!==scheduleCurrentTurn();
  if(readOnly){
   $('schedule-action-choices').replaceChildren();
@@ -1241,25 +1248,19 @@ $('schedule-action-clear').addEventListener('click',()=>{
  const year=scheduleCurrent.year;
  const turn=scheduleGlobalTurn(year,scheduleTurn);
  if(!scheduleTurnEditable(year,scheduleTurn))return;
- if(!scheduleEditingPlan){
-  if(!scheduleRecordedTurns[turn-1])return;
+ if(!scheduleEditingPlan&&scheduleRecordedTurns[turn-1]){
   counterUnlinkFriendOuting(year,scheduleTurn);
   // Keep later completed actions intact when undoing an earlier turn.
   scheduleRecordedTurns[turn-1]=false;
   scheduleSaveRecordedTurns();
  }
  const key=scheduleTurnEventKey(year,scheduleTurn);
- // Keep the character's fixed goal. Clear all editable main and scenario actions.
- if(!scheduleIsLockedGoal(year,scheduleTurn)){
-  const baseline=scheduleActivePlan()?.schedule;
-  scheduleCurrent.turns[year][scheduleTurn]=baseline?.turns[year]?.[scheduleTurn]||null;
-  if(baseline?.selectedRaces?.[key])scheduleCurrent.selectedRaces[key]=baseline.selectedRaces[key];
-  else delete scheduleCurrent.selectedRaces[key];
- }
- const initialEvents=scheduleActivePlan()?scheduleScenarioTurnEvents(scheduleActivePlan().schedule,'onsen',year,scheduleTurn):[];
+ // Clear all editable inputs, rather than restoring the active plan's values.
+ // The character database supplies fixed goal races independently.
+ scheduleCurrent.turns[year][scheduleTurn]=null;
+ delete scheduleCurrent.selectedRaces[key];
  const existing=scheduleOnsenData(scheduleCurrent).events;
- if(initialEvents.length)scheduleEnsureScenarioData(scheduleCurrent,'onsen').events[key]=[...initialEvents];
- else if(existing)delete existing[key];
+ if(existing)delete existing[key];
  saveScheduleCurrent();closeScheduleDialog();renderSchedule();
 });
 let planPreviewId='';
