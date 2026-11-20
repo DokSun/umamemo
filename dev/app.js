@@ -952,14 +952,14 @@ function renderSchedule(){
    const label=display?display.label:'행동 추가';
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const mark=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
-   // Plans show the generic race action. Specific banners belong to completed records.
-   const recordedRace=!scheduleEditingPlan&&recorded&&visibleAction==='race'&&selectedRace;
-   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):recordedRace?scheduleBannerHtml(selectedRace):scheduleActionIcon(display);
+   // All optional race turns use the generic race action icon; only fixed
+   // target races render their database banner.
+   const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):scheduleActionIcon(display);
 
    const extras=scheduleOnsenBadges(year,i,source);
    const extraTitle=source.scenario==='onsen'?[...scheduleOnsenEvents(year,i,source).map(k=>SCHEDULE_ONSEN_EVENTS[k]?.label).filter(Boolean),...(scheduleOnsenTicketTurn(year,i,source)===2?['온천 효과 2턴째']:[])].join(' · '):'';
    const goalTitle=goal?' · 목표: '+goal.o.map(scheduleGoalName).join(' / '):'';
-   const raceTitle=scheduleEditingPlan&&selectedRace?' · 출전: '+scheduleRaceName(selectedRace):'';
+   const raceTitle=''; // Non-goal race names are not shown in cultivation plans.
    const title=goal&&scheduleGoalRequiresRace(goal)?'고정 목표 레이스':pendingPlan?'계획(미기록): '+label:label;
     
    return `<button type="button" class="schedule-cell ${visibleAction&&!pendingPlan?'filled':''} ${pendingPlan?'pending-plan':''} ${seasonal?'seasonal':''} ${goal?'has-goal'+(scheduleGoalRequiresRace(goal)?' locked-goal':''):''} ${current?'current-turn':''} ${recorded?'recorded-turn':''} ${future?'future-turn':''}" data-schedule-year-cell="${year}" data-schedule-turn="${i}" ${future?'disabled':''} aria-label="${SCHEDULE_YEAR_KO[year]} ${month}월 ${half}: ${escapeHTML(title+goalTitle+raceTitle+(extraTitle?' · '+extraTitle:''))}"><span class="schedule-cell-face">${icon}${mark}${extras}</span><span class="schedule-cell-label">${month}월 ${half}</span></button>`;
