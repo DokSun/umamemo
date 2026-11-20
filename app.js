@@ -1224,12 +1224,12 @@ function renderPlanPreview(){
    const info=scheduleAvailableActions(source.scenario)[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):race?scheduleBannerHtml(race):scheduleActionIcon(info);
-   const marker=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(goal.c?'선택 목표':'목표')+'</span>':'';
+   const marker=goal?'<span class="schedule-goal-marker" aria-hidden="true">'+(scheduleGoalRequiresRace(goal)?goal.c?'선택 목표':'목표':'기한')+'</span>':'';
    const badges=scheduleOnsenBadges(year,i,source);
    const seasonal=scheduleIsPrepTurn(year,i);
    const month=1+Math.floor(i/2),half=i%2===0?'전반':'후반';
    const title=goal?'목표: '+goal.o.map(scheduleGoalName).join(' / '):race?'레이스: '+scheduleRaceName(race):info?.label||'미지정';
-   return '<div class="plan-preview-cell schedule-cell '+(action?'filled ':'')+(goal?'has-goal locked-goal ':'')+(seasonal?'seasonal':'')+'" title="'+escapeHTML(SCHEDULE_YEAR_KO[year]+' '+month+'월 '+half+' · '+title)+'"><div class="plan-preview-face schedule-cell-face">'+icon+marker+badges+'</div><small class="schedule-cell-label">'+month+'월 '+half+'</small></div>';
+   return '<div class="plan-preview-cell schedule-cell '+(action?'filled ':'')+(goal?'has-goal'+(scheduleGoalRequiresRace(goal)?' locked-goal':'')+' ':'')+(seasonal?'seasonal':'')+'" title="'+escapeHTML(SCHEDULE_YEAR_KO[year]+' '+month+'월 '+half+' · '+title)+'"><div class="plan-preview-face schedule-cell-face">'+icon+marker+badges+'</div><small class="schedule-cell-label">'+month+'월 '+half+'</small></div>';
   }).join('');
   return '<section class="plan-preview-year"><h4>'+SCHEDULE_YEAR_KO[year]+'</h4><div class="plan-preview-cells">'+cells+'</div></section>';
  }).join('');
