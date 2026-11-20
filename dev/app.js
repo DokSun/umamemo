@@ -539,11 +539,14 @@ function scheduleOnsenBadges(year,i,source=scheduleCurrent){
  if(source.scenario!=='onsen')return '';
  const events=scheduleOnsenEvents(year,i,source);
  const badges=[];
- const start=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
- const done=events.find(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id));
- // A completion is also an excavation marker, including same-turn start+finish.
- const dig=done?'dig'+done.slice(4):start;
- if(dig)badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+(done?' · 굴착 완료':' · 굴착 시작')+'">'+scheduleOnsenIconHtml(dig)+'</span>');
+ // Show both start and completion markers; they may occur on the same turn.
+ // A same-turn start+completion of the same excavation needs only one badge.
+ const starts=events.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_DIGS,id));
+ const finished=events.filter(id=>Object.hasOwn(SCHEDULE_ONSEN_DIG_DONE_IDS,id)).map(id=>'dig'+id.slice(4));
+ for(const dig of new Set([...starts,...finished])){
+  const done=finished.includes(dig);
+  badges.push('<span class="schedule-onsen-dig-badge" title="'+SCHEDULE_ONSEN_DIGS[dig].label+(done?' · 굴착 완료':' · 굴착 시작')+'">'+scheduleOnsenIconHtml(dig)+'</span>');
+ }
  const ticket=scheduleOnsenTicketStatus(year,i,source);
  if(ticket.turn){
   const label=(ticket.turn===1?'온천권 사용 · 효과 1턴째':'온천 효과 2턴째')+(ticket.superRecovery?' · 초회복':'');
