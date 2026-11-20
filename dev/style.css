@@ -1532,3 +1532,17 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-onsen-dig-choice.completed,.schedule-onsen-dig-choice:disabled{opacity:.43;filter:grayscale(.75);cursor:not-allowed;border-style:dashed}
 .schedule-onsen-dig-complete{display:block;width:100%;margin-top:8px;min-height:33px;background:#315a58;border-color:#619b85;font-size:12px}
 .schedule-onsen-dig-complete[hidden]{display:none!important}
+
+/* Current turn: show the planned action as a reference, never as a completed record. */
+.schedule-cell.pending-plan .schedule-cell-face{position:relative;border-style:dashed;border-color:#9da8ca}
+.schedule-cell.pending-plan .schedule-cell-face>.schedule-action-image,
+.schedule-cell.pending-plan .schedule-cell-face>.schedule-race-banner,
+.schedule-cell.pending-plan .schedule-cell-face>.schedule-type-icon,
+.schedule-cell.pending-plan .schedule-cell-face>.schedule-friend-outing-art,
+.schedule-cell.pending-plan .schedule-cell-face>.schedule-emoji-icon{opacity:.6}
+.schedule-cell.pending-plan .schedule-pending-plan-label{
+ position:absolute;right:2px;bottom:2px;z-index:5;
+ padding:2px 4px;border-radius:4px;background:#252f48ed;color:#f4e6a9;
+ font-size:clamp(8px,.8vw,10px);line-height:1.2;font-weight:800;
+ white-space:nowrap;pointer-events:none
+}
