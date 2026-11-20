@@ -1540,9 +1540,4 @@ header .header-settings-button{order:initial;margin-left:auto}
 .schedule-cell.pending-plan .schedule-cell-face>.schedule-type-icon,
 .schedule-cell.pending-plan .schedule-cell-face>.schedule-friend-outing-art,
 .schedule-cell.pending-plan .schedule-cell-face>.schedule-emoji-icon{opacity:.6}
-.schedule-cell.pending-plan .schedule-pending-plan-label{
- position:absolute;right:2px;bottom:2px;z-index:5;
- padding:2px 4px;border-radius:4px;background:#252f48ed;color:#f4e6a9;
- font-size:clamp(8px,.8vw,10px);line-height:1.2;font-weight:800;
- white-space:nowrap;pointer-events:none
-}
+
