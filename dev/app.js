@@ -804,9 +804,8 @@ function scheduleRecordedPlanSnapshot(){
    if(!scheduleIsRecorded(year,i))continue;
    const key=scheduleTurnEventKey(year,i);
    snapshot.turns[year][i]=scheduleCurrent.turns[year][i];
-   if(snapshot.turns[year][i]==='race'&&scheduleCurrent.selectedRaces[key]){
-    snapshot.selectedRaces[key]=scheduleCurrent.selectedRaces[key];
-   }
+   // The copied plan stores a generic "race" action, never the specific
+   // race selected in the original cultivation record.
    const events=scheduleScenarioTurnEvents(scheduleCurrent,'onsen',year,i);
    if(events.length)scheduleEnsureScenarioData(snapshot,'onsen').events[key]=[...events];
   }
@@ -1225,26 +1224,32 @@ $('schedule-goal-complete').addEventListener('click',()=>{
 $('schedule-action-clear').addEventListener('click',()=>{
  if(scheduleTurn===null)return;
  const year=scheduleCurrent.year;
- const turn=scheduleGlobalTurn(year,scheduleTurn);
- if(!scheduleTurnEditable(year,scheduleTurn))return;
+ const index=scheduleTurn;
+ if(!scheduleTurnEditable(year,index))return;
+ const turn=scheduleGlobalTurn(year,index);
+ const key=scheduleTurnEventKey(year,index);
  if(!scheduleEditingPlan&&scheduleRecordedTurns[turn-1]){
-  counterUnlinkFriendOuting(year,scheduleTurn);
-  // Keep later completed actions intact when undoing an earlier turn.
+  // Undo only this turn's actual recording; do not alter any saved plan.
+  counterUnlinkFriendOuting(year,index);
   scheduleRecordedTurns[turn-1]=false;
   scheduleSaveRecordedTurns();
  }
- const key=scheduleTurnEventKey(year,scheduleTurn);
- // Reset an actual recorded turn to its initial plan, not to an empty plan.
- // During explicit plan editing the button instead clears that draft turn.
- const baseline=!scheduleEditingPlan?scheduleActivePlan()?.schedule:null;
- scheduleCurrent.turns[year][scheduleTurn]=baseline?.turns?.[year]?.[scheduleTurn]||null;
- if(baseline?.selectedRaces?.[key])scheduleCurrent.selectedRaces[key]=baseline.selectedRaces[key];
- else delete scheduleCurrent.selectedRaces[key];
- const initialEvents=baseline? [...scheduleScenarioTurnEvents(baseline,'onsen',year,scheduleTurn)]:[];
- const existing=scheduleOnsenData(scheduleCurrent).events;
- if(initialEvents.length)scheduleEnsureScenarioData(scheduleCurrent,'onsen').events[key]=initialEvents;
- else if(existing)delete existing[key];
- saveScheduleCurrent();closeScheduleDialog();renderSchedule();
+ // In plan editing, clear only the edited draft; in recording mode, restore
+ // exactly the selected plan's original entries for this particular turn.
+ const initial=!scheduleEditingPlan?scheduleActivePlan()?.schedule:null;
+ if(!scheduleIsLockedGoal(year,index)){
+  scheduleCurrent.turns[year][index]=initial?.turns?.[year]?.[index]||null;
+  if(initial?.selectedRaces?.[key])scheduleCurrent.selectedRaces[key]=initial.selectedRaces[key];
+  else delete scheduleCurrent.selectedRaces[key];
+ }
+ // Fixed goal is never deleted, but scenario-side turn events still reset.
+ const originalEvents=initial? [...scheduleScenarioTurnEvents(initial,'onsen',year,index)]:[];
+ const currentEvents=scheduleOnsenData(scheduleCurrent).events;
+ if(originalEvents.length)scheduleEnsureScenarioData(scheduleCurrent,'onsen').events[key]=originalEvents;
+ else if(currentEvents)delete currentEvents[key];
+ saveScheduleCurrent();
+ closeScheduleDialog();
+ renderSchedule();
 });
 let planPreviewId='';
 let planPreviewYear='junior';
@@ -1260,8 +1265,7 @@ function renderPlanPreview(){
  const sections=SCHEDULE_YEAR_ORDER.map(year=>{
   const cells=source.turns[year].map((action,i)=>{
    const goal=scheduleGoalAt(year,i,source);
-   const raceName=source.selectedRaces?.[year+'-'+i];
-   const race=action==='race'&&raceName?scheduleDb.races.find(r=>r.t===scheduleGlobalTurn(year,i)&&(r.n===raceName||r.ko===raceName)):null;
+   // Non-goal race selection is intentionally unspecified in cultivation plans.
    const info=scheduleAvailableActions(source.scenario)[action]||LEGACY_SCHEDULE_ACTIONS[action]||null;
    const selectedGoal=goal?.o.find(o=>o.rid)||goal?.o[0]||null;
    const icon=goal&&scheduleGoalRequiresRace(goal)?scheduleBannerHtml(selectedGoal):scheduleActionIcon(info);
