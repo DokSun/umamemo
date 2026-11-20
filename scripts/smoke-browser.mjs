@@ -57,6 +57,55 @@ try{
   ||!scenarioPreview.second.includes('회복 · 2/2턴')
   ||!scenarioPreview.expired.includes('적용 중인 효과 없음')
   ||!scenarioPreview.empty.includes('선택 기록 없음'))throw new Error('Onsen scenario status display failed');
+ // Deadline objective is a playable final turn and a contiguous outlined period.
+ const deadline=await page.evaluate(()=>{
+  const backup=scheduleDb.characters;
+  scheduleDb.characters=[...backup,{id:'smoke-goal-character',ko:'목표 시험',goals:[
+   {t:6,o:[{n:'팬 수 달성',d:'팬 수 확보'}]},
+   {t:8,o:[{n:'고정 목표 레이스',rid:9999,g:'G1'}]}
+  ]}];
+  const model=emptySchedule();model.character='smoke-goal-character';
+  const periods=scheduleNonRaceGoalPeriods(model);
+  const nonRace=scheduleGoalAt('junior',5,model);
+  const race=scheduleGoalAt('junior',7,model);
+  const saved=scheduleCurrent,year=scheduleCurrent.year;
+  scheduleCurrent=model;scheduleCurrent.year='junior';
+  renderSchedule();
+  const deadlineCell=document.querySelector('#schedule-grid [data-schedule-year-cell="junior"][data-schedule-turn="5"]');
+  const deadlineUnlocked=deadlineCell&&!deadlineCell.classList.contains('locked-goal');
+  const outlines=document.querySelectorAll('#schedule-grid .schedule-goal-period-outline').length;
+  scheduleCurrent=saved;scheduleCurrent.year=year;
+  scheduleDb.characters=backup;
+  renderSchedule();
+  return {periods,nonRaceLocked:scheduleGoalRequiresRace(nonRace),raceLocked:scheduleGoalRequiresRace(race),deadlineUnlocked,outlines};
+ });
+ if(deadline.periods.length!==1||deadline.periods[0].start!==1||deadline.periods[0].end!==6
+   ||deadline.nonRaceLocked||!deadline.raceLocked||!deadline.deadlineUnlocked||deadline.outlines<2)
+  throw new Error('Non-race deadline boundary/action behavior failed: '+JSON.stringify(deadline));
+ // Switch to newly unlocked digs without completing the old one; completed digs lock.
+ const digHistory=await page.evaluate(()=>{
+  const source=emptySchedule();source.scenario='onsen';
+  source.scenarioData={onsen:{events:{
+   'junior-2':['dig1'],
+   'classic-0':['dig4'],
+   'classic-1':['done4'],
+   'classic-2':['dig1'],
+   'classic-3':['done1'],
+   'senior-0':['dig8']
+  }}};
+  const norm=normalizeSchedule(source);
+  const switched=scheduleOnsenDigState('classic',0,norm);
+  const completed=scheduleOnsenDigState('classic',1,norm);
+  const resumed=scheduleOnsenDigState('classic',2,norm);
+  const last=scheduleOnsenDigState('senior',0,norm);
+  return {switched:switched.active,oldUnfinished:!switched.completed.has('dig1'),
+   done4:completed.completed.has('dig4'),resumed:resumed.active,
+   done1:last.completed.has('dig1'),done4Still:last.completed.has('dig4'),
+   newUnlocked:last.active==='dig8',saved:!!norm.scenarioData.onsen.events['classic-1']?.includes('done4')};
+ });
+ if(digHistory.switched!=='dig4'||!digHistory.oldUnfinished||!digHistory.done4||digHistory.resumed!=='dig1'
+  ||!digHistory.done1||!digHistory.done4Still||!digHistory.newUnlocked||!digHistory.saved)
+  throw new Error('Onsen excavation completion/switch history failed: '+JSON.stringify(digHistory));
  if((await page.locator('#schedule-training-levels > #schedule-scenario-status').count())!==0)throw new Error('Scenario status must not add an independent row');
  if((await page.locator('#workspace > #schedule-scenario-status').count())!==1)throw new Error('Scenario status must be its own workspace grid frame');
  const current=page.locator('#schedule-current-turn');
