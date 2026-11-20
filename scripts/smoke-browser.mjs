@@ -98,13 +98,17 @@ try{
   const completed=scheduleOnsenDigState('classic',1,norm);
   const resumed=scheduleOnsenDigState('classic',2,norm);
   const last=scheduleOnsenDigState('senior',0,norm);
+  const sameTurn=emptySchedule();sameTurn.scenario='onsen';
+  sameTurn.scenarioData={onsen:{events:{'classic-0':['dig4'],'classic-1':['done4','dig1']}}};
+  const immediate=scheduleOnsenDigState('classic',1,sameTurn);
   return {switched:switched.active,oldUnfinished:!switched.completed.has('dig1'),
    done4:completed.completed.has('dig4'),resumed:resumed.active,
    done1:last.completed.has('dig1'),done4Still:last.completed.has('dig4'),
+   sameTurnSwitch:immediate.completed.has('dig4')&&immediate.active==='dig1',
    newUnlocked:last.active==='dig8',saved:!!norm.scenarioData.onsen.events['classic-1']?.includes('done4')};
  });
  if(digHistory.switched!=='dig4'||!digHistory.oldUnfinished||!digHistory.done4||digHistory.resumed!=='dig1'
-  ||!digHistory.done1||!digHistory.done4Still||!digHistory.newUnlocked||!digHistory.saved)
+  ||!digHistory.done1||!digHistory.done4Still||!digHistory.sameTurnSwitch||!digHistory.newUnlocked||!digHistory.saved)
   throw new Error('Onsen excavation completion/switch history failed: '+JSON.stringify(digHistory));
  if((await page.locator('#schedule-training-levels > #schedule-scenario-status').count())!==0)throw new Error('Scenario status must not add an independent row');
  if((await page.locator('#workspace > #schedule-scenario-status').count())!==1)throw new Error('Scenario status must be its own workspace grid frame');
