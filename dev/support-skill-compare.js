@@ -66,20 +66,31 @@
  }
  function statBox(name,val,detail=''){return '<div class="skill-compare-stat"><span>'+esc(name)+'</span><strong>'+esc(val)+'</strong>'+(detail?'<small>'+esc(detail)+'</small>':'')+'</div>'}
  const percentage=(n,d)=>d?(100*n/d).toFixed(1)+'%':'—';
- function rowMarkup(entry,columnIds,sortMode='count'){
+ function rowMarkup(entry,columnIds){
   const details=skillInfo(entry.id);
   const mapped=columnIds.map((id,i)=>{
    const found=id&&entry.cards.has(Number(id));
-   const types=found?[...entry.perCard.get(Number(id))].map(t=>t==='hint'?'훈련':'이벤트').join('+'):'';
-   return '<span class="skill-compare-presence '+(found?'yes':'')+'" title="'+esc(labels[mode][i]+(types?' · '+types:''))+'">'+(found?'●':'·')+'</span>';
+   const types=found?[...entry.perCard.get(Number(id))].map(t=>t==='hint'?'훈련 힌트':'이벤트').join(' + '):'';
+   const title=labels[mode][i]+(id?' · '+cardLabel(id):' · 미선택')+(types?' · '+types:'');
+   return '<td class="skill-compare-matrix-cell '+(found?'has-skill':'no-skill')+'" title="'+esc(title)+'" aria-label="'+esc(title+(found?' · 스킬 제공':' · 해당 스킬 없음'))+'">'
+    +(found?'<span aria-hidden="true">✓</span>':'<span aria-hidden="true">·</span>')+'</td>';
   }).join('');
   const flag=entry.sources.has('hint')&&entry.sources.has('event')?'훈련+이벤트':entry.sources.has('hint')?'훈련':'이벤트';
-  return '<tr><td><span class="skill-compare-skill-name">'+esc(details.name)+'</span><small>'+flag+'</small></td><td><div class="skill-compare-dots">'+mapped+'</div></td><td class="skill-compare-count">'+entry.cards.size+'장</td></tr>';
+  return '<tr><th scope="row" class="skill-compare-matrix-skill"><span class="skill-compare-skill-name">'+esc(details.name)+'</span><small>'+flag+'</small></th>'
+   +mapped+'<td class="skill-compare-count">'+entry.cards.size+'장</td></tr>';
  }
  function renderTable(rows,ids,heading,emptyMsg){
   const sorted=[...rows].sort((a,b)=>b.cards.size-a.cards.size||skillInfo(a.id).name.localeCompare(skillInfo(b.id).name,'ko'));
-  return '<section class="skill-compare-table-wrap"><h3>'+esc(heading)+'</h3><div class="skill-compare-scroll"><table><thead><tr><th>스킬</th><th>'+ids.map((_,i)=>'<span title="'+esc(labels[mode][i])+'">'+esc(String(i+1))+'</span>').join('')+'</th><th>제공</th></tr></thead><tbody>'
-   +(sorted.length?sorted.map(row=>rowMarkup(row,ids)).join(''):'<tr><td colspan="3">'+esc(emptyMsg)+'</td></tr>')
+  const headers=ids.map((id,i)=>{
+   const name=id?cardLabel(id):labels[mode][i]+' 미선택';
+   return '<th scope="col" class="skill-compare-matrix-card" title="'+esc(name)+'"><div class="skill-compare-matrix-card-heading">'
+    +(id?'<span class="skill-compare-matrix-portrait">'+cardArt(id)+'</span>':'<span class="skill-compare-matrix-portrait empty">＋</span>')
+    +'<span class="skill-compare-matrix-label">'+esc(labels[mode][i])+'</span></div></th>';
+  }).join('');
+  return '<section class="skill-compare-table-wrap"><h3>'+esc(heading)+'</h3>'
+   +'<div class="skill-compare-scroll"><table class="skill-compare-matrix"><thead><tr><th scope="col" class="skill-compare-matrix-skill">스킬</th>'
+   +headers+'<th scope="col" class="skill-compare-matrix-total">제공</th></tr></thead><tbody>'
+   +(sorted.length?sorted.map(row=>rowMarkup(row,ids)).join(''):'<tr><td colspan="'+(ids.length+2)+'" class="skill-compare-empty">'+esc(emptyMsg)+'</td></tr>')
    +'</tbody></table></div></section>';
  }
  function renderResults(){
@@ -90,7 +101,7 @@
   const values=[...map.values()],total=values.reduce((n,x)=>n+x.cards.size,0),duplicated=values.filter(x=>x.cards.size>=2).length;
   let html='<div class="skill-compare-stats">'+statBox('고유 스킬',values.length+'종')+statBox('중복 스킬',duplicated+'종')+statBox('총 카드별 스킬 항목',total+'건')+'</div>';
   if(mode==='team'){
-   html+='<p class="skill-compare-note">스킬별 ●은 제공 카드입니다. 같은 카드의 훈련·이벤트 중복은 카드별 1회로 셉니다.</p>';
+   html+='<p class="skill-compare-note">격자의 각 열은 서포트카드, 각 행은 스킬입니다. 초록색 ✓는 해당 카드가 제공하는 스킬입니다. 같은 카드에서 훈련·이벤트가 겹쳐도 1회로 셉니다.</p>';
    html+=renderTable(values,ids,'5장 편성 스킬 목록','선택한 카드에 해당하는 스킬이 없습니다.');
    const dist=[1,2,3,4,5].map(n=>n+'장 제공 '+values.filter(x=>x.cards.size===n).length+'종').join(' · ');
    html+='<p class="skill-compare-note">'+dist+'</p>';
