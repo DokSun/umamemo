@@ -1690,3 +1690,45 @@ header .header-settings-button{order:initial;margin-left:auto}
  #support-skills-panel .skill-compare-deck-tabs button,#support-skills-panel .skill-compare-deck-actions button{font-size:11px;padding:6px 8px}
 }
 @media(max-width:390px){#support-skills-panel .skill-compare-deck-comparisons{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Five position candidate grid: each column is a deck slot, stacked alternatives underneath. */
+#support-skills-panel .skill-compare-slots.candidate-layout{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px;align-items:stretch}
+#support-skills-panel .skill-compare-candidate-column{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;padding:9px 5px;background:#203047;border:1px solid #49617f;border-radius:9px}
+#support-skills-panel .skill-compare-candidate-column>strong{font-size:12px;line-height:1.3;color:#e7f1fd}
+#support-skills-panel .skill-compare-candidate{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;min-width:0}
+#support-skills-panel .skill-compare-candidate .skill-compare-slot-art{width:min(100%,110px);aspect-ratio:3/4;min-height:0}
+#support-skills-panel .skill-compare-candidate .skill-compare-remove{position:absolute;top:2px;right:2px;width:23px;height:23px;padding:0;font-size:16px;line-height:20px;z-index:1;background:#7c4050}
+#support-skills-panel .skill-compare-candidate-count{font-size:10px;color:#b8d5e6}
+#support-skills-panel .skill-compare-add-candidate{width:100%;margin-top:4px;min-height:37px;font-size:11px;padding:5px 4px;border:1px dashed #6f9db7}
+#support-skills-panel .skill-compare-matrix-card-count{font-size:10px;color:#a8efd1;white-space:nowrap}
+#support-skills-panel .skill-compare-combo-meta{font-size:12px;color:#d7e7f4;background:#213850;border-radius:6px;padding:9px;margin:9px 0}
+#support-skills-panel .skill-compare-combo-list{display:flex;flex-direction:column;gap:6px;margin:12px 0}
+#support-skills-panel .skill-compare-combo-row{display:flex;align-items:center;gap:10px;border:1px solid #455c79;background:#1e324b;padding:8px;border-radius:8px;min-width:0}
+#support-skills-panel .skill-compare-combo-rank{font-size:13px;font-weight:800;min-width:34px;color:#95ddc8}
+#support-skills-panel .skill-compare-combo-images{display:flex;gap:3px;flex:0 1 auto;min-width:0}
+#support-skills-panel .skill-compare-combo-member{width:41px;height:55px;flex:0 1 41px;min-width:0;overflow:hidden;border-radius:4px;border:1px solid #63809d;background:#17293c}
+#support-skills-panel .skill-compare-combo-member img{width:100%;height:100%;object-fit:cover}
+#support-skills-panel .skill-compare-combo-member .skill-compare-no-image{font-size:9px;color:#b8cde0}
+#support-skills-panel .skill-compare-combo-scores{display:flex;flex-direction:column;gap:3px;min-width:0;margin-left:auto}
+#support-skills-panel .skill-compare-combo-scores strong{font-size:18px;color:#dffbea}
+#support-skills-panel .skill-compare-combo-scores small{font-size:10px;color:#b6cbe2}
+#support-skills-panel .skill-compare-combo-row>button{font-size:11px;min-height:32px;white-space:nowrap}
+#support-skills-panel .skill-compare-combo-pager{display:flex;justify-content:center;align-items:center;gap:10px;margin:12px 0}
+#support-skills-panel .skill-compare-combo-pager button{font-size:12px;min-height:34px}
+#support-skills-panel .skill-compare-combo-pager span{font-size:12px;color:#bbcee4}
+@media(max-width:680px){
+ #support-skills-panel .skill-compare-slots.candidate-layout{grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+ #support-skills-panel .skill-compare-candidate-column{padding:6px 2px;gap:5px}
+ #support-skills-panel .skill-compare-add-candidate{font-size:10px;overflow-wrap:anywhere}
+ #support-skills-panel .skill-compare-combo-row{gap:5px;padding:6px}
+ #support-skills-panel .skill-compare-combo-member{width:30px;height:40px;flex-basis:30px}
+ #support-skills-panel .skill-compare-combo-scores strong{font-size:15px}
+ #support-skills-panel .skill-compare-combo-scores small{font-size:9px}
+ #support-skills-panel .skill-compare-combo-rank{font-size:11px;min-width:27px}
+ #support-skills-panel .skill-compare-combo-row>button{padding:5px;font-size:10px}
+}
+@media(max-width:390px){
+ #support-skills-panel .skill-compare-combo-row{flex-wrap:wrap}
+ #support-skills-panel .skill-compare-combo-scores{margin-left:0}
+}
