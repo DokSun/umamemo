@@ -127,41 +127,16 @@
   root.querySelector('#skill-compare-intro').textContent=mode==='team'?'친구·그룹 카드를 제외한 5장을 선택합니다.':mode==='pair'?'서포트카드 두 장의 공통·전용 스킬을 비교합니다.':'공통 4장에 각각 A 또는 B를 추가한 두 편성을 비교합니다.';
   renderSlots();renderResults();
  }
- function pickerMatches(){
-  const query=root.querySelector('#skill-compare-search').value.trim().toLocaleLowerCase();
-  const type=root.querySelector('#skill-compare-type').value,rarity=root.querySelector('#skill-compare-rarity').value;
-  const today=new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Seoul'});
-  const taken=new Set(selections[mode].map((id,i)=>i===activeSlot?null:id).filter(Boolean));
-  return cards.filter(c=>!taken.has(c.id)&&(type==='all'||c.typeRaw===type)&&(rarity==='all'||c.rarity===rarity)
-   &&(server()==='jp'||(c.releaseKo&&c.releaseKo<=today))
-   &&(!query||(cardName(c)+' '+c.characterKo+' '+c.nameJa+' '+c.id).toLocaleLowerCase().includes(query)))
-   .sort((a,b)=>Number(b.id)-Number(a.id));
- }
- function updatePicker(resetPage=false){
-  if(resetPage)pickerPage=0;
-  const results=root.querySelector('#skill-compare-search-results'),matches=pickerMatches();
-  const pages=Math.max(1,Math.ceil(matches.length/pickerPageSize));
-  pickerPage=Math.min(pickerPage,pages-1);
-  const pageCards=matches.slice(pickerPage*pickerPageSize,(pickerPage+1)*pickerPageSize);
-  results.innerHTML=pageCards.length?pageCards.map(c=>
-   '<button type="button" class="skill-compare-picker-card" data-skill-select="'+c.id+'" title="'+esc(cardName(c))+'" aria-label="'+esc(cardName(c)+' · '+cardDesc(c))+'">'
-   +cardArt(c.id)+'</button>'
-  ).join(''):'<p class="skill-compare-note">검색 조건에 맞는 카드가 없습니다.</p>';
-  const pager=root.querySelector('#skill-compare-picker-pager');
-  pager.innerHTML='<button type="button" data-skill-page="'+(pickerPage-1)+'" '+(pickerPage===0?'disabled':'')+'>◀ 이전</button>'
-   +'<span>'+(pickerPage+1)+' / '+pages+' 페이지 · '+matches.length+'장</span>'
-   +'<button type="button" data-skill-page="'+(pickerPage+1)+'" '+(pickerPage===pages-1?'disabled':'')+'>다음 ▶</button>';
- }
  function openPicker(i){
-  activeSlot=i;pickerPage=0;const modal=root.querySelector('#skill-compare-picker');
-  modal.hidden=false;
-  root.querySelector('#skill-compare-search').value='';
-  root.querySelector('#skill-compare-type').value='all';
-  root.querySelector('#skill-compare-rarity').value='all';
-  root.querySelector('#skill-compare-picker-title').textContent=labels[mode][i]+' 선택';
-  updatePicker();root.querySelector('#skill-compare-search').focus();
+  if(typeof window.umamemoOpenSupportPicker!=='function')return;
+  const unavailable=new Set(selections[mode].filter((_,idx)=>idx!==i).filter(Boolean));
+  window.umamemoOpenSupportPicker({
+   title:labels[mode][i]+' 선택',
+   filter:c=>!['friend','group'].includes(c.typeRaw)&&!unavailable.has(c.id),
+   onSelect:c=>{selections[mode][i]=c.id;save();render()},
+   onClear:()=>{selections[mode][i]=null;save();render()}
+  });
  }
- function closePicker(){root.querySelector('#skill-compare-picker').hidden=true;activeSlot=null}
  root.addEventListener('click',e=>{
   const m=e.target.closest('[data-skill-mode]');
   if(m){mode=m.dataset.skillMode;render();return}
@@ -171,20 +146,10 @@
   if(pick){openPicker(Number(pick.dataset.skillPick));return}
   const remove=e.target.closest('[data-skill-remove]');
   if(remove){selections[mode][Number(remove.dataset.skillRemove)]=null;save();render();return}
-  const page=e.target.closest('[data-skill-page]');
-  if(page&&!page.disabled){pickerPage=Number(page.dataset.skillPage);updatePicker();return}
-  const selected=e.target.closest('[data-skill-select]');
-  if(selected&&activeSlot!==null){selections[mode][activeSlot]=Number(selected.dataset.skillSelect);save();closePicker();render();return}
-  if(e.target.closest('[data-skill-close]')||e.target.id==='skill-compare-picker'){closePicker();return}
  });
- for(const id of ['skill-compare-search','skill-compare-type','skill-compare-rarity']){
-  root.querySelector('#'+id).addEventListener(id==='skill-compare-search'?'input':'change',()=>updatePicker(true));
- }
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.querySelector('#skill-compare-picker').hidden){e.preventDefault();closePicker()}});
  // Keep the comparison independent per server, including when the user changes
  // servers without reloading the page.
  document.getElementById('server-mode')?.addEventListener('change',()=>{
-  closePicker();
   selections={team:[null,null,null,null,null],pair:[null,null],swap:[null,null,null,null,null,null]};
   read();
   render();
