@@ -1627,16 +1627,20 @@ const PICKER_TYPES=[
  ['근성','근성','guts'],['지능','지능','wisdom'],['친구','친구','friend'],['그룹','그룹','group']
 ];
 let pickerSlot=null,pickerType='전체',pickerRarity='SSR',pickerPage=0;
+let pickerExternal=null;
 let pickerPreviousFocus=null;
 function pickerClose(){
  $('card-picker').hidden=true;
  document.body.classList.remove('picker-open');
  pickerSlot=null;
+ pickerExternal=null;
+ $('picker-title').textContent='서포트 카드 선택';
  if(pickerPreviousFocus&&pickerPreviousFocus.isConnected)pickerPreviousFocus.focus();
  pickerPreviousFocus=null;
 }
 function pickerOpen(i){
  if(!cards.length)return toast('카드 DB를 불러오는 중입니다');
+ pickerExternal=null;
  pickerSlot=i;
  pickerPreviousFocus=document.activeElement;
  pickerPage=0;
@@ -1645,9 +1649,24 @@ function pickerOpen(i){
  pickerRender();
  $('picker-close').focus();
 }
+// Other tools can open this exact gallery without changing the counter's slots.
+window.umamemoOpenSupportPicker=function({title='서포트 카드 선택',filter,onSelect,onClear}={}){
+ if(!cards.length)return false;
+ pickerExternal={filter:typeof filter==='function'?filter:null,onSelect,onClear};
+ pickerSlot=-1;
+ pickerPreviousFocus=document.activeElement;
+ pickerType='전체';pickerRarity='SSR';pickerPage=0;
+ $('picker-title').textContent=title;
+ $('card-picker').hidden=false;
+ document.body.classList.add('picker-open');
+ pickerRender();
+ $('picker-close').focus();
+ return true;
+};
 function pickerFiltered(){
  return cards.filter(c=>{
   if(!visibleCard(c))return false;
+  if(pickerExternal?.filter&&!pickerExternal.filter(c))return false;
   if(pickerType!=='전체'&&c.type!==pickerType)return false;
   if(c.rarity!==pickerRarity)return false;
   return true;
@@ -1693,12 +1712,25 @@ $('picker-pager').addEventListener('click',e=>{
 $('picker-grid').addEventListener('click',e=>{
  const b=e.target.closest('[data-picker-card]');if(!b||pickerSlot===null)return;
  const c=findCard(b.dataset.pickerCard);if(!c||!visibleCard(c))return;
+ if(pickerExternal){
+  if(pickerExternal.filter&&!pickerExternal.filter(c))return;
+  const callback=pickerExternal.onSelect;
+  pickerClose();
+  if(typeof callback==='function')callback(c);
+  return;
+ }
  counterForgetLinksForSlot(pickerSlot);
  state.slots[pickerSlot]={id:c.id,step:0,random:[false,false],groupCount:3};
  pickerClose();render();
 });
 $('picker-clear').addEventListener('click',()=>{
  if(pickerSlot===null)return;
+ if(pickerExternal){
+  const callback=pickerExternal.onClear;
+  pickerClose();
+  if(typeof callback==='function')callback();
+  return;
+ }
  counterForgetLinksForSlot(pickerSlot);
  state.slots[pickerSlot]={id:null,step:0,random:[false,false],groupCount:3};
  pickerClose();
