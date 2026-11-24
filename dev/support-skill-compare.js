@@ -117,7 +117,7 @@
   const out=root.querySelector('#skill-compare-results');
   if(!cards.length||!hints||!events){out.innerHTML='<p class="skill-compare-note">서포트카드 및 스킬 DB를 불러오는 중입니다.</p>';return}
   const ids=currentIds(),picked=ids.filter(Boolean),map=entryMap(ids);
-  if(!picked.length){out.innerHTML='<p class="skill-compare-note">카드를 선택하면 비교 결과가 표시됩니다.</p>';return}
+  if(!picked.length&&mode!=='decks'){out.innerHTML='<p class="skill-compare-note">카드를 선택하면 비교 결과가 표시됩니다.</p>';return}
   const values=[...map.values()],total=values.reduce((n,x)=>n+x.cards.size,0),duplicated=values.filter(x=>x.cards.size>=2).length;
   let html='<div class="skill-compare-stats">'+statBox('고유 스킬',values.length+'종')+statBox('중복 스킬',duplicated+'종')+statBox('총 카드별 스킬 항목',total+'건')+'</div>';
   if(mode==='team'){
