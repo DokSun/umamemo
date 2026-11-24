@@ -37,7 +37,7 @@
    if(!data)return;
    if(Array.isArray(data.team))selections.team=cleanDeck(data.team);
    if(Array.isArray(data.pair))selections.pair=cleanDeck(data.pair);
-   if(Array.isArray(data.typeCounts)&&data.typeCounts.length===5&&data.typeCounts.every(x=>Number.isInteger(x)&&x>=0&&x<=5)&&data.typeCounts.reduce((a,b)=>a+b,0)===5)typeCounts=[...data.typeCounts];
+   if(Array.isArray(data.typeCounts)&&data.typeCounts.length===5&&data.typeCounts.every(x=>Number.isInteger(x)&&x>=0&&x<=5))typeCounts=[...data.typeCounts];
    if(Array.isArray(data.typeCandidates)&&data.typeCandidates.length===5){
     candidates=data.typeCandidates.map((arr,i)=>Array.isArray(arr)?[...new Set(arr.map(Number).filter(id=>id>0&&(!cardById.size||cardById.get(id)?.typeRaw===types[i])))].slice(0,candidateLimit):[]);
    }
@@ -295,14 +295,14 @@
     if(mode==='decks'){
      if(replaceIndex===null)candidates[i].push(c.id);
      else candidates[i][replaceIndex]=c.id;
-     page=0;selectedCombo=null;
+     page=0;
     }else selections[mode][i]=c.id;
     save();render();
    },
    onClear:()=>{
     if(mode==='decks'){
      if(replaceIndex!==null)candidates[i].splice(replaceIndex,1);
-     page=0;selectedCombo=null;
+     page=0;
     }else selections[mode][i]=null;
     save();render();
    }
@@ -310,13 +310,13 @@
  }
  root.addEventListener('click',e=>{
   const m=e.target.closest('[data-skill-mode]');
-  if(m){mode=m.dataset.skillMode;page=0;selectedCombo=null;render();return}
+  if(m){mode=m.dataset.skillMode;page=0;render();return}
   const k=e.target.closest('[data-skill-kind]');
-  if(k){kind=k.dataset.skillKind;page=0;selectedCombo=null;render();return}
+  if(k){kind=k.dataset.skillKind;page=0;render();return}
   const removeCandidate=e.target.closest('[data-skill-candidate-remove]');
   if(removeCandidate){
    const [i,j]=removeCandidate.dataset.skillCandidateRemove.split(':').map(Number);
-   candidates[i].splice(j,1);page=0;selectedCombo=null;save();render();return;
+   candidates[i].splice(j,1);page=0;save();render();return;
   }
   const add=e.target.closest('[data-skill-add-candidate]');
   if(add){openPicker(Number(add.dataset.skillAddCandidate));return}
@@ -328,7 +328,7 @@
   const remove=e.target.closest('[data-skill-remove]');
   if(remove){selections[mode][Number(remove.dataset.skillRemove)]=null;save();render();return}
   const resultPage=e.target.closest('[data-skill-combo-page]');
-  if(resultPage&&!resultPage.disabled){page=Number(resultPage.dataset.skillComboPage);selectedCombo=null;renderResults();return}
+  if(resultPage&&!resultPage.disabled){page=Number(resultPage.dataset.skillComboPage);renderResults();return}
   const detail=e.target.closest('[data-skill-combo-detail]');
   if(detail){openCombinationDetail(Number(detail.dataset.skillComboDetail));return}
   if(e.target.closest('#skill-compare-detail-close')||e.target.id==='skill-compare-detail-dialog'){closeCombinationDetail();return}
@@ -337,7 +337,7 @@
   const input=e.target.closest('[data-skill-type-count]');if(!input)return;
   const i=Number(input.dataset.skillTypeCount),n=Number(input.value);
   if(!Number.isInteger(i)||i<0||i>=5||!Number.isInteger(n)||n<0||n>5)return;
-  typeCounts[i]=n;page=0;selectedCombo=null;save();render();
+  typeCounts[i]=n;page=0;save();render();
  });
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!root.querySelector('#skill-compare-detail-dialog').hidden){e.preventDefault();closeCombinationDetail()}
@@ -346,7 +346,7 @@
  // servers without reloading the page.
  document.getElementById('server-mode')?.addEventListener('change',()=>{
   selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
-  candidates=[[],[],[],[],[]];typeCounts=defaultCounts();page=0;selectedCombo=null;closeCombinationDetail();read();
+  candidates=[[],[],[],[],[]];typeCounts=defaultCounts();page=0;closeCombinationDetail();read();
   render();
  });
  async function load(){
