@@ -1657,3 +1657,36 @@ header .header-settings-button{order:initial;margin-left:auto}
  #support-skills-panel .skill-compare-matrix-cell{min-width:49px;width:54px;height:33px}
  #support-skills-panel .skill-compare-matrix-portrait{width:32px;height:43px}
 }
+
+
+/* Skill comparison 2026-11-24: independent deck formation / card / multi-deck comparison modes. */
+#support-skills-panel .skill-compare-config{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#20334b;border:1px solid #3e5674;border-radius:8px;padding:10px}
+#support-skills-panel .skill-compare-config[hidden],#support-skills-panel .skill-compare-deck-controls[hidden]{display:none!important}
+#support-skills-panel .skill-compare-config label{font-weight:700;font-size:13px}
+#support-skills-panel #skill-compare-card-count{min-height:35px;min-width:96px;padding:5px 8px}
+#support-skills-panel .skill-compare-deck-controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;background:#20334b;border:1px solid #3e5674;border-radius:8px;padding:9px}
+#support-skills-panel .skill-compare-deck-tabs,#support-skills-panel .skill-compare-deck-actions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+#support-skills-panel .skill-compare-deck-tabs button.active{background:#27765f;border-color:#71cbb0;font-weight:750}
+#support-skills-panel .skill-compare-deck-tabs button,#support-skills-panel .skill-compare-deck-actions button{min-height:34px;font-size:12px}
+#support-skills-panel .skill-compare-deck-actions button:disabled{opacity:.38;cursor:default}
+#support-skills-panel .skill-compare-deck-summary{margin-top:14px}
+#support-skills-panel .skill-compare-deck-summary h3{font-size:15px;margin:0 0 7px}
+#support-skills-panel .skill-compare-deck-comparisons{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:12px 0}
+#support-skills-panel .skill-compare-deck-result{background:#1d3048;border:1px solid #49617e;border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:8px}
+#support-skills-panel .skill-compare-deck-result.is-active{border-color:#64c9a7;background:#203e46}
+#support-skills-panel .skill-compare-deck-result-head{display:flex;justify-content:space-between;gap:8px;align-items:center}
+#support-skills-panel .skill-compare-deck-result-head strong{font-size:14px}
+#support-skills-panel .skill-compare-deck-result-head span{font-size:11px;color:#bbcde0}
+#support-skills-panel .skill-compare-deck-result-count{font-size:24px;font-weight:800;line-height:1.15;color:#ecfff6}
+#support-skills-panel .skill-compare-deck-bar{background:#122339;border-radius:99px;height:10px;overflow:hidden}
+#support-skills-panel .skill-compare-deck-bar span{display:block;height:100%;background:#58baa3;border-radius:99px}
+#support-skills-panel .skill-compare-deck-stats{font-size:11px;color:#bccce0;line-height:1.4}
+#support-skills-panel .skill-compare-deck-result button{margin-top:auto;min-height:34px;font-size:12px}
+#support-skills-panel .skill-compare-deck-summary+.skill-compare-stat{max-width:360px;margin:10px 0}
+@media(max-width:620px){
+ #support-skills-panel .skill-compare-deck-comparisons{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ #support-skills-panel .skill-compare-deck-result{padding:9px;gap:6px}
+ #support-skills-panel .skill-compare-deck-result-count{font-size:21px}
+ #support-skills-panel .skill-compare-deck-tabs button,#support-skills-panel .skill-compare-deck-actions button{font-size:11px;padding:6px 8px}
+}
+@media(max-width:390px){#support-skills-panel .skill-compare-deck-comparisons{grid-template-columns:minmax(0,1fr)}}
