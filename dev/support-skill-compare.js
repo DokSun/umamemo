@@ -152,6 +152,63 @@
    +(sorted.length?sorted.map(row=>rowMarkup(row,ids)).join(''):'<tr><td colspan="'+(ids.length+2)+'" class="skill-compare-empty">'+esc(emptyMsg)+'</td></tr>')
    +'</tbody></table></div></section>';
  }
+ // Enumerate all valid combinations of exactly one candidate per position.
+ // Duplicate support cards cannot appear twice within one deck.
+ function combinations(){
+  if(candidates.some(group=>group.length===0))return [];
+  const combos=[],allSkillSets=new Map();
+  for(const id of new Set(candidates.flat())){
+   const set=new Set();
+   if(kind!=='event')for(const skill of hints?.cards?.[id]||[])set.add(String(skill));
+   if(kind!=='hint')for(const skill of events?.cards?.[id]||[])set.add(String(skill));
+   allSkillSets.set(id,set);
+  }
+  const selected=[],used=new Set();
+  const dfs=(position,union,entries)=>{
+   if(position===5){
+    combos.push({ids:[...selected],count:union.size,total:entries,overlap:entries-union.size});
+    return;
+   }
+   for(const id of candidates[position]){
+    if(used.has(id))continue;
+    selected.push(id);used.add(id);
+    const next=new Set(union);
+    for(const skill of allSkillSets.get(id)||[])next.add(skill);
+    dfs(position+1,next,entries+(allSkillSets.get(id)?.size||0));
+    selected.pop();used.delete(id);
+   }
+  };
+  dfs(0,new Set(),0);
+  combos.sort((a,b)=>b.count-a.count||a.overlap-b.overlap||a.ids.join(',').localeCompare(b.ids.join(',')));
+  return combos;
+ }
+ function renderCombinationResults(){
+  const combos=combinations();
+  const totalPossible=candidates.reduce((n,group)=>n*group.length,1);
+  const visible=combos.slice(page*resultsPageSize,(page+1)*resultsPageSize);
+  const maxPages=Math.max(1,Math.ceil(combos.length/resultsPageSize));
+  if(page>=maxPages){page=0;return renderCombinationResults()}
+  let html='<section class="skill-compare-deck-summary"><h3>편성 조합 순위</h3>'
+    +'<p class="skill-compare-note">각 위치에서 후보 1장씩 선택한 모든 조합을 계산합니다. 같은 카드가 중복된 편성은 제외합니다. 고유 스킬 수 내림차순이며, 동점이면 중복 초과 항목이 적은 편성을 먼저 표시합니다.</p>';
+  html+='<div class="skill-compare-combo-meta">후보 조합 '+totalPossible.toLocaleString()+'개 · 유효 편성 '+combos.length.toLocaleString()+'개</div>';
+  if(!combos.length){
+   html+='<p class="skill-compare-note">'+(candidates.some(group=>!group.length)?'다섯 위치에 각각 카드 후보를 1장 이상 지정해 주세요.':'유효한 편성이 없습니다. 같은 카드가 서로 다른 위치에 중복되어 있는지 확인해 주세요.')+'</p></section>';
+   return html;
+  }
+  html+='<div class="skill-compare-combo-list">'+visible.map((combo,i)=>{
+   const rank=page*resultsPageSize+i+1;
+   const images=combo.ids.map((id,j)=>'<div class="skill-compare-combo-member" title="'+esc(labels.decks[j]+' · '+cardLabel(id))+'">'+cardArt(id)+'</div>').join('');
+   return '<div class="skill-compare-combo-row"><span class="skill-compare-combo-rank">'+rank+'위</span><div class="skill-compare-combo-images">'+images+'</div>'
+    +'<div class="skill-compare-combo-scores"><strong>'+combo.count+'종</strong><small>중복 포함 '+combo.total+'건 · 중복 초과 '+combo.overlap+'건</small></div>'
+    +'<button type="button" data-skill-combo-detail="'+(page*resultsPageSize+i)+'">스킬 보기</button></div>';
+  }).join('')+'</div>';
+  html+='<div class="skill-compare-combo-pager"><button type="button" data-skill-combo-page="'+(page-1)+'" '+(page===0?'disabled':'')+'>◀ 이전</button>'
+   +'<span>'+(page+1)+' / '+maxPages+' 페이지</span><button type="button" data-skill-combo-page="'+(page+1)+'" '+(page===maxPages-1?'disabled':'')+'>다음 ▶</button></div>';
+  const detail=Number.isInteger(selectedCombo)&&selectedCombo>=0&&selectedCombo<combos.length?combos[selectedCombo]:null;
+  if(detail)html+=renderTable([...entryMap(detail.ids).values()],detail.ids,'선택한 편성 · '+detail.count+'종','스킬이 없습니다.');
+  return html+'</section>';
+ }
+ let selectedCombo=null;
  function renderResults(){
   const out=root.querySelector('#skill-compare-results');
   if(!cards.length||!hints||!events){out.innerHTML='<p class="skill-compare-note">서포트카드 및 스킬 DB를 불러오는 중입니다.</p>';return}
@@ -171,30 +228,7 @@
     +statBox('여러 카드 공통 스킬',duplicated+'종')+statBox('선택한 모든 카드 공통',all.length+'종')+'</div>';
    html+=renderTable(values,ids,'보유 스킬 목록','선택한 카드의 스킬이 없습니다.');
   }else{
-   const decks=selections.decks.map((deck,index)=>({index,deck,map:entryMap(deck),selected:deck.filter(Boolean).length}));
-   const top=Math.max(0,...decks.map(d=>d.map.size));
-   const min=Math.min(...decks.map(d=>d.map.size));
-   html='<section class="skill-compare-deck-summary"><h3>편성별 총 스킬 개수</h3>'
-    +'<p class="skill-compare-note">각 편성에서 중복을 제거한 획득 가능 스킬 종류를 비교합니다. 미선택 카드는 계산에서 제외됩니다.</p>'
-    +'<div class="skill-compare-deck-comparisons">'
-    +decks.map(d=>{
-     const totalEntries=[...d.map.values()].reduce((sum,x)=>sum+x.cards.size,0);
-     const repeated=[...d.map.values()].filter(x=>x.cards.size>=2).length;
-     const diff=d.map.size-top;
-     return '<div class="skill-compare-deck-result '+(d.index===activeDeck?'is-active':'')+'"><div class="skill-compare-deck-result-head"><strong>편성 '+(d.index+1)+'</strong><span>'+d.selected+'/5장</span></div>'
-      +'<div class="skill-compare-deck-result-count">'+d.map.size+'종</div>'
-      +'<div class="skill-compare-deck-bar"><span style="width:'+(top?Math.max(0,d.map.size/top*100):0)+'%"></span></div>'
-      +'<div class="skill-compare-deck-stats">중복 스킬 '+repeated+'종 · 중복 포함 '+totalEntries+'건</div>'
-      +'<div class="skill-compare-deck-stats">최다 편성 대비 '+diff+'종</div>'
-      +'<button type="button" data-skill-deck="'+d.index+'">편성 '+(d.index+1)+' 확인·수정</button></div>';
-    }).join('')
-    +'</div>'
-    +'<p class="skill-compare-note">최다 편성과 최소 편성의 차이: '+(top-min)+'종</p></section>';
-   const active=decks[activeDeck];
-   const ownership=decks.map(d=>new Set(d.map.keys()));
-   const exclusive=[...active.map.values()].filter(x=>ownership.every((set,i)=>i===activeDeck||!set.has(x.id)));
-   html+=statBox('현재 편성에서만 획득 가능한 스킬',exclusive.length+'종');
-   html+=renderTable([...active.map.values()],active.deck,'편성 '+(activeDeck+1)+' 스킬 구성','선택한 편성의 스킬이 없습니다.');
+   html=renderCombinationResults();
   }
   html+='<p class="skill-compare-note">표시된 스킬은 획득 가능한 후보입니다. 실제 획득 확률은 계산하지 않습니다. 이벤트 스킬의 ID 미확정 항목은 별도 이름으로 표시됩니다.</p>';
   out.innerHTML=html;
