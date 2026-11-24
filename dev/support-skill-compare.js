@@ -275,21 +275,22 @@
  function render(){
   root.querySelectorAll('[data-skill-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.skillMode===mode);b.setAttribute('aria-pressed',String(b.dataset.skillMode===mode))});
   root.querySelectorAll('[data-skill-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.skillKind===kind);b.setAttribute('aria-pressed',String(b.dataset.skillKind===kind))});
+  closeCombinationDetail();
   root.querySelector('#skill-compare-intro').textContent=mode==='team'
    ?'서포트카드 5장의 획득 가능 스킬을 확인합니다.'
    :mode==='pair'?'카드 A~E의 보유 스킬과 중복을 비교합니다. 비워 둔 슬롯은 제외합니다.'
-   :'각 위치에 후보를 추가하세요. 각 위치에서 하나씩 선택한 모든 유효 편성을 계산해 고유 스킬 수 순으로 표시합니다.';
+   :'속성별 편성 장수를 설정하고, 각 속성에 후보 카드를 등록하면 모든 가능한 편성을 계산합니다.';
   renderSlots();renderResults();
  }
  function openPicker(i,replaceIndex=null){
   if(typeof window.umamemoOpenSupportPicker!=='function')return;
   const current=mode==='decks'?candidates[i]:(selections[mode]||[]);
-  const used=new Set(mode==='decks'?candidates.flat():current);
+  const used=new Set(mode==='decks'?candidates[i]:current);
   if(mode!=='decks')used.delete(current[i]);
   if(mode==='decks'&&replaceIndex!==null)used.delete(candidates[i][replaceIndex]);
   window.umamemoOpenSupportPicker({
-   title:(mode==='decks'?'위치 '+(i+1)+' · ':'')+labels[mode][i]+' 선택',
-   filter:c=>!['friend','group'].includes(c.typeRaw)&&!used.has(c.id),
+   title:(mode==='decks'?typeNames[types[i]]+' · ':'')+labels[mode][i]+' 선택',
+   filter:c=>!['friend','group'].includes(c.typeRaw)&&!used.has(c.id)&&(mode!=='decks'||c.typeRaw===types[i]),
    onSelect:c=>{
     if(mode==='decks'){
      if(replaceIndex===null)candidates[i].push(c.id);
@@ -329,13 +330,23 @@
   const resultPage=e.target.closest('[data-skill-combo-page]');
   if(resultPage&&!resultPage.disabled){page=Number(resultPage.dataset.skillComboPage);selectedCombo=null;renderResults();return}
   const detail=e.target.closest('[data-skill-combo-detail]');
-  if(detail){selectedCombo=Number(detail.dataset.skillComboDetail);renderResults();return}
+  if(detail){openCombinationDetail(Number(detail.dataset.skillComboDetail));return}
+  if(e.target.closest('#skill-compare-detail-close')||e.target.id==='skill-compare-detail-dialog'){closeCombinationDetail();return}
+ });
+ root.addEventListener('change',e=>{
+  const input=e.target.closest('[data-skill-type-count]');if(!input)return;
+  const i=Number(input.dataset.skillTypeCount),n=Number(input.value);
+  if(!Number.isInteger(i)||i<0||i>=5||!Number.isInteger(n)||n<0||n>5)return;
+  typeCounts[i]=n;page=0;selectedCombo=null;save();render();
+ });
+ document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'&&!root.querySelector('#skill-compare-detail-dialog').hidden){e.preventDefault();closeCombinationDetail()}
  });
  // Keep the comparison independent per server, including when the user changes
  // servers without reloading the page.
  document.getElementById('server-mode')?.addEventListener('change',()=>{
   selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
-  candidates=[[],[],[],[],[]];page=0;selectedCombo=null;read();
+  candidates=[[],[],[],[],[]];typeCounts=defaultCounts();page=0;selectedCombo=null;closeCombinationDetail();read();
   render();
  });
  async function load(){
