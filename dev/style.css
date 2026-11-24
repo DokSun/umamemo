@@ -1759,3 +1759,32 @@ body.skill-compare-dialog-open{overflow:hidden}
  #support-skills-panel .skill-compare-detail-dialog{padding:6px}
  #support-skills-panel .skill-compare-detail-surface{padding:8px;max-height:calc(100dvh - 12px)}
 }
+
+
+/* Composition comparison: attribute buttons -> 5 icon slots -> candidates -> ranking. */
+#support-skills-panel .skill-compare-step{margin-top:14px;padding-top:11px;border-top:1px solid #40546f;min-width:0}
+#support-skills-panel .skill-compare-step[hidden]{display:none!important}
+#support-skills-panel .skill-compare-step h3{font-size:15px;margin:0 0 8px;color:#e5f1ff}
+#support-skills-panel .skill-compare-type-buttons{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin:10px 0}
+#support-skills-panel .skill-compare-type-add{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:78px;padding:6px 3px;background:#233a53;border:1px solid #547496;border-radius:8px}
+#support-skills-panel .skill-compare-type-add .type-icon{flex:0 0 36px}
+#support-skills-panel .skill-compare-type-add>span:not(.type-icon){font-size:12px;font-weight:650}
+#support-skills-panel .skill-compare-type-add small{font-size:11px;color:#addfcf}
+#support-skills-panel .skill-compare-type-add:disabled{opacity:.4;cursor:default}
+#support-skills-panel .skill-compare-type-lineup{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px;background:#162b43;border:1px solid #476481;border-radius:9px}
+#support-skills-panel .skill-compare-type-slots{display:grid;grid-template-columns:repeat(5,48px);gap:8px;max-width:100%}
+#support-skills-panel .skill-compare-type-slots>button,#support-skills-panel .skill-compare-type-slots>.skill-compare-empty-type{width:48px;height:48px;display:flex;align-items:center;justify-content:center;position:relative;border-radius:7px;border:1px solid #547a9b;background:#233954;padding:2px}
+#support-skills-panel .skill-compare-type-slots>.skill-compare-empty-type{border-style:dashed;color:#8ca5bf;font-size:18px}
+#support-skills-panel .skill-compare-equipped-type:hover{background:#4a3340;border-color:#eb8e9e}
+#support-skills-panel .skill-compare-equipped-remove{position:absolute;right:0;top:0;display:flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:0 5px 0 5px;background:#743f50;color:#fff;font-size:12px;line-height:1}
+#support-skills-panel .skill-compare-type-total{font-size:13px;font-weight:700;color:#c9e5f9;white-space:nowrap}
+#support-skills-panel .skill-compare-result-heading{margin-bottom:7px}
+#support-skills-panel #skill-compare-candidate-section{margin-bottom:10px}
+@media(max-width:600px){
+ #support-skills-panel .skill-compare-type-buttons{gap:4px}
+ #support-skills-panel .skill-compare-type-add{min-height:70px;padding:4px 1px}
+ #support-skills-panel .skill-compare-type-add>span:not(.type-icon){font-size:10px}
+ #support-skills-panel .skill-compare-type-add small{font-size:10px}
+ #support-skills-panel .skill-compare-type-slots{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;flex:1;min-width:0}
+ #support-skills-panel .skill-compare-type-slots>button,#support-skills-panel .skill-compare-type-slots>.skill-compare-empty-type{width:100%;height:45px}
+}
