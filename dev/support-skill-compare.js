@@ -9,12 +9,14 @@
  const cleanDeck=arr=>Array.from({length:5},(_,i)=>Number(Array.isArray(arr)?arr[i]:null)||null);
  const typeNames={speed:'스피드',stamina:'스태미나',power:'파워',guts:'근성',intelligence:'지능'};
  const types=Object.keys(typeNames);
- const defaultCounts=()=>[1,1,1,1,1];
+ const defaultTypeSlots=()=>[];
+ const typeIcon={speed:'speed',stamina:'stamina',power:'power',guts:'guts',intelligence:'wisdom'};
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const server=()=>localStorage.getItem('umamemo-dev-v1:uma-tracker-server-v1')==='jp'?'jp':'ko';
  let mode='team',kind='hint',cards=[],cardById=new Map(),hints=null,events=null;
  let selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
- let candidates=[[],[],[],[],[]],typeCounts=defaultCounts(),page=0;
+ let candidates=[[],[],[],[],[]],typeSlots=defaultTypeSlots(),page=0;
+ const typeCounts=()=>types.map(type=>typeSlots.filter(t=>t===type).length);
  let modalPreviousFocus=null;
  const candidateLimit=8,resultsPageSize=25;
  let activeSlot=null,pickerPage=0;
@@ -37,14 +39,18 @@
    if(!data)return;
    if(Array.isArray(data.team))selections.team=cleanDeck(data.team);
    if(Array.isArray(data.pair))selections.pair=cleanDeck(data.pair);
-   if(Array.isArray(data.typeCounts)&&data.typeCounts.length===5&&data.typeCounts.every(x=>Number.isInteger(x)&&x>=0&&x<=5))typeCounts=[...data.typeCounts];
+   if(Array.isArray(data.typeSlots)&&data.typeSlots.length<=5&&data.typeSlots.every(t=>types.includes(t))){
+    typeSlots=[...data.typeSlots];
+   }else if(Array.isArray(data.typeCounts)&&data.typeCounts.length===5){
+    typeSlots=types.flatMap((type,i)=>Array.from({length:Math.min(5,Math.max(0,Number(data.typeCounts[i])||0))},()=>type)).slice(0,5);
+   }
    if(Array.isArray(data.typeCandidates)&&data.typeCandidates.length===5){
     candidates=data.typeCandidates.map((arr,i)=>Array.isArray(arr)?[...new Set(arr.map(Number).filter(id=>id>0&&(!cardById.size||cardById.get(id)?.typeRaw===types[i])))].slice(0,candidateLimit):[]);
    }
   }catch(err){console.warn('스킬 비교 선택 정보 로딩 실패',err)}
  };
  const save=()=>{
-  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({team:selections.team,pair:selections.pair,typeCounts,typeCandidates:candidates}))}
+  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({team:selections.team,pair:selections.pair,typeSlots,typeCandidates:candidates}))}
   catch(err){console.warn('스킬 비교 선택 정보 저장 실패',err)}
  };
  const cardName=c=>server()==='ko'?c.nameKo:(c.nameJa||c.nameKo);
@@ -73,11 +79,32 @@
  };
  const cardLabel=id=>{const c=cardById.get(Number(id));return c?cardName(c):'미선택'};
  const cardCount=id=>entryMap([id]).size;
+ function renderTypeSelector(){
+  const area=root.querySelector('#skill-compare-type-configuration');
+  area.hidden=mode!=='decks';
+  if(mode!=='decks')return;
+  const counts=typeCounts();
+  root.querySelector('#skill-compare-type-buttons').innerHTML=types.map((type,i)=>{
+   const disabled=typeSlots.length>=5?' disabled':'';
+   return '<button type="button" class="skill-compare-type-add" data-skill-type-add="'+i+'"'+disabled+' aria-label="'+esc(typeNames[type]+' 추가')+'">'
+    +'<span class="type-icon type-icon-'+typeIcon[type]+'" aria-hidden="true"></span>'
+    +'<span>'+typeNames[type]+'</span><small>'+counts[i]+'장</small></button>';
+  }).join('');
+  root.querySelector('#skill-compare-type-slots').innerHTML=Array.from({length:5},(_,i)=>{
+   const type=typeSlots[i];
+   return type
+    ?'<button type="button" class="skill-compare-equipped-type" data-skill-type-remove="'+i+'" aria-label="'+esc((i+1)+'번 '+typeNames[type]+' 제거')+'" title="'+esc(typeNames[type]+' 제거')+'">'
+     +'<span class="type-icon type-icon-'+typeIcon[type]+'" aria-hidden="true"></span><span class="skill-compare-equipped-remove" aria-hidden="true">×</span></button>'
+    :'<span class="skill-compare-empty-type" aria-label="'+(i+1)+'번 빈 칸">＋</span>';
+  }).join('');
+  root.querySelector('#skill-compare-type-total').textContent=typeSlots.length+' / 5장';
+ }
  function renderSlots(){
   const holder=root.querySelector('#skill-compare-slots');
   const selected=currentIds();
   if(mode==='decks'){
    holder.classList.add('candidate-layout','skill-compare-typed-candidates');
+   const counts=typeCounts();
    holder.innerHTML=types.map((type,i)=>{
     const group=candidates[i];
     const cardsHtml=group.map((id,j)=>{
@@ -88,9 +115,7 @@
       +'<button type="button" class="skill-compare-remove" data-skill-candidate-remove="'+i+':'+j+'" aria-label="'+esc(typeNames[type]+' 후보 제거')+'">×</button></div>';
     }).join('');
     return '<div class="skill-compare-candidate-column"><strong>'+typeNames[type]+'</strong>'
-     +'<label class="skill-compare-type-count">편성 장수 <select data-skill-type-count="'+i+'" aria-label="'+typeNames[type]+' 편성 장수">'
-     +Array.from({length:6},(_,n)=>'<option value="'+n+'" '+(typeCounts[i]===n?'selected':'')+'>'+n+'장</option>').join('')+'</select></label>'
-     +'<span class="skill-compare-type-status">'+group.length+'장 후보 · '+typeCounts[i]+'장 편성</span>'
+     +'<span class="skill-compare-type-status">'+group.length+'장 후보 · '+counts[i]+'장 편성</span>'
      +'<div class="skill-compare-candidate-stack">'+cardsHtml+'</div>'
      +(group.length<candidateLimit?'<button type="button" class="skill-compare-add-candidate" data-skill-add-candidate="'+i+'">＋ '+typeNames[type]+' 후보</button>':'')
      +'</div>';
@@ -174,8 +199,9 @@
   dfs(0);return out;
  }
  function combinations(){
-  if(typeCounts.reduce((a,b)=>a+b,0)!==5)return [];
-  const options=candidates.map((group,i)=>chooseCards(group,typeCounts[i]));
+  if(typeSlots.length!==5)return [];
+  const counts=typeCounts();
+  const options=candidates.map((group,i)=>chooseCards(group,counts[i]));
   if(options.some(group=>group.length===0))return [];
   const skillsByCard=new Map();
   for(const id of new Set(candidates.flat())){
@@ -208,11 +234,12 @@
   return combos;
  }
  function renderCombinationResults(){
-  const totalCount=typeCounts.reduce((a,b)=>a+b,0);
+  const totalCount=typeSlots.length;
+  const counts=typeCounts();
   if(totalCount!==5)return '<p class="skill-compare-validation">속성별 편성 장수 합계가 5장이 되도록 설정하세요. 현재 '+totalCount+'장입니다.</p>';
-  const missing=types.filter((type,i)=>candidates[i].length<typeCounts[i]).map(type=>typeNames[type]);
+  const missing=types.filter((type,i)=>candidates[i].length<counts[i]).map(type=>typeNames[type]);
   if(missing.length)return '<p class="skill-compare-validation">'+esc(missing.join(' · '))+' 속성에 지정된 장수 이상의 후보 카드를 추가하세요.</p>';
-  const possible=candidates.map((group,i)=>chooseCards(group,typeCounts[i]).length).reduce((n,x)=>n*x,1);
+  const possible=candidates.map((group,i)=>chooseCards(group,counts[i]).length).reduce((n,x)=>n*x,1);
   const combos=combinations(),maxPages=Math.max(1,Math.ceil(combos.length/resultsPageSize));
   if(page>=maxPages)page=0;
   const visible=combos.slice(page*resultsPageSize,(page+1)*resultsPageSize);
@@ -276,6 +303,9 @@
   root.querySelectorAll('[data-skill-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.skillMode===mode);b.setAttribute('aria-pressed',String(b.dataset.skillMode===mode))});
   root.querySelectorAll('[data-skill-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.skillKind===kind);b.setAttribute('aria-pressed',String(b.dataset.skillKind===kind))});
   closeCombinationDetail();
+  root.querySelector('#skill-compare-result-section').classList.toggle('comparison-decks',mode==='decks');
+  root.querySelector('#skill-compare-candidate-section').hidden=mode!=='decks';
+  renderTypeSelector();
   root.querySelector('#skill-compare-intro').textContent=mode==='team'
    ?'서포트카드 5장의 획득 가능 스킬을 확인합니다.'
    :mode==='pair'?'카드 A~E의 보유 스킬과 중복을 비교합니다. 비워 둔 슬롯은 제외합니다.'
@@ -309,6 +339,16 @@
   });
  }
  root.addEventListener('click',e=>{
+  const typeAdd=e.target.closest('[data-skill-type-add]');
+  if(typeAdd&&typeSlots.length<5){
+   const type=types[Number(typeAdd.dataset.skillTypeAdd)];
+   if(type){typeSlots.push(type);page=0;save();render()}return;
+  }
+  const typeRemove=e.target.closest('[data-skill-type-remove]');
+  if(typeRemove){
+   typeSlots.splice(Number(typeRemove.dataset.skillTypeRemove),1);
+   page=0;save();render();return;
+  }
   const m=e.target.closest('[data-skill-mode]');
   if(m){mode=m.dataset.skillMode;page=0;render();return}
   const k=e.target.closest('[data-skill-kind]');
@@ -333,12 +373,6 @@
   if(detail){openCombinationDetail(Number(detail.dataset.skillComboDetail));return}
   if(e.target.closest('#skill-compare-detail-close')||e.target.id==='skill-compare-detail-dialog'){closeCombinationDetail();return}
  });
- root.addEventListener('change',e=>{
-  const input=e.target.closest('[data-skill-type-count]');if(!input)return;
-  const i=Number(input.dataset.skillTypeCount),n=Number(input.value);
-  if(!Number.isInteger(i)||i<0||i>=5||!Number.isInteger(n)||n<0||n>5)return;
-  typeCounts[i]=n;page=0;save();render();
- });
  document.addEventListener('keydown',e=>{
   if(e.key==='Escape'&&!root.querySelector('#skill-compare-detail-dialog').hidden){e.preventDefault();closeCombinationDetail()}
  });
@@ -346,7 +380,7 @@
  // servers without reloading the page.
  document.getElementById('server-mode')?.addEventListener('change',()=>{
   selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
-  candidates=[[],[],[],[],[]];typeCounts=defaultCounts();page=0;closeCombinationDetail();read();
+  candidates=[[],[],[],[],[]];typeSlots=defaultTypeSlots();page=0;closeCombinationDetail();read();
   render();
  });
  async function load(){
