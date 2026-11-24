@@ -122,7 +122,7 @@
    }).join('');
    return;
   }
-  holder.classList.remove('candidate-layout');
+  holder.classList.remove('candidate-layout','skill-compare-typed-candidates');
   holder.innerHTML=Array.from({length:5},(_,i)=>{
    const id=selected[i],card=cardById.get(Number(id));
    return '<div class="skill-compare-slot '+(card?'filled':'')+'"><span class="skill-compare-slot-label">'+labels[mode][i]+'</span>'
