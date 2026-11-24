@@ -8,11 +8,14 @@
  const blankDeck=()=>[null,null,null,null,null];
  const cleanDeck=arr=>Array.from({length:5},(_,i)=>Number(Array.isArray(arr)?arr[i]:null)||null);
  const typeNames={speed:'스피드',stamina:'스태미나',power:'파워',guts:'근성',intelligence:'지능'};
+ const types=Object.keys(typeNames);
+ const defaultCounts=()=>[1,1,1,1,1];
  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const server=()=>localStorage.getItem('umamemo-dev-v1:uma-tracker-server-v1')==='jp'?'jp':'ko';
  let mode='team',kind='hint',cards=[],cardById=new Map(),hints=null,events=null;
  let selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
- let candidates=[[],[],[],[],[]],page=0;
+ let candidates=[[],[],[],[],[]],typeCounts=defaultCounts(),page=0;
+ let modalPreviousFocus=null;
  const candidateLimit=8,resultsPageSize=25;
  let activeSlot=null,pickerPage=0;
  const pickerPageSize=24;
@@ -27,23 +30,21 @@
    :'<span class="skill-compare-no-image">이미지 없음</span>';
  };
 
- const currentIds=()=>mode==='decks'?candidates.map(slot=>slot[0]||null):selections[mode];
+ const currentIds=()=>mode==='decks'?[]:selections[mode];
  const read=()=>{
   try{
    const data=JSON.parse(localStorage.getItem(keyPrefix+server()));
    if(!data)return;
    if(Array.isArray(data.team))selections.team=cleanDeck(data.team);
    if(Array.isArray(data.pair))selections.pair=cleanDeck(data.pair);
-   if(Array.isArray(data.candidates)&&data.candidates.length===5){
-    candidates=data.candidates.map(arr=>Array.isArray(arr)?[...new Set(arr.map(Number).filter(Number.isFinite))].slice(0,candidateLimit):[]);
-   }else if(Array.isArray(data.decks)&&data.decks[0]){
-    // Migrate the previous multi-deck format into per-position candidates.
-    candidates=Array.from({length:5},(_,i)=>[...new Set(data.decks.map(d=>Number(d?.[i])).filter(Boolean))].slice(0,candidateLimit));
+   if(Array.isArray(data.typeCounts)&&data.typeCounts.length===5&&data.typeCounts.every(x=>Number.isInteger(x)&&x>=0&&x<=5)&&data.typeCounts.reduce((a,b)=>a+b,0)===5)typeCounts=[...data.typeCounts];
+   if(Array.isArray(data.typeCandidates)&&data.typeCandidates.length===5){
+    candidates=data.typeCandidates.map((arr,i)=>Array.isArray(arr)?[...new Set(arr.map(Number).filter(id=>id>0&&(!cardById.size||cardById.get(id)?.typeRaw===types[i])))].slice(0,candidateLimit):[]);
    }
   }catch(err){console.warn('스킬 비교 선택 정보 로딩 실패',err)}
  };
  const save=()=>{
-  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({team:selections.team,pair:selections.pair,candidates}))}
+  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({team:selections.team,pair:selections.pair,typeCounts,typeCandidates:candidates}))}
   catch(err){console.warn('스킬 비교 선택 정보 저장 실패',err)}
  };
  const cardName=c=>server()==='ko'?c.nameKo:(c.nameJa||c.nameKo);
@@ -76,17 +77,22 @@
   const holder=root.querySelector('#skill-compare-slots');
   const selected=currentIds();
   if(mode==='decks'){
-   holder.classList.add('candidate-layout');
-   holder.innerHTML=candidates.map((group,i)=>{
+   holder.classList.add('candidate-layout','skill-compare-typed-candidates');
+   holder.innerHTML=types.map((type,i)=>{
+    const group=candidates[i];
     const cardsHtml=group.map((id,j)=>{
      const card=cardById.get(id);
      return '<div class="skill-compare-candidate">'
-      +'<button type="button" class="skill-compare-slot-art" data-skill-pick="'+i+'" data-skill-replace="'+j+'" aria-label="'+esc(labels.decks[i]+' · '+(card?cardName(card):'카드 선택'))+'">'+cardArt(id)+'</button>'
+      +'<button type="button" class="skill-compare-slot-art" data-skill-pick="'+i+'" data-skill-replace="'+j+'" aria-label="'+esc(typeNames[type]+' · '+(card?cardName(card):'카드 선택'))+'">'+cardArt(id)+'</button>'
       +'<span class="skill-compare-candidate-count">'+cardCount(id)+'종</span>'
-      +'<button type="button" class="skill-compare-remove" data-skill-candidate-remove="'+i+':'+j+'" aria-label="'+esc(labels.decks[i]+' 후보 제거')+'">×</button></div>';
+      +'<button type="button" class="skill-compare-remove" data-skill-candidate-remove="'+i+':'+j+'" aria-label="'+esc(typeNames[type]+' 후보 제거')+'">×</button></div>';
     }).join('');
-    return '<div class="skill-compare-candidate-column"><strong>'+labels.decks[i]+'</strong>'+cardsHtml
-     +(group.length<candidateLimit?'<button type="button" class="skill-compare-add-candidate" data-skill-add-candidate="'+i+'">＋ 후보 추가</button>':'')
+    return '<div class="skill-compare-candidate-column"><strong>'+typeNames[type]+'</strong>'
+     +'<label class="skill-compare-type-count">편성 장수 <select data-skill-type-count="'+i+'" aria-label="'+typeNames[type]+' 편성 장수">'
+     +Array.from({length:6},(_,n)=>'<option value="'+n+'" '+(typeCounts[i]===n?'selected':'')+'>'+n+'장</option>').join('')+'</select></label>'
+     +'<span class="skill-compare-type-status">'+group.length+'장 후보 · '+typeCounts[i]+'장 편성</span>'
+     +'<div class="skill-compare-candidate-stack">'+cardsHtml+'</div>'
+     +(group.length<candidateLimit?'<button type="button" class="skill-compare-add-candidate" data-skill-add-candidate="'+i+'">＋ '+typeNames[type]+' 후보</button>':'')
      +'</div>';
    }).join('');
    return;
