@@ -240,7 +240,6 @@
    ?'서포트카드 5장의 획득 가능 스킬을 확인합니다.'
    :mode==='pair'?'카드 A~E의 보유 스킬과 중복을 비교합니다. 비워 둔 슬롯은 제외합니다.'
    :'각 위치에 후보를 추가하세요. 각 위치에서 하나씩 선택한 모든 유효 편성을 계산해 고유 스킬 수 순으로 표시합니다.';
-  root.querySelector('#skill-compare-deck-controls').hidden=true;
   renderSlots();renderResults();
  }
  function openPicker(i,replaceIndex=null){
