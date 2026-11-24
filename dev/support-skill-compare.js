@@ -236,70 +236,68 @@
  function render(){
   root.querySelectorAll('[data-skill-mode]').forEach(b=>{b.classList.toggle('active',b.dataset.skillMode===mode);b.setAttribute('aria-pressed',String(b.dataset.skillMode===mode))});
   root.querySelectorAll('[data-skill-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.skillKind===kind);b.setAttribute('aria-pressed',String(b.dataset.skillKind===kind))});
-  root.querySelector('#skill-compare-intro').textContent=mode==='team'?'5장의 서포트카드가 제공하는 스킬을 확인합니다.':mode==='pair'?'2~5장의 서포트카드 스킬을 서로 비교합니다.':'여러 개의 5장 편성에서 획득 가능한 총 스킬 종류 수를 비교합니다.';
-  root.querySelector('#skill-compare-card-count-wrap').hidden=mode!=='pair';
-  root.querySelector('#skill-compare-card-count').value=String(compareCount);
-  root.querySelector('#skill-compare-deck-controls').hidden=mode!=='decks';
-  renderDeckControls();renderSlots();renderResults();
+  root.querySelector('#skill-compare-intro').textContent=mode==='team'
+   ?'서포트카드 5장의 획득 가능 스킬을 확인합니다.'
+   :mode==='pair'?'카드 A~E의 보유 스킬과 중복을 비교합니다. 비워 둔 슬롯은 제외합니다.'
+   :'각 위치에 후보를 추가하세요. 각 위치에서 하나씩 선택한 모든 유효 편성을 계산해 고유 스킬 수 순으로 표시합니다.';
+  root.querySelector('#skill-compare-deck-controls').hidden=true;
+  renderSlots();renderResults();
  }
- function renderDeckControls(){
-  const list=root.querySelector('#skill-compare-deck-tabs');
-  list.innerHTML=selections.decks.map((d,i)=>'<button type="button" data-skill-deck="'+i+'" class="'+(i===activeDeck?'active':'')+'" aria-pressed="'+(i===activeDeck)+'">편성 '+(i+1)+'</button>').join('');
-  root.querySelector('#skill-compare-add-deck').disabled=selections.decks.length>=5;
-  root.querySelector('#skill-compare-remove-deck').disabled=selections.decks.length<=2;
- }
- function openPicker(i){
+ function openPicker(i,replaceIndex=null){
   if(typeof window.umamemoOpenSupportPicker!=='function')return;
-  const ids=currentIds();
-  const unavailable=new Set(ids.filter((_,idx)=>idx!==i).filter(Boolean));
+  const current=mode==='decks'?candidates[i]:(selections[mode]||[]);
+  const used=new Set(mode==='decks'?candidates.flat():current);
+  if(mode!=='decks')used.delete(current[i]);
+  if(mode==='decks'&&replaceIndex!==null)used.delete(candidates[i][replaceIndex]);
   window.umamemoOpenSupportPicker({
-   title:(mode==='decks'?'편성 '+(activeDeck+1)+' · ':'')+labels[mode][i]+' 선택',
-   filter:c=>!['friend','group'].includes(c.typeRaw)&&!unavailable.has(c.id),
+   title:(mode==='decks'?'위치 '+(i+1)+' · ':'')+labels[mode][i]+' 선택',
+   filter:c=>!['friend','group'].includes(c.typeRaw)&&!used.has(c.id),
    onSelect:c=>{
-    if(mode==='decks')selections.decks[activeDeck][i]=c.id;
-    else selections[mode][i]=c.id;
+    if(mode==='decks'){
+     if(replaceIndex===null)candidates[i].push(c.id);
+     else candidates[i][replaceIndex]=c.id;
+     page=0;selectedCombo=null;
+    }else selections[mode][i]=c.id;
     save();render();
    },
    onClear:()=>{
-    if(mode==='decks')selections.decks[activeDeck][i]=null;
-    else selections[mode][i]=null;
+    if(mode==='decks'){
+     if(replaceIndex!==null)candidates[i].splice(replaceIndex,1);
+     page=0;selectedCombo=null;
+    }else selections[mode][i]=null;
     save();render();
    }
   });
  }
  root.addEventListener('click',e=>{
   const m=e.target.closest('[data-skill-mode]');
-  if(m){mode=m.dataset.skillMode;render();return}
+  if(m){mode=m.dataset.skillMode;page=0;selectedCombo=null;render();return}
   const k=e.target.closest('[data-skill-kind]');
-  if(k){kind=k.dataset.skillKind;renderResults();root.querySelectorAll('[data-skill-kind]').forEach(b=>{b.classList.toggle('active',b.dataset.skillKind===kind);b.setAttribute('aria-pressed',String(b.dataset.skillKind===kind))});return}
+  if(k){kind=k.dataset.skillKind;page=0;selectedCombo=null;render();return}
+  const removeCandidate=e.target.closest('[data-skill-candidate-remove]');
+  if(removeCandidate){
+   const [i,j]=removeCandidate.dataset.skillCandidateRemove.split(':').map(Number);
+   candidates[i].splice(j,1);page=0;selectedCombo=null;save();render();return;
+  }
+  const add=e.target.closest('[data-skill-add-candidate]');
+  if(add){openPicker(Number(add.dataset.skillAddCandidate));return}
   const pick=e.target.closest('[data-skill-pick]');
-  if(pick){openPicker(Number(pick.dataset.skillPick));return}
+  if(pick){
+   const replace=pick.hasAttribute('data-skill-replace')?Number(pick.dataset.skillReplace):null;
+   openPicker(Number(pick.dataset.skillPick),replace);return;
+  }
   const remove=e.target.closest('[data-skill-remove]');
-  if(remove){
-   if(mode==='decks')selections.decks[activeDeck][Number(remove.dataset.skillRemove)]=null;
-   else selections[mode][Number(remove.dataset.skillRemove)]=null;
-   save();render();return;
-  }
-  const deck=e.target.closest('[data-skill-deck]');
-  if(deck){activeDeck=Number(deck.dataset.skillDeck);render();return}
-  if(e.target.closest('#skill-compare-add-deck')){
-   if(selections.decks.length<5){selections.decks.push(blankDeck());activeDeck=selections.decks.length-1;save();render()}return;
-  }
-  if(e.target.closest('#skill-compare-remove-deck')){
-   if(selections.decks.length>2){
-    selections.decks.splice(activeDeck,1);
-    activeDeck=Math.max(0,Math.min(activeDeck,selections.decks.length-1));save();render();
-   }return;
-  }
- });
- root.querySelector('#skill-compare-card-count').addEventListener('change',e=>{
-  compareCount=Math.max(2,Math.min(5,Number(e.target.value)||2));save();render();
+  if(remove){selections[mode][Number(remove.dataset.skillRemove)]=null;save();render();return}
+  const resultPage=e.target.closest('[data-skill-combo-page]');
+  if(resultPage&&!resultPage.disabled){page=Number(resultPage.dataset.skillComboPage);selectedCombo=null;renderResults();return}
+  const detail=e.target.closest('[data-skill-combo-detail]');
+  if(detail){selectedCombo=Number(detail.dataset.skillComboDetail);renderResults();return}
  });
  // Keep the comparison independent per server, including when the user changes
  // servers without reloading the page.
  document.getElementById('server-mode')?.addEventListener('change',()=>{
   selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
-  compareCount=2;activeDeck=0;read();
+  candidates=[[],[],[],[],[]];page=0;selectedCombo=null;read();
   render();
  });
  async function load(){
