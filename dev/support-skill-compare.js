@@ -152,6 +152,14 @@
   root.querySelector('#'+id).addEventListener(id==='skill-compare-search'?'input':'change',updatePicker);
  }
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.querySelector('#skill-compare-picker').hidden){e.preventDefault();closePicker()}});
+ // Keep the comparison independent per server, including when the user changes
+ // servers without reloading the page.
+ document.getElementById('server-mode')?.addEventListener('change',()=>{
+  closePicker();
+  selections={team:[null,null,null,null,null],pair:[null,null],swap:[null,null,null,null,null,null]};
+  read();
+  render();
+ });
  async function load(){
   try{
    const responses=await Promise.all(['support_cards.json','support_skill_hints.json','support_skill_events.json'].map(f=>fetch('./data/'+f,{cache:'no-store'})));
