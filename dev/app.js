@@ -35,7 +35,8 @@ const TOOLS={
  memo:{name:'메모장',scope:'independent',element:'memo-panel',
   reset(){state.scenario='';$('scenario').value='';save()}},
  schedule:{name:'육성 기록',group:'record',scope:'session',element:'schedule-panel',reset(){resetCurrentScheduleOnly()}},
- plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}}
+ plan:{name:'육성 계획',group:'plan',scope:'independent',element:'plan-panel',reset(){}},
+ supportSkills:{name:'서포트 스킬 비교',group:'plan',scope:'independent',element:'support-skills-panel',reset(){}}
 };
 function readLayout(){
  const initial={mode:'split',tool:'memo',ratio:60,reversed:false};
@@ -52,7 +53,7 @@ function readLayout(){
 }
 const layout=readLayout();
 function saveLayout(){try{devStorage.setItem(LAYOUT_KEY,JSON.stringify(layout))}catch(e){console.warn('화면 설정 저장 실패',e)}}
-function isSoloLayout(){return layout.tool==='plan'||layout.mode==='single';}
+function isSoloLayout(){return layout.tool==='plan'||layout.tool==='supportSkills'||layout.mode==='single';}
 function visibleToolIds(){return isSoloLayout()?[layout.tool]:['counter',layout.tool==='counter'?'memo':layout.tool]}
 function shouldShowScheduleReset(ids=visibleToolIds()){
  return !scheduleEditingPlan&&ids.includes('schedule')&&!ids.includes('counter');
@@ -115,7 +116,7 @@ function updateScenarioFrameWidth(){
 window.addEventListener('resize',updateScenarioFrameWidth);
 function applyLayout(){
  if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
- const ids=visibleToolIds(),workspace=$('workspace'),solo=isSoloLayout(),planOnly=layout.tool==='plan';
+ const ids=visibleToolIds(),workspace=$('workspace'),solo=isSoloLayout(),planOnly=layout.tool==='plan'||layout.tool==='supportSkills';
  workspace.classList.toggle('single',solo);
  workspace.classList.toggle('split',!solo);
  workspace.classList.toggle('reversed',!solo&&layout.reversed);
@@ -227,7 +228,7 @@ function initSettings(){
 }
 function initWorkspace(){
  const nodes=[];
- for(const [category,heading,ids] of [['plan','계획',['plan']],['record','기록',['counter','schedule','memo']]]){
+ for(const [category,heading,ids] of [['plan','계획',['plan','supportSkills']],['record','기록',['counter','schedule','memo']]]){
   const group=document.createElement('div');group.className='tool-menu-heading tool-menu-group-heading';group.dataset.toolCategory=category;group.textContent=heading;nodes.push(group);
   for(const id of ids){const tool=TOOLS[id];const btn=document.createElement('button');btn.type='button';btn.dataset.tool=id;btn.textContent=tool.name;btn.className='tool-menu-item';nodes.push(btn);}
  }
@@ -271,7 +272,7 @@ function initWorkspace(){
   toggleToolMenu(false);
  });
  $('split-toggle').addEventListener('change',e=>{
-  if(layout.tool==='plan'){e.target.checked=layout.mode==='split';return;}
+  if(layout.tool==='plan'||layout.tool==='supportSkills'){e.target.checked=layout.mode==='split';return;}
   layout.mode=e.target.checked?'split':'single';
   if(layout.mode==='split'&&layout.tool==='counter')layout.tool='memo';
   applyLayout();
