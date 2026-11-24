@@ -12,7 +12,8 @@
  const server=()=>localStorage.getItem('umamemo-dev-v1:uma-tracker-server-v1')==='jp'?'jp':'ko';
  let mode='team',kind='hint',cards=[],cardById=new Map(),hints=null,events=null;
  let selections={team:blankDeck(),pair:blankDeck(),decks:[blankDeck(),blankDeck()]};
- let compareCount=2,activeDeck=0;
+ let candidates=[[],[],[],[],[]],page=0;
+ const candidateLimit=8,resultsPageSize=25;
  let activeSlot=null,pickerPage=0;
  const pickerPageSize=24;
  let imageIndex={};
@@ -26,22 +27,23 @@
    :'<span class="skill-compare-no-image">이미지 없음</span>';
  };
 
- const currentIds=()=>mode==='decks'?selections.decks[activeDeck]:selections[mode].slice(0,mode==='pair'?compareCount:5);
+ const currentIds=()=>mode==='decks'?candidates.map(slot=>slot[0]||null):selections[mode];
  const read=()=>{
   try{
    const data=JSON.parse(localStorage.getItem(keyPrefix+server()));
    if(!data)return;
    if(Array.isArray(data.team))selections.team=cleanDeck(data.team);
    if(Array.isArray(data.pair))selections.pair=cleanDeck(data.pair);
-   if(Array.isArray(data.decks)&&data.decks.length>=2){
-    selections.decks=data.decks.slice(0,5).map(cleanDeck);
+   if(Array.isArray(data.candidates)&&data.candidates.length===5){
+    candidates=data.candidates.map(arr=>Array.isArray(arr)?[...new Set(arr.map(Number).filter(Number.isFinite))].slice(0,candidateLimit):[]);
+   }else if(Array.isArray(data.decks)&&data.decks[0]){
+    // Migrate the previous multi-deck format into per-position candidates.
+    candidates=Array.from({length:5},(_,i)=>[...new Set(data.decks.map(d=>Number(d?.[i])).filter(Boolean))].slice(0,candidateLimit));
    }
-   compareCount=Math.max(2,Math.min(5,Number(data.compareCount)||2));
-   activeDeck=Math.min(activeDeck,selections.decks.length-1);
   }catch(err){console.warn('스킬 비교 선택 정보 로딩 실패',err)}
  };
  const save=()=>{
-  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({...selections,compareCount}))}
+  try{localStorage.setItem(keyPrefix+server(),JSON.stringify({team:selections.team,pair:selections.pair,candidates}))}
   catch(err){console.warn('스킬 비교 선택 정보 저장 실패',err)}
  };
  const cardName=c=>server()==='ko'?c.nameKo:(c.nameJa||c.nameKo);
@@ -69,17 +71,34 @@
   return result;
  };
  const cardLabel=id=>{const c=cardById.get(Number(id));return c?cardName(c):'미선택'};
+ const cardCount=id=>entryMap([id]).size;
  function renderSlots(){
   const holder=root.querySelector('#skill-compare-slots');
   const selected=currentIds();
-  holder.innerHTML=Array.from({length:selected.length},(_,i)=>{
+  if(mode==='decks'){
+   holder.classList.add('candidate-layout');
+   holder.innerHTML=candidates.map((group,i)=>{
+    const cardsHtml=group.map((id,j)=>{
+     const card=cardById.get(id);
+     return '<div class="skill-compare-candidate">'
+      +'<button type="button" class="skill-compare-slot-art" data-skill-pick="'+i+'" data-skill-replace="'+j+'" aria-label="'+esc(labels.decks[i]+' · '+(card?cardName(card):'카드 선택'))+'">'+cardArt(id)+'</button>'
+      +'<span class="skill-compare-candidate-count">'+cardCount(id)+'종</span>'
+      +'<button type="button" class="skill-compare-remove" data-skill-candidate-remove="'+i+':'+j+'" aria-label="'+esc(labels.decks[i]+' 후보 제거')+'">×</button></div>';
+    }).join('');
+    return '<div class="skill-compare-candidate-column"><strong>'+labels.decks[i]+'</strong>'+cardsHtml
+     +(group.length<candidateLimit?'<button type="button" class="skill-compare-add-candidate" data-skill-add-candidate="'+i+'">＋ 후보 추가</button>':'')
+     +'</div>';
+   }).join('');
+   return;
+  }
+  holder.classList.remove('candidate-layout');
+  holder.innerHTML=Array.from({length:5},(_,i)=>{
    const id=selected[i],card=cardById.get(Number(id));
    return '<div class="skill-compare-slot '+(card?'filled':'')+'"><span class="skill-compare-slot-label">'+labels[mode][i]+'</span>'
     +'<button type="button" class="skill-compare-slot-art" data-skill-pick="'+i+'" aria-label="'+esc(labels[mode][i]+': '+(card?cardName(card):'서포트카드 선택'))+'">'
-    +(card?cardArt(card.id):'<span class="skill-compare-add-mark">＋</span>')
-    +'</button>'
+    +(card?cardArt(card.id):'<span class="skill-compare-add-mark">＋</span>')+'</button>'
     +'<button type="button" class="skill-compare-slot-name" data-skill-pick="'+i+'" title="'+esc(card?cardName(card):'서포트카드 선택')+'">'+esc(card?cardName(card):'카드 선택')+'</button>'
-    +(card?'<small class="skill-compare-slot-meta">'+esc(cardDesc(card))+'</small>':'')
+    +'<span class="skill-compare-slot-meta">'+(card?cardCount(card.id)+'종 · '+esc(cardDesc(card)):'미선택')+'</span>'
     +(card?'<button type="button" class="skill-compare-remove" data-skill-remove="'+i+'" aria-label="'+esc(labels[mode][i])+' 제거">×</button>':'')
     +'</div>';
   }).join('');
@@ -100,12 +119,32 @@
    +mapped+'<td class="skill-compare-count">'+entry.cards.size+'장</td></tr>';
  }
  function renderTable(rows,ids,heading,emptyMsg){
-  const sorted=[...rows].sort((a,b)=>b.cards.size-a.cards.size||skillInfo(a.id).name.localeCompare(skillInfo(b.id).name,'ko'));
+  // Priority: overlapping skills first, first owning card A-E, then its original skill order.
+  const cardOrder=id=>{
+   const ids=[];
+   if(kind!=='event')ids.push(...(hints?.cards?.[id]||[]));
+   if(kind!=='hint')ids.push(...(events?.cards?.[id]||[]));
+   return ids.map(String);
+  };
+  const orders=ids.map(id=>id?cardOrder(id):[]);
+  const sortKey=row=>{
+   for(let i=0;i<ids.length;i++){
+    if(ids[i]&&row.cards.has(Number(ids[i])))return [i,orders[i].indexOf(String(row.id))];
+   }
+   return [99,99];
+  };
+  const sorted=[...rows].sort((a,b)=>{
+   const repeated=Number(b.cards.size>1)-Number(a.cards.size>1);
+   if(repeated)return repeated;
+   const x=sortKey(a),y=sortKey(b);
+   return x[0]-y[0]||x[1]-y[1]||skillInfo(a.id).name.localeCompare(skillInfo(b.id).name,'ko');
+  });
   const headers=ids.map((id,i)=>{
    const name=id?cardLabel(id):labels[mode][i]+' 미선택';
    return '<th scope="col" class="skill-compare-matrix-card" title="'+esc(name)+'"><div class="skill-compare-matrix-card-heading">'
     +(id?'<span class="skill-compare-matrix-portrait">'+cardArt(id)+'</span>':'<span class="skill-compare-matrix-portrait empty">＋</span>')
-    +'<span class="skill-compare-matrix-label">'+esc(labels[mode][i])+'</span></div></th>';
+    +'<span class="skill-compare-matrix-label">'+esc(labels[mode][i])+'</span>'
+    +'<span class="skill-compare-matrix-card-count">'+(id?cardCount(id)+'종':'0종')+'</span></div></th>';
   }).join('');
   return '<section class="skill-compare-table-wrap"><h3>'+esc(heading)+'</h3>'
    +'<div class="skill-compare-scroll"><table class="skill-compare-matrix"><thead><tr><th scope="col" class="skill-compare-matrix-skill">스킬</th>'
@@ -122,7 +161,7 @@
   let html='<div class="skill-compare-stats">'+statBox('고유 스킬',values.length+'종')+statBox('중복 스킬',duplicated+'종')+statBox('총 카드별 스킬 항목',total+'건')+'</div>';
   if(mode==='team'){
    html+='<p class="skill-compare-note">격자의 각 열은 서포트카드, 각 행은 스킬입니다. 초록색 ✓는 해당 카드가 제공하는 스킬입니다. 같은 카드에서 훈련·이벤트가 겹쳐도 1회로 셉니다.</p>';
-   html+=renderTable(values,ids,'5장 편성 스킬 목록','선택한 카드에 해당하는 스킬이 없습니다.');
+   html+=renderTable(values,ids,'보유 스킬 목록','선택한 카드에 해당하는 스킬이 없습니다.');
    const dist=[1,2,3,4,5].map(n=>n+'장 제공 '+values.filter(x=>x.cards.size===n).length+'종').join(' · ');
    html+='<p class="skill-compare-note">'+dist+'</p>';
   }else if(mode==='pair'){
@@ -130,7 +169,7 @@
    html+='<p class="skill-compare-note">선택한 '+picked.length+'장 중 제공하는 카드가 하나뿐인 스킬과 여러 카드에 겹치는 스킬을 격자로 비교합니다.</p>';
    html+='<div class="skill-compare-stats">'+statBox('한 카드에만 있는 스킬',values.filter(x=>x.cards.size===1).length+'종')
     +statBox('여러 카드 공통 스킬',duplicated+'종')+statBox('선택한 모든 카드 공통',all.length+'종')+'</div>';
-   html+=renderTable(values,ids,'카드별 스킬 격자','선택한 카드의 스킬이 없습니다.');
+   html+=renderTable(values,ids,'보유 스킬 목록','선택한 카드의 스킬이 없습니다.');
   }else{
    const decks=selections.decks.map((deck,index)=>({index,deck,map:entryMap(deck),selected:deck.filter(Boolean).length}));
    const top=Math.max(0,...decks.map(d=>d.map.size));
