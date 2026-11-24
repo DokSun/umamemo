@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261124-skill-ownership-grid"><link rel="preconnect" href="https://umamusu.wiki" crossorigin></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261124-three-comparison-modes"><link rel="preconnect" href="https://umamusu.wiki" crossorigin></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">우마 메모</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 </nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
@@ -48,11 +48,24 @@
 <section id="support-skills-panel" class="panel tool-panel" hidden>
  <div class="panel-title"><h2>서포트 스킬 비교</h2></div>
  <div class="skill-compare-modes" role="group" aria-label="비교 방식">
-  <button type="button" data-skill-mode="team" aria-pressed="true">5장 편성</button>
-  <button type="button" data-skill-mode="pair" aria-pressed="false">A / B 비교</button>
-  <button type="button" data-skill-mode="swap" aria-pressed="false">4장 + A / B 비교</button>
+  <button type="button" data-skill-mode="team" aria-pressed="true">덱 편성</button>
+  <button type="button" data-skill-mode="pair" aria-pressed="false">카드 비교</button>
+  <button type="button" data-skill-mode="decks" aria-pressed="false">편성 비교</button>
  </div>
  <p id="skill-compare-intro" class="skill-compare-note">서포트카드 5장을 선택하여 스킬을 비교합니다.</p>
+ <div id="skill-compare-card-count-wrap" class="skill-compare-config" hidden>
+  <label for="skill-compare-card-count">비교할 카드 수</label>
+  <select id="skill-compare-card-count" aria-label="비교할 카드 수">
+   <option value="2">2장</option><option value="3">3장</option><option value="4">4장</option><option value="5">5장</option>
+  </select>
+ </div>
+ <div id="skill-compare-deck-controls" class="skill-compare-deck-controls" hidden>
+  <div id="skill-compare-deck-tabs" class="skill-compare-deck-tabs" role="group" aria-label="편성 선택"></div>
+  <div class="skill-compare-deck-actions">
+   <button id="skill-compare-add-deck" type="button">+ 편성 추가</button>
+   <button id="skill-compare-remove-deck" type="button">현재 편성 삭제</button>
+  </div>
+ </div>
  <div id="skill-compare-slots" class="skill-compare-slots" aria-label="비교할 서포트카드"></div>
  <div class="skill-compare-toolbar">
   <strong>스킬 획득 경로</strong>
@@ -84,4 +97,4 @@
   <button type="button" id="schedule-action-clear" class="schedule-secondary-action">턴 초기화</button>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261124-shared-card-picker" defer></script><script src="support-skill-compare.js?v=20261124-skill-ownership-grid" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261124-shared-card-picker" defer></script><script src="support-skill-compare.js?v=20261124-three-comparison-modes" defer></script></body></html>
