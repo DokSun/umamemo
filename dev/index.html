@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261120-switch-plan-footer-fix"><link rel="preconnect" href="https://umamusu.wiki" crossorigin></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>우마 메모 · 개발판</title><link rel="stylesheet" href="style.css?v=20261124-support-skill-compare"><link rel="preconnect" href="https://umamusu.wiki" crossorigin></head><body><header><div class="header-brand"><div class="tool-menu-wrap"><button id="tool-menu-toggle" type="button" aria-controls="tool-menu" aria-expanded="false" aria-label="기능 메뉴 열기" title="기능 메뉴">☰ <span>기능</span></button></div><h1>우마 메모</h1></div><div class="header-cultivation" aria-label="현재 육성 정보"><strong id="schedule-work-title">현재 육성</strong><span id="schedule-header-character">캐릭터 미지정</span><span id="schedule-header-scenario">기본</span></div><span style="font-size:12px;color:#ffcf82;border:1px solid #d49b54;padding:3px 8px;border-radius:6px">개발판 · 실제 기록과 분리</span></header><div id="tool-menu-backdrop" class="tool-menu-backdrop" hidden></div><nav id="tool-menu" class="tool-menu" aria-label="기능 선택" hidden>
 <div class="tool-drawer-header"><strong id="tool-menu-title">우마 메모</strong><button id="tool-menu-close" type="button" aria-label="기능 메뉴 닫기">←</button></div><div id="tool-menu-list" class="tool-menu-list"></div>
 </nav><main id="workspace" class="workspace split">
 <section id="counter-panel" class="panel tool-panel"><div class="panel-title"><h2>서포트 이벤트 카운팅</h2></div><div id="slots"></div><div class="panel-reset-footer" id="counter-reset-footer"><button id="reset" type="button">이벤트 카운팅 초기화</button></div></section>
@@ -45,6 +45,33 @@
   <aside id="plan-preview" class="plan-preview" aria-label="육성 계획 미리보기" aria-live="polite"><p class="plan-preview-placeholder">계획 항목을 클릭하면 여기에 일정이 표시됩니다.</p></aside>
  </div>
 </section>
+<section id="support-skills-panel" class="panel tool-panel" hidden>
+ <div class="panel-title"><h2>서포트 스킬 비교</h2></div>
+ <div class="skill-compare-modes" role="group" aria-label="비교 방식">
+  <button type="button" data-skill-mode="team" aria-pressed="true">5장 편성</button>
+  <button type="button" data-skill-mode="pair" aria-pressed="false">A / B 비교</button>
+  <button type="button" data-skill-mode="swap" aria-pressed="false">4장 + A / B 비교</button>
+ </div>
+ <p id="skill-compare-intro" class="skill-compare-note">서포트카드 5장을 선택하여 스킬을 비교합니다.</p>
+ <div id="skill-compare-slots" class="skill-compare-slots" aria-label="비교할 서포트카드"></div>
+ <div class="skill-compare-toolbar">
+  <strong>스킬 획득 경로</strong>
+  <div class="skill-compare-kinds" role="group" aria-label="스킬 획득 경로">
+   <button type="button" data-skill-kind="hint" aria-pressed="true">훈련 힌트</button>
+   <button type="button" data-skill-kind="event" aria-pressed="false">이벤트</button>
+   <button type="button" data-skill-kind="all" aria-pressed="false">전체</button>
+  </div>
+ </div>
+ <div id="skill-compare-results" aria-live="polite"></div>
+ <div id="skill-compare-picker" class="skill-compare-picker" hidden>
+  <div class="skill-compare-picker-dialog" role="dialog" aria-modal="true" aria-labelledby="skill-compare-picker-title">
+   <div class="skill-compare-picker-head"><h3 id="skill-compare-picker-title">서포트카드 선택</h3><button type="button" data-skill-close aria-label="닫기">×</button></div>
+   <input type="search" id="skill-compare-search" placeholder="카드 이름 또는 캐릭터 검색" aria-label="서포트카드 검색" autocomplete="off">
+   <div class="skill-compare-filters"><select id="skill-compare-type" aria-label="카드 유형"><option value="all">모든 유형</option><option value="speed">스피드</option><option value="stamina">스태미나</option><option value="power">파워</option><option value="guts">근성</option><option value="intelligence">지능</option></select><select id="skill-compare-rarity" aria-label="희귀도"><option value="all">모든 등급</option><option value="SSR">SSR</option><option value="SR">SR</option><option value="R">R</option></select></div>
+   <div id="skill-compare-search-results" class="skill-compare-search-results" aria-label="검색 결과"></div>
+  </div>
+ </div>
+</section>
 </main><div id="settings-source" hidden>
    <div class="settings-pane" data-settings-pane="counter" hidden>
     <h3>서포트 이벤트 카운팅</h3><label class="reset-popup-option" for="reset-popup-toggle"><span>초기화 팝업</span><input id="reset-popup-toggle" type="checkbox" role="switch" aria-label="이벤트 초기화 확인 팝업" checked><span class="reset-popup-track" aria-hidden="true"></span></label>
@@ -64,4 +91,4 @@
   <button type="button" id="schedule-action-clear" class="schedule-secondary-action">턴 초기화</button>
  </section>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261120-switch-plan-footer-fix" defer></script></body></html>
+<div id="toast" role="status" aria-live="polite"></div><script src="ui-text.js?v=20261109-plan-initial-state" defer></script><script src="training-levels.js?v=20261114-training-levels" defer></script><script src="app.js?v=20261124-support-skill-compare" defer></script><script src="support-skill-compare.js?v=20261124-support-skill-compare" defer></script></body></html>
