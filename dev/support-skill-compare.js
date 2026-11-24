@@ -10,7 +10,19 @@
  const server=()=>localStorage.getItem('umamemo-dev-v1:uma-tracker-server-v1')==='jp'?'jp':'ko';
  let mode='team',kind='hint',cards=[],cardById=new Map(),hints=null,events=null;
  let selections={team:[null,null,null,null,null],pair:[null,null],swap:[null,null,null,null,null,null]};
- let activeSlot=null;
+ let activeSlot=null,pickerPage=0;
+ const pickerPageSize=24;
+ let imageIndex={};
+ const imageURL=id=>{
+  const src=imageIndex[String(id)];
+  try{return typeof src==='string'&&new URL(src).protocol==='https:'?src:null}catch{return null}
+ };
+ const cardArt=(id,loading='lazy')=>{
+  const src=imageURL(id);
+  return src?'<img src="'+esc(src)+'" alt="" loading="'+loading+'" decoding="async" referrerpolicy="no-referrer" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span class="skill-compare-no-image" hidden>이미지 없음</span>'
+   :'<span class="skill-compare-no-image">이미지 없음</span>';
+ };
+
  const read=()=>{try{const data=JSON.parse(localStorage.getItem(keyPrefix+server()));if(data){for(const m of Object.keys(slotsByMode))if(Array.isArray(data[m]))selections[m]=Array.from({length:slotsByMode[m]},(_,i)=>Number(data[m][i])||null)}}catch(err){console.warn(err)}};
  const save=()=>{try{localStorage.setItem(keyPrefix+server(),JSON.stringify(selections))}catch(err){console.warn(err)}};
  const cardName=c=>server()==='ko'?c.nameKo:(c.nameJa||c.nameKo);
@@ -43,9 +55,12 @@
   holder.innerHTML=Array.from({length:slotsByMode[mode]},(_,i)=>{
    const id=selections[mode][i],card=cardById.get(Number(id));
    return '<div class="skill-compare-slot '+(card?'filled':'')+'"><span class="skill-compare-slot-label">'+labels[mode][i]+'</span>'
-    +'<button type="button" data-skill-pick="'+i+'"><strong>'+esc(card?cardName(card):'＋ 카드 선택')+'</strong>'
-    +(card?'<small>'+esc(cardDesc(card))+'</small>':'')+'</button>'
-    +(card?'<button type="button" class="skill-compare-remove" data-skill-remove="'+i+'" aria-label="'+labels[mode][i]+' 제거">×</button>':'')
+    +'<button type="button" class="skill-compare-slot-art" data-skill-pick="'+i+'" aria-label="'+esc(labels[mode][i]+': '+(card?cardName(card):'서포트카드 선택'))+'">'
+    +(card?cardArt(card.id):'<span class="skill-compare-add-mark">＋</span>')
+    +'</button>'
+    +'<button type="button" class="skill-compare-slot-name" data-skill-pick="'+i+'" title="'+esc(card?cardName(card):'서포트카드 선택')+'">'+esc(card?cardName(card):'카드 선택')+'</button>'
+    +(card?'<small class="skill-compare-slot-meta">'+esc(cardDesc(card))+'</small>':'')
+    +(card?'<button type="button" class="skill-compare-remove" data-skill-remove="'+i+'" aria-label="'+esc(labels[mode][i])+' 제거">×</button>':'')
     +'</div>';
   }).join('');
  }
@@ -119,14 +134,26 @@
   const taken=new Set(selections[mode].map((id,i)=>i===activeSlot?null:id).filter(Boolean));
   return cards.filter(c=>!taken.has(c.id)&&(type==='all'||c.typeRaw===type)&&(rarity==='all'||c.rarity===rarity)
    &&(server()==='jp'||(c.releaseKo&&c.releaseKo<=today))
-   &&(!query||(cardName(c)+' '+c.characterKo+' '+c.nameJa+' '+c.id).toLocaleLowerCase().includes(query))).slice(0,60);
+   &&(!query||(cardName(c)+' '+c.characterKo+' '+c.nameJa+' '+c.id).toLocaleLowerCase().includes(query)))
+   .sort((a,b)=>Number(b.id)-Number(a.id));
  }
- function updatePicker(){
+ function updatePicker(resetPage=false){
+  if(resetPage)pickerPage=0;
   const results=root.querySelector('#skill-compare-search-results'),matches=pickerMatches();
-  results.innerHTML=matches.length?matches.map(c=>'<button type="button" data-skill-select="'+c.id+'"><strong>'+esc(cardName(c))+'</strong><small>'+esc(cardDesc(c))+'</small></button>').join(''):'<p class="skill-compare-note">일치하는 카드가 없습니다.</p>';
+  const pages=Math.max(1,Math.ceil(matches.length/pickerPageSize));
+  pickerPage=Math.min(pickerPage,pages-1);
+  const pageCards=matches.slice(pickerPage*pickerPageSize,(pickerPage+1)*pickerPageSize);
+  results.innerHTML=pageCards.length?pageCards.map(c=>
+   '<button type="button" class="skill-compare-picker-card" data-skill-select="'+c.id+'" title="'+esc(cardName(c))+'" aria-label="'+esc(cardName(c)+' · '+cardDesc(c))+'">'
+   +cardArt(c.id)+'</button>'
+  ).join(''):'<p class="skill-compare-note">검색 조건에 맞는 카드가 없습니다.</p>';
+  const pager=root.querySelector('#skill-compare-picker-pager');
+  pager.innerHTML='<button type="button" data-skill-page="'+(pickerPage-1)+'" '+(pickerPage===0?'disabled':'')+'>◀ 이전</button>'
+   +'<span>'+(pickerPage+1)+' / '+pages+' 페이지 · '+matches.length+'장</span>'
+   +'<button type="button" data-skill-page="'+(pickerPage+1)+'" '+(pickerPage===pages-1?'disabled':'')+'>다음 ▶</button>';
  }
  function openPicker(i){
-  activeSlot=i;const modal=root.querySelector('#skill-compare-picker');
+  activeSlot=i;pickerPage=0;const modal=root.querySelector('#skill-compare-picker');
   modal.hidden=false;
   root.querySelector('#skill-compare-search').value='';
   root.querySelector('#skill-compare-type').value='all';
@@ -144,12 +171,14 @@
   if(pick){openPicker(Number(pick.dataset.skillPick));return}
   const remove=e.target.closest('[data-skill-remove]');
   if(remove){selections[mode][Number(remove.dataset.skillRemove)]=null;save();render();return}
+  const page=e.target.closest('[data-skill-page]');
+  if(page&&!page.disabled){pickerPage=Number(page.dataset.skillPage);updatePicker();return}
   const selected=e.target.closest('[data-skill-select]');
   if(selected&&activeSlot!==null){selections[mode][activeSlot]=Number(selected.dataset.skillSelect);save();closePicker();render();return}
   if(e.target.closest('[data-skill-close]')||e.target.id==='skill-compare-picker'){closePicker();return}
  });
  for(const id of ['skill-compare-search','skill-compare-type','skill-compare-rarity']){
-  root.querySelector('#'+id).addEventListener(id==='skill-compare-search'?'input':'change',updatePicker);
+  root.querySelector('#'+id).addEventListener(id==='skill-compare-search'?'input':'change',()=>updatePicker(true));
  }
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!root.querySelector('#skill-compare-picker').hidden){e.preventDefault();closePicker()}});
  // Keep the comparison independent per server, including when the user changes
@@ -162,9 +191,11 @@
  });
  async function load(){
   try{
-   const responses=await Promise.all(['support_cards.json','support_skill_hints.json','support_skill_events.json'].map(f=>fetch('./data/'+f,{cache:'no-store'})));
-   if(responses.some(x=>!x.ok))throw Error('서포트 카드/스킬 DB HTTP 오류');
-   [cards,hints,events]=await Promise.all(responses.map(x=>x.json()));
+   const responses=await Promise.all(['support_cards.json','support_skill_hints.json','support_skill_events.json','image_sources.json'].map(f=>fetch('./data/'+f,{cache:'no-store'})));
+   if(responses.some(x=>!x.ok))throw Error('서포트 카드/스킬/이미지 DB HTTP 오류');
+   const [allCards,hintData,eventData,imageData]=await Promise.all(responses.map(x=>x.json()));
+   cards=allCards;hints=hintData;events=eventData;
+   imageIndex=imageData?.images&&typeof imageData.images==='object'?imageData.images:{};
    cards=cards.filter(c=>!['friend','group'].includes(c.typeRaw));cardById=new Map(cards.map(c=>[c.id,c]));
    read();render();
   }catch(err){console.error('서포트 스킬 비교 DB 로딩 실패',err);root.querySelector('#skill-compare-results').textContent='스킬 DB를 불러오지 못했습니다. 페이지를 새로고침해 주세요.'}
