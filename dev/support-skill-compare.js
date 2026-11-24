@@ -160,61 +160,94 @@
  }
  // Enumerate all valid combinations of exactly one candidate per position.
  // Duplicate support cards cannot appear twice within one deck.
- function combinations(){
-  if(candidates.some(group=>group.length===0))return [];
-  const combos=[],allSkillSets=new Map();
-  for(const id of new Set(candidates.flat())){
-   const set=new Set();
-   if(kind!=='event')for(const skill of hints?.cards?.[id]||[])set.add(String(skill));
-   if(kind!=='hint')for(const skill of events?.cards?.[id]||[])set.add(String(skill));
-   allSkillSets.set(id,set);
-  }
-  const selected=[],used=new Set();
-  const dfs=(position,union,entries)=>{
-   if(position===5){
-    combos.push({ids:[...selected],count:union.size,total:entries,overlap:entries-union.size});
-    return;
-   }
-   for(const id of candidates[position]){
-    if(used.has(id))continue;
-    selected.push(id);used.add(id);
-    const next=new Set(union);
-    for(const skill of allSkillSets.get(id)||[])next.add(skill);
-    dfs(position+1,next,entries+(allSkillSets.get(id)?.size||0));
-    selected.pop();used.delete(id);
+
+ function chooseCards(group,n){
+  if(n===0)return [[]];
+  if(group.length<n)return [];
+  const out=[],picked=[];
+  const dfs=start=>{
+   if(picked.length===n){out.push([...picked]);return}
+   for(let i=start;i<=group.length-(n-picked.length);i++){
+    picked.push(group[i]);dfs(i+1);picked.pop();
    }
   };
-  dfs(0,new Set(),0);
+  dfs(0);return out;
+ }
+ function combinations(){
+  if(typeCounts.reduce((a,b)=>a+b,0)!==5)return [];
+  const options=candidates.map((group,i)=>chooseCards(group,typeCounts[i]));
+  if(options.some(group=>group.length===0))return [];
+  const skillsByCard=new Map();
+  for(const id of new Set(candidates.flat())){
+   const set=new Set();
+   if(kind!=='event')for(const sid of hints?.cards?.[id]||[])set.add(String(sid));
+   if(kind!=='hint')for(const sid of events?.cards?.[id]||[])set.add(String(sid));
+   skillsByCard.set(id,set);
+  }
+  const combos=[],picked=[];
+  const walk=(type,union,total)=>{
+   if(type===5){
+    combos.push({ids:[...picked],count:union.size,total,overlap:total-union.size});
+    return;
+   }
+   for(const group of options[type]){
+    const next=new Set(union);
+    let entries=total;
+    for(const id of group){
+     picked.push(id);
+     const skills=skillsByCard.get(id)||new Set();
+     entries+=skills.size;
+     for(const sid of skills)next.add(sid);
+    }
+    walk(type+1,next,entries);
+    picked.length-=group.length;
+   }
+  };
+  walk(0,new Set(),0);
   combos.sort((a,b)=>b.count-a.count||a.overlap-b.overlap||a.ids.join(',').localeCompare(b.ids.join(',')));
   return combos;
  }
  function renderCombinationResults(){
-  const combos=combinations();
-  const totalPossible=candidates.reduce((n,group)=>n*group.length,1);
+  const totalCount=typeCounts.reduce((a,b)=>a+b,0);
+  if(totalCount!==5)return '<p class="skill-compare-validation">속성별 편성 장수 합계가 5장이 되도록 설정하세요. 현재 '+totalCount+'장입니다.</p>';
+  const missing=types.filter((type,i)=>candidates[i].length<typeCounts[i]).map(type=>typeNames[type]);
+  if(missing.length)return '<p class="skill-compare-validation">'+esc(missing.join(' · '))+' 속성에 지정된 장수 이상의 후보 카드를 추가하세요.</p>';
+  const possible=candidates.map((group,i)=>chooseCards(group,typeCounts[i]).length).reduce((n,x)=>n*x,1);
+  const combos=combinations(),maxPages=Math.max(1,Math.ceil(combos.length/resultsPageSize));
+  if(page>=maxPages)page=0;
   const visible=combos.slice(page*resultsPageSize,(page+1)*resultsPageSize);
-  const maxPages=Math.max(1,Math.ceil(combos.length/resultsPageSize));
-  if(page>=maxPages){page=0;return renderCombinationResults()}
   let html='<section class="skill-compare-deck-summary"><h3>편성 조합 순위</h3>'
-    +'<p class="skill-compare-note">각 위치에서 후보 1장씩 선택한 모든 조합을 계산합니다. 같은 카드가 중복된 편성은 제외합니다. 고유 스킬 수 내림차순이며, 동점이면 중복 초과 항목이 적은 편성을 먼저 표시합니다.</p>';
-  html+='<div class="skill-compare-combo-meta">후보 조합 '+totalPossible.toLocaleString()+'개 · 유효 편성 '+combos.length.toLocaleString()+'개</div>';
-  if(!combos.length){
-   html+='<p class="skill-compare-note">'+(candidates.some(group=>!group.length)?'다섯 위치에 각각 카드 후보를 1장 이상 지정해 주세요.':'유효한 편성이 없습니다. 같은 카드가 서로 다른 위치에 중복되어 있는지 확인해 주세요.')+'</p></section>';
-   return html;
-  }
+   +'<p class="skill-compare-note">각 속성에서 설정한 장수만큼 선택하는 모든 편성을 계산합니다. 중복을 제거한 스킬 종류가 많은 순서로 표시합니다.</p>'
+   +'<div class="skill-compare-combo-meta">유효 편성 '+possible.toLocaleString()+'개 · 고유 스킬 수 내림차순</div>';
   html+='<div class="skill-compare-combo-list">'+visible.map((combo,i)=>{
    const rank=page*resultsPageSize+i+1;
-   const images=combo.ids.map((id,j)=>'<div class="skill-compare-combo-member" title="'+esc(labels.decks[j]+' · '+cardLabel(id))+'">'+cardArt(id)+'</div>').join('');
+   const images=combo.ids.map(id=>'<div class="skill-compare-combo-member" title="'+esc(cardLabel(id))+'">'+cardArt(id)+'</div>').join('');
    return '<div class="skill-compare-combo-row"><span class="skill-compare-combo-rank">'+rank+'위</span><div class="skill-compare-combo-images">'+images+'</div>'
     +'<div class="skill-compare-combo-scores"><strong>'+combo.count+'종</strong><small>중복 포함 '+combo.total+'건 · 중복 초과 '+combo.overlap+'건</small></div>'
     +'<button type="button" data-skill-combo-detail="'+(page*resultsPageSize+i)+'">스킬 보기</button></div>';
   }).join('')+'</div>';
   html+='<div class="skill-compare-combo-pager"><button type="button" data-skill-combo-page="'+(page-1)+'" '+(page===0?'disabled':'')+'>◀ 이전</button>'
    +'<span>'+(page+1)+' / '+maxPages+' 페이지</span><button type="button" data-skill-combo-page="'+(page+1)+'" '+(page===maxPages-1?'disabled':'')+'>다음 ▶</button></div>';
-  const detail=Number.isInteger(selectedCombo)&&selectedCombo>=0&&selectedCombo<combos.length?combos[selectedCombo]:null;
-  if(detail)html+=renderTable([...entryMap(detail.ids).values()],detail.ids,'선택한 편성 · '+detail.count+'종','스킬이 없습니다.');
   return html+'</section>';
  }
- let selectedCombo=null;
+ function openCombinationDetail(index){
+  const combo=combinations()[index];if(!combo)return;
+  modalPreviousFocus=document.activeElement;
+  const modal=root.querySelector('#skill-compare-detail-dialog');
+  root.querySelector('#skill-compare-detail-title').textContent='편성 스킬 · '+combo.count+'종';
+  root.querySelector('#skill-compare-detail-content').innerHTML=renderTable([...entryMap(combo.ids).values()],combo.ids,'보유 스킬 목록','보유 스킬이 없습니다.');
+  modal.hidden=false;
+  document.body.classList.add('skill-compare-dialog-open');
+  root.querySelector('#skill-compare-detail-close').focus();
+ }
+ function closeCombinationDetail(){
+  const modal=root.querySelector('#skill-compare-detail-dialog');
+  if(modal.hidden)return;
+  modal.hidden=true;
+  document.body.classList.remove('skill-compare-dialog-open');
+  if(modalPreviousFocus?.isConnected)modalPreviousFocus.focus();
+  modalPreviousFocus=null;
+ }
  function renderResults(){
   const out=root.querySelector('#skill-compare-results');
   if(!cards.length||!hints||!events){out.innerHTML='<p class="skill-compare-note">서포트카드 및 스킬 DB를 불러오는 중입니다.</p>';return}
